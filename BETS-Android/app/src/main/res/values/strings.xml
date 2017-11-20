@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  -  DICE NFC evaluation.
+  -
+  -  (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+-->
+<!--
+  -  Application strings.
+  -
+  -  @author Matthew Casey
+-->
+<resources>
+
+  <!-- Top-level strings. -->
+  <!--string name="app_name">DICE</string-->
+  <string name="apdu_service">DICE NFC Evaluation</string>
+  <string name="noProcessingText">No Processing</string>
+  <string name="processingText">Processing %1$s</string>
+
+</resources>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  -  DICE NFC evaluation.
+  -
+  -  (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+-->
+<!--
+  -  Application manifest file.
+  -
+  -  @author Matthew Casey
+-->
+<manifest package="uk.co.pervasive_intelligence.dice"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- Permissions and hardware requirements. -->
+  <uses-permission android:name="android.permission.NFC"/>
+
+  <uses-feature
+    android:name="android.hardware.nfc"
+    android:required="true"/>
+  <uses-feature
+    android:name="android.hardware.nfc.hce"
+    android:required="true"/>
+
+  <application
+    android:allowBackup="true"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name"
+    android:supportsRtl="true"
+    android:theme="@style/AppTheme">
+
+    <!-- Launch activity. -->
+    <activity android:name=".LaunchActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+
+    <!-- APDU service which responds to the NFC reader. -->
+    <service
+      android:name=".APDUService"
+      android:exported="true"
+      android:permission="android.permission.BIND_NFC_SERVICE">
+      <intent-filter>
+        <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+      </intent-filter>
+      <meta-data
+        android:name="android.nfc.cardemulation.host_apdu_service"
+        android:resource="@xml/apduservice"/>
+    </service>
+  </application>
+
+</manifest>

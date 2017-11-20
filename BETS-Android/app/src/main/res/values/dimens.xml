@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  -  DICE NFC evaluation.
+  -
+  -  (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+-->
+<!--
+  -  Application dimensions.
+  -
+  -  @author Matthew Casey
+-->
+<resources>
+
+  <!-- Default screen margins, per the Android Design guidelines. -->
+  <dimen name="activity_horizontal_margin">16dp</dimen>
+  <dimen name="activity_vertical_margin">16dp</dimen>
+
+</resources>

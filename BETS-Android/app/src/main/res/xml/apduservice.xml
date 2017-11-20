@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  -  DICE NFC evaluation.
+  -
+  -  (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+-->
+<!--
+  -  APDU service definitions.
+  -
+  -  @author Matthew Casey
+-->
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+                   android:description="@string/apdu_service"
+                   android:requireDeviceUnlock="false">
+
+  <aid-group
+    android:category="other"
+    android:description="@string/apdu_service">
+
+    <!-- Arbitrary proprietary AID (starts with "F") for Android app. Hopefully doesn't clash with anything else. -->
+    <aid-filter android:name="F0112233445566"/>
+  </aid-group>
+
+</host-apdu-service>

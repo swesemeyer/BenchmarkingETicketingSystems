@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  -  DICE NFC evaluation.
+  -
+  -  (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+-->
+<!--
+  -  Logback configuration.
+  -
+  -  @author Matthew Casey
+-->
+<configuration>
+
+  <!-- Logcat appender. -->
+  <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
+    <encoder>
+      <pattern>[%-4thread] %msg</pattern>
+    </encoder>
+  </appender>
+
+  <!-- File appender. -->
+  <appender name="file" class="ch.qos.logback.core.FileAppender">
+    <file>development.log</file>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %.-1level %-30(%logger{12}:%L) [%-4thread] %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Root level configuration. -->
+  <root level="ALL">
+    <appender-ref ref="logcat"/>
+    <appender-ref ref="file"/>
+  </root>
+
+</configuration>

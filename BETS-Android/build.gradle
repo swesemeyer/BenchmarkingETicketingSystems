@@ -1,0 +1,43 @@
+/**
+ * DICE NFC evaluation.
+ *
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ */
+
+/**
+ * Top-level build file where you can add configuration options common to all sub-projects/modules.
+ *
+ * @author Matthew Casey
+ */
+
+buildscript {
+  repositories {
+    jcenter()
+  }
+  dependencies {
+    classpath 'com.android.tools.build:gradle:3.0.0'
+
+    // NOTE: Do not place your application dependencies here; they belong in the individual module build.gradle files
+  }
+}
+
+allprojects {
+  repositories {
+    jcenter()
+  }
+}
+
+task clean(type: Delete) {
+  delete rootProject.buildDir
+}
+
+ext {
+  buildToolsVersion = "26.0.0"
+  supportLibVersion = "25.3.1"
+  gsonVersion = "2.8.1"
+  logbackVersion = "1.1.1-6"
+  slf4jVersion="1.7.21"
+  bcVersion="1.58"
+  junitVersion = "4.12"
+  espressoVersion = "2.2.2"
+}
