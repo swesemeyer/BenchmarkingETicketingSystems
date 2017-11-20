@@ -9,7 +9,7 @@ This repository contains the Java code which can be run on a PC to operate the A
 * Test that the reader works using, for example, "pcsctest" or "pcsc_scan"
 * Download this repository
 * Import the repository into Eclipse as an "Existing Maven Project" (sometimes you may need to remove the files/diretories .settings, .classpath and .project)
-* Run the program via the "uk.co.pervasive_intelligence.dice.Main" class, making sure that the "log" directory in the repository is added to the classpath as this contains the Logback properties file
+* Run the program via the "uk.ac.surrey.bets_framework.Main" class, making sure that the "log" directory in the repository is added to the classpath as this contains the Logback properties file
 * Output from the program is logged to "log/development.log"
 
 ## Command Options ##

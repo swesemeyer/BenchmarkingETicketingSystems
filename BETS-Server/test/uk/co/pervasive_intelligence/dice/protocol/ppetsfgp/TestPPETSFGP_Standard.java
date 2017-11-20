@@ -1,7 +1,7 @@
 /**
  *
  */
-package uk.co.pervasive_intelligence.dice.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 
 import static org.junit.Assert.fail;
 
@@ -22,15 +22,15 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
-import uk.co.pervasive_intelligence.dice.Crypto;
-import uk.co.pervasive_intelligence.dice.Crypto.BigIntEuclidean;
-import uk.co.pervasive_intelligence.dice.protocol.data.Data;
-import uk.co.pervasive_intelligence.dice.protocol.data.ListData;
-import uk.co.pervasive_intelligence.dice.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.co.pervasive_intelligence.dice.protocol.ppetsfgp.data.CentralAuthorityData;
-import uk.co.pervasive_intelligence.dice.protocol.ppetsfgp.data.SellerData;
-import uk.co.pervasive_intelligence.dice.protocol.ppetsfgp.data.UserData;
-import uk.co.pervasive_intelligence.dice.protocol.ppetsfgp.data.ValidatorData;
+import uk.ac.surrey.bets_framework.Crypto;
+import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
+import uk.ac.surrey.bets_framework.protocol.data.Data;
+import uk.ac.surrey.bets_framework.protocol.data.ListData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
 
 /**
  * @author swesemeyer

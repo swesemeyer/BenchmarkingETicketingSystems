@@ -26,18 +26,18 @@ import ch.qos.logback.classic.Logger;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveField;
-import uk.co.pervasive_intelligence.dice.Crypto;
-import uk.co.pervasive_intelligence.dice.Crypto.BigIntEuclidean;
-import uk.co.pervasive_intelligence.dice.GsonUtils;
-import uk.co.pervasive_intelligence.dice.protocol.data.ListData;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.PPLASTSharedMemory;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.CentralAuthorityData;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.PoliceData;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.SellerData;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.TicketDetails;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.UserData;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.VerifierData;
+import uk.ac.surrey.bets_framework.Crypto;
+import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
+import uk.ac.surrey.bets_framework.GsonUtils;
+import uk.ac.surrey.bets_framework.protocol.data.ListData;
+import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.PoliceData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 
 /**
  * @author swesemeyer
