@@ -1,0 +1,173 @@
+/**
+ * DICE NFC evaluation.
+ * <p>
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ */
+package uk.ac.surrey.bets_framework;
+
+import android.util.Base64;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
+
+import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
+import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveField;
+import uk.ac.surrey.bets_framework.protocol.data.Data;
+
+/**
+ * Utilities for use with GSON.
+ *
+ * @author Matthew Casey
+ */
+public class GsonUtils {
+
+  /**
+   * Deserializes an CurveElement.
+   */
+  public static class CurveElementDeserializer implements JsonDeserializer<CurveElement<?, ?>> {
+
+
+    /**
+     * The field associated with the curve.
+     */
+    private CurveField<?> field1 = null;
+    private CurveField<?> field2 = null;
+
+    /**
+     * Constructor.
+     *
+     * @param field1 The field associated with the curve.
+     * @param field2 The field associated with the curve.
+     */
+    public CurveElementDeserializer(CurveField<?> field1, CurveField<?> field2) {
+      super();
+
+      this.field1 = field1;
+      this.field2 = field2;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param field1 The field associated with the curve.
+     */
+    public CurveElementDeserializer(CurveField<?> field1) {
+      super();
+
+      this.field1 = field1;
+      this.field2 = null;
+    }
+
+
+    /**
+     * Gson invokes this call-back method during deserialization when it encounters a field of the specified type.
+     *
+     * @param json    The Json data being deserialized.
+     * @param typeOfT The type of the Object to deserialize to.
+     * @return a deserialized object of the specified type typeOfT which is a subclass of {@code T}.
+     * @throws JsonParseException if json is not in the expected format of {@code typeofT}.
+     */
+    @Override
+    public CurveElement<?, ?> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws
+            JsonParseException {
+
+      CurveElement<?, ?> curveElement = null;
+
+      try {
+        String type = json.getAsString().substring(0, 1);
+
+        byte[] bytes = Base64.decode(json.getAsString().substring(1).getBytes(Data.UTF8), Base64.NO_WRAP);
+
+        if (type.equalsIgnoreCase("1")) {
+          curveElement = new CurveElement<>(this.field1);
+        } else {
+          curveElement = new CurveElement<>(this.field2);
+        }
+        curveElement.setFromBytes(bytes);
+
+      } catch (final UnsupportedEncodingException e) {
+        LOG.error("could not decode Base 64 string", e);
+      }
+
+      return (CurveElement<?, ?>) curveElement.getImmutable();
+    }
+  }
+
+  /**
+   * Serializes an CurveElement.
+   */
+  public static class CurveElementSerializer implements JsonSerializer<CurveElement<?, ?>> {
+
+    /**
+     * The field associated with the curve.
+     */
+    private CurveField<?> field1 = null;
+    private CurveField<?> field2 = null;
+
+    /**
+     * Constructor.
+     *
+     * @param field1 The field associated with the curve.
+     * @param field2 The field associated with the curve.
+     */
+    public CurveElementSerializer(CurveField<?> field1, CurveField<?> field2) {
+      super();
+
+      this.field1 = field1;
+      this.field2 = field2;
+    }
+
+    /**
+     * Constructor.
+     */
+    public CurveElementSerializer() {
+      super();
+
+      this.field1 = null;
+      this.field2 = null;
+    }
+
+    /**
+     * Gson invokes this call-back method during serialization when it encounters a field of the specified type.
+     *
+     * @param src       the object that needs to be converted to Json.
+     * @param typeOfSrc the actual type (fully genericized version) of the source object.
+     * @return a JsonCurveElement corresponding to the specified object.
+     */
+    @Override
+    public JsonElement serialize(CurveElement<?, ?> src, Type typeOfSrc, JsonSerializationContext context) {
+      JsonElement curveElement = null;
+      String type = "1";
+      if ((this.field2 != null) && (src.getField().equals(this.field2))) {
+        type = "2";
+      }
+      try {
+        // Get the CurveElement bytes as a string.
+
+        curveElement = new JsonPrimitive(type + (new String(Base64.encode(src.toBytes(),
+                Base64.NO_WRAP), Data
+                .UTF8)));
+      } catch (final UnsupportedEncodingException e) {
+        LOG.error("could not encode Base 64 string", e);
+      }
+
+      return curveElement;
+    }
+  }
+
+  /**
+   * Logback logger.
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(GsonUtils.class);
+}
