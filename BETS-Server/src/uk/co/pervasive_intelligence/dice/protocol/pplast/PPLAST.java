@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import uk.co.pervasive_intelligence.dice.protocol.NFCReaderStateMachine;
 import uk.co.pervasive_intelligence.dice.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.co.pervasive_intelligence.dice.protocol.pplast.data.UserData;
 import uk.co.pervasive_intelligence.dice.state.SharedMemory;
 
 /**

@@ -10,16 +10,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import javax.print.DocFlavor.STRING;
-
 import org.bouncycastle.crypto.params.DHParameters;
-import org.bouncycastle.jcajce.provider.digest.GOST3411.HashMac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.supercsv.cellprocessor.constraint.LMinMax;
@@ -27,6 +22,11 @@ import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.io.ICsvListWriter;
 import org.supercsv.prefs.CsvPreference;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import com.google.gson.Gson;
 
 import uk.co.pervasive_intelligence.dice.command.JCommanderFactory;
 import uk.co.pervasive_intelligence.dice.command.ProtocolRun;
@@ -36,13 +36,6 @@ import uk.co.pervasive_intelligence.dice.protocol.control.setup.Setup;
 import uk.co.pervasive_intelligence.dice.protocol.control.teardown.TearDown;
 import uk.co.pervasive_intelligence.dice.state.StateMachine;
 import uk.co.pervasive_intelligence.dice.state.Timing;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
-import com.google.gson.Gson;
-
-import ch.qos.logback.core.read.ListAppender;
 
 /**
  * Main entry point for NFC reader application.

@@ -253,6 +253,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
   public void clearTest() {
     // Reset the shared parameters. Other parameters are kept as they are
     // required across protocol runs.
+	  LOG.warn("This should only be called as part of JUnit tests");
     this.actor = Actor.CENTRAL_AUTHORITY;
     this.setBilinearGroup();
 

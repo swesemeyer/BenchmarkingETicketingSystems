@@ -38,7 +38,6 @@ import uk.co.pervasive_intelligence.dice.protocol.pplast.data.PoliceData;
 import uk.co.pervasive_intelligence.dice.protocol.pplast.data.SellerData;
 import uk.co.pervasive_intelligence.dice.protocol.pplast.data.UserData;
 import uk.co.pervasive_intelligence.dice.protocol.pplast.data.VerifierData;
-import uk.co.pervasive_intelligence.dice.state.SharedMemory;
 
 public class PPLASTSharedMemory extends NFCSharedMemory {
   /** Logback logger. */

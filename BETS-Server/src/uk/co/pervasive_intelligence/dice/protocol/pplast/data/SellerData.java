@@ -6,7 +6,6 @@
 package uk.co.pervasive_intelligence.dice.protocol.pplast.data;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.co.pervasive_intelligence.dice.Crypto;

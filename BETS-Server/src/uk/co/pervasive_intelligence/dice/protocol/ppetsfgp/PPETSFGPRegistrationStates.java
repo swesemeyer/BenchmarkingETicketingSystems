@@ -8,7 +8,6 @@ package uk.co.pervasive_intelligence.dice.protocol.ppetsfgp;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
 
-import static org.junit.Assert.fail;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -231,8 +230,8 @@ public class PPETSFGPRegistrationStates {
       final ListData listData = ListData.fromBytes(data);
 
       if (listData.getList().size() < 11) {
-        fail("wrong number of data elements: " + listData.getList().size());
-
+        LOG.error("wrong number of data elements: " + listData.getList().size());
+        return null;
       }
 
       int index = 0;
@@ -267,7 +266,8 @@ public class PPETSFGPRegistrationStates {
       final byte[] c_1Verify = crypto.getHash(c_1VerifyData.toBytes());
 
       if (!Arrays.equals(c_1, c_1Verify)) {
-        fail("failed to verify PI_1_U: c_1");
+        LOG.error("failed to verify PI_1_U: c_1");
+        return null;
 
       }
       LOG.debug("SUCCESS: Verified PI_1_U c1:...");
@@ -278,7 +278,8 @@ public class PPETSFGPRegistrationStates {
       final byte[] c_2Verify = crypto.getHash(c_2VerifyData.toBytes());
 
       if (!Arrays.equals(c_2, c_2Verify)) {
-        fail("failed to verify PI_1_U: c_2");
+    	  LOG.error("failed to verify PI_1_U: c_2");
+    	  return null;
 
       }
 

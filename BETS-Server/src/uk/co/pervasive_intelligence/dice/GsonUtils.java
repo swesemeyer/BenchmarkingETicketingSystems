@@ -5,20 +5,14 @@
  */
 package uk.co.pervasive_intelligence.dice;
 
-import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
-import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveField;
-
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import uk.co.pervasive_intelligence.dice.protocol.data.Data;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -27,6 +21,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
+import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
+import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveField;
+import uk.co.pervasive_intelligence.dice.protocol.data.Data;
 
 /**
  * Utilities for use with GSON.

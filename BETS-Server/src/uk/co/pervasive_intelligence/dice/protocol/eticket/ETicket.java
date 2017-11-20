@@ -5,7 +5,6 @@
  */
 package uk.co.pervasive_intelligence.dice.protocol.eticket;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import uk.co.pervasive_intelligence.dice.Crypto;
 import uk.co.pervasive_intelligence.dice.protocol.NFCReaderStateMachine;
-import uk.co.pervasive_intelligence.dice.protocol.NFCSharedMemory;
 import uk.co.pervasive_intelligence.dice.state.SharedMemory;
 
 /**

@@ -7,7 +7,6 @@ package uk.co.pervasive_intelligence.dice;
 
 import java.io.File;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
