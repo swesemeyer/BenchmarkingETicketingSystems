@@ -1,10 +1,9 @@
 /**
  * DICE NFC evaluation.
  *
- * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
-
 import java.util.Arrays;
 import java.util.List;
 

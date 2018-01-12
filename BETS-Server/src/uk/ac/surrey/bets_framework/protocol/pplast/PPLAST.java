@@ -41,13 +41,13 @@ public class PPLAST extends NFCReaderStateMachine {
         new PPLASTRegistrationStates.RState09(), new PPLASTRegistrationStates.RState10(), new PPLASTRegistrationStates.RState11(),
         new PPLASTRegistrationStates.RState12(), new PPLASTRegistrationStates.RState13(), new PPLASTRegistrationStates.RState14(),
         new PPLASTRegistrationStates.RState15(), new PPLASTRegistrationStates.RState16(),
-        new PPLASTRegistrationStates.RState17(Actor.VERIFIER), new PPLASTRegistrationStates.RState18(),
+        new PPLASTRegistrationStates.RState17(Actor.VERIFIERS), new PPLASTRegistrationStates.RState18(),
         new PPLASTRegistrationStates.RState19(), new PPLASTRegistrationStates.RState20(),
-        new PPLASTRegistrationStates.RState21(Actor.VERIFIER), new PPLASTIssuingStates.IState22(),
+        new PPLASTRegistrationStates.RState21(Actor.VERIFIERS), new PPLASTIssuingStates.IState22(),
         new PPLASTIssuingStates.IState23(),new PPLASTIssuingStates.IState24(),
-        new PPLASTVerifyingStates.VState25(new String[] { Actor.VERIFIER[2], Actor.VERIFIER[5], Actor.VERIFIER[1] }),
+        new PPLASTVerifyingStates.VState25(new String[] { Actor.VERIFIERS[2], Actor.VERIFIERS[5], Actor.VERIFIERS[1] }),
         new PPLASTVerifyingStates.VState26(),
-        new PPLASTVerifyingStates.VState27(new String[] { Actor.VERIFIER[2], Actor.VERIFIER[5], Actor.VERIFIER[1] }),
+        new PPLASTVerifyingStates.VState27(new String[] { Actor.VERIFIERS[2], Actor.VERIFIERS[5], Actor.VERIFIERS[1] }),
         new PPLASTVerifyingStates.VState28(),new PPLASTVerifyingStates.VState29()));
   }
 

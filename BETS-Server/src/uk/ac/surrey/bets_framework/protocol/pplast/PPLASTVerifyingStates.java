@@ -324,9 +324,9 @@ public class PPLASTVerifyingStates {
           return false;
         }
         final BigInteger s_Vnum = (new BigInteger(1, verifys_V)).mod(p);
-        final Element lhs = sharedMemory.pairing.pairing(ticketDetails.sigma_V[i], Y_bar_S.add(g_frak.mul(ticketDetails.e_V[i])))
+        final Element lhs = sharedMemory.pairing.pairing(ticketDetails.sigma_V[i], Y_bar_S.add(g_frak.mul(ticketDetails.e_v[i])))
             .getImmutable();
-        final Element rhs = sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_V[i])).add(h_tilde.mul(s_Vnum)), g_frak);
+        final Element rhs = sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum)), g_frak);
         if (!lhs.isEqual(rhs)) {
           LOG.debug("first pairing check failed for ID_V[" + i + "]: " + ticketDetails.VerifierList[i]);
         }

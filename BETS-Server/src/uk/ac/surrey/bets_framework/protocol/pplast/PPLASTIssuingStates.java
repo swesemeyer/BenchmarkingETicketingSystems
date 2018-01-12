@@ -113,9 +113,14 @@ public class PPLASTIssuingStates {
       verifyc_hashData.add(W_2.toBytes());
 
       final int numberOfVerifiers = new BigInteger(1, listData.getList().get(index++)).intValue();
+      /** We don't do the dummy verifiers at them moment
+      
       // if numberOfVerifiers is odd then add one to make an even number.
       int evenNumberOfVerifiers = numberOfVerifiers + (numberOfVerifiers % 2);
       final TicketDetails ticketDetails = new TicketDetails(evenNumberOfVerifiers);
+      
+      **/
+      final TicketDetails ticketDetails = new TicketDetails(numberOfVerifiers);
 
       for (int i = 0; i < numberOfVerifiers; i++) {
         ticketDetails.VerifierList[i] = new String(listData.getList().get(index++), StandardCharsets.UTF_8);
@@ -146,19 +151,19 @@ public class PPLASTIssuingStates {
       // need the BigInteger value of c_hash now
       final BigInteger c_hashNum = (new BigInteger(1, c_hash)).mod(p);
 
-      final BigInteger e_hat_U = new BigInteger(1, listData.getList().get(index++));
+      final BigInteger e_hat_u = new BigInteger(1, listData.getList().get(index++));
       final BigInteger v_hat_2 = new BigInteger(1, listData.getList().get(index++));
       final BigInteger v_hat_3 = new BigInteger(1, listData.getList().get(index++));
       final BigInteger v_hat = new BigInteger(1, listData.getList().get(index++));
-      final BigInteger x_hat_U = new BigInteger(1, listData.getList().get(index++));
+      final BigInteger x_hat_u = new BigInteger(1, listData.getList().get(index++));
 
-      final BigInteger[] z_hat_V = new BigInteger[numberOfVerifiers];
+      final BigInteger[] z_hat_v = new BigInteger[numberOfVerifiers];
       for (int i = 0; i < numberOfVerifiers; i++) {
-        z_hat_V[i] = new BigInteger(1, listData.getList().get(index++));
+        z_hat_v[i] = new BigInteger(1, listData.getList().get(index++));
       }
 
       // check W_1
-      final Element W_1lhs = ((sigma_bar_U.mul(e_hat_U.negate().mod(p))).add(h.mul(v_hat_2)))
+      final Element W_1lhs = ((sigma_bar_U.mul(e_hat_u.negate().mod(p))).add(h.mul(v_hat_2)))
           .add((sigma_tilde_U.sub(B_bar_U)).mul(c_hashNum)).getImmutable();
 
       if (!W_1.isEqual(W_1lhs)) {
@@ -170,7 +175,7 @@ public class PPLASTIssuingStates {
 
       // check W_2
       Element W_2lhs = (B_bar_U.mul(v_hat_3.negate().mod(p))).getImmutable();
-      W_2lhs = W_2lhs.add(xi.mul(x_hat_U)).getImmutable();
+      W_2lhs = W_2lhs.add(xi.mul(x_hat_u)).getImmutable();
       W_2lhs = W_2lhs.add(h.mul(v_hat)).getImmutable();
       W_2lhs = W_2lhs.add(g.mul(c_hashNum.negate().mod(p))).getImmutable();
 
@@ -184,7 +189,7 @@ public class PPLASTIssuingStates {
       final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-        final Element P_dash_Vlhs = (xi.mul(x_hat_U)).add(Y_P.mul(z_hat_V[i])).add(ticketDetails.P_V[i].mul(c_hashNum))
+        final Element P_dash_Vlhs = (xi.mul(x_hat_u)).add(Y_P.mul(z_hat_v[i])).add(ticketDetails.P_V[i].mul(c_hashNum))
             .getImmutable();
         if (!P_dash_V[i].isEqual(P_dash_Vlhs)) {
           LOG.debug("P_dash_V[" + i + "] verification failed!");
@@ -195,49 +200,52 @@ public class PPLASTIssuingStates {
       LOG.debug("passed P_dash_V verification!");
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-        final Element Q_dash_Vlhs = ((xi.mul(z_hat_V[i])).add(ticketDetails.Q_V[i].mul(c_hashNum))).getImmutable();
+        final Element Q_dash_Vlhs = ((xi.mul(z_hat_v[i])).add(ticketDetails.Q_V[i].mul(c_hashNum))).getImmutable();
         if (!Q_dash_V[i].isEqual(Q_dash_Vlhs)) {
           LOG.debug("Q_dash_V[" + i + "] verification failed!");
           return null;
         }
       }
       LOG.debug("passed Q_dash_V verification!");
+      
+      //Creating the ticket now
 
-      final BigInteger t_U = crypto.secureRandom(p);
-      final Element C_U = xi.mul(t_U);
+      final BigInteger t_u = crypto.secureRandom(p);
+      final Element C_U = xi.mul(t_u);
       LOG.debug("C_U = " + C_U);
 
       BigIntEuclidean gcd = null;
 
       for (int i = 0; i < numberOfVerifiers; i++) {
 
-        ticketDetails.d_V[i] = crypto.secureRandom(p);
-        ticketDetails.E_V[i] = xi.mul(ticketDetails.d_V[i]).getImmutable();
+        ticketDetails.d_v[i] = crypto.secureRandom(p);
+        ticketDetails.E_V[i] = xi.mul(ticketDetails.d_v[i]).getImmutable();
 
-        ticketDetails.w_V[i] = crypto.secureRandom(p);
-        ticketDetails.e_V[i] = crypto.secureRandom(p);
+        ticketDetails.w_v[i] = crypto.secureRandom(p);
+        ticketDetails.e_v[i] = crypto.secureRandom(p);
         final ListData D_Vdata = new ListData(Arrays.asList(C_U.toBytes(), ticketDetails.VerifierList[i].getBytes()));
         ticketDetails.D_V[i] = crypto.getHash(D_Vdata.toBytes(), sharedMemory.Hash2);
         final Element Y_V = sharedMemory.getPublicKey(ticketDetails.VerifierList[i]);
-        ticketDetails.F_V[i] = Y_V.mul(ticketDetails.d_V[i]).getImmutable();
-        ticketDetails.K_V[i] = Y_V.add(Y_P.mul(ticketDetails.d_V[i])).getImmutable();
+        ticketDetails.F_V[i] = Y_V.mul(ticketDetails.d_v[i]).getImmutable();
+        ticketDetails.K_V[i] = Y_V.add(Y_P.mul(ticketDetails.d_v[i])).getImmutable();
         final ListData s_Vdata = new ListData(
             Arrays.asList(ticketDetails.P_V[i].toBytes(), ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V[i].toBytes(),
                 ticketDetails.F_V[i].toBytes(), ticketDetails.K_V[i].toBytes(), SellerData.TICKET_TEXT.getBytes()));
         ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
         final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-        gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_V[i]).mod(p), p);
+        gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_v[i]).mod(p), p);
         final BigInteger xs_plus_ev_inverse = gcd.x.mod(p);
-        ticketDetails.sigma_V[i] = (g.add(h.mul(ticketDetails.w_V[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
+        ticketDetails.sigma_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
             .getImmutable();
         ticketDetails.ticketText = SellerData.TICKET_TEXT;
 
       }
+/** remove dummy verifier for now 
 
       // Do we need to create a dummy verifier?
       if (numberOfVerifiers != evenNumberOfVerifiers) {
         // Yes - so give it a name and make up some stuff...
-        final String ID_du = Actor.VERIFIER[Actor.dummyVerifierIndx];
+        final String ID_du = Actor.VERIFIERS[Actor.dummyVerifierIndx];
         ticketDetails.VerifierList[numberOfVerifiers] = ID_du;
         final BigInteger d_dash = crypto.secureRandom(p);
         final BigInteger w_dash = crypto.secureRandom(p);
@@ -278,11 +286,12 @@ public class PPLASTIssuingStates {
         ticketDetails.e_V[numberOfVerifiers] = e_dash;
 
       }
-
+**/
+      
       ticketDetails.w_P = crypto.secureRandom(p);
       ticketDetails.e_P = crypto.secureRandom(p);
       final List<byte[]> s_pDataList = new ArrayList<>();
-      for (int i = 0; i < evenNumberOfVerifiers; i++) {
+      for (int i = 0; i < numberOfVerifiers; i++) {
         s_pDataList.add(ticketDetails.s_V[i]);
       }
       ticketDetails.s_P = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
@@ -292,9 +301,7 @@ public class PPLASTIssuingStates {
 
       final List<byte[]> sendDataList = new ArrayList<>();
       sendDataList.add(C_U.toBytes());
-      // moved into the TicketDetails class
-      // sendDataList.add(SellerData.TICKET_TEXT.getBytes(StandardCharsets.UTF_8));
-      sendDataList.add(BigInteger.valueOf(evenNumberOfVerifiers).toByteArray()); // need to keep track of the array size
+      sendDataList.add(BigInteger.valueOf(numberOfVerifiers).toByteArray()); // need to keep track of the array size
       ticketDetails.getTicketDetails(sendDataList);
       final ListData sendData = new ListData(sendDataList);
 

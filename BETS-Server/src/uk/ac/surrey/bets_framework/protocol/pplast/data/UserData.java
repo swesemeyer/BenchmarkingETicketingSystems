@@ -1,7 +1,7 @@
 /**
  * DICE NFC evaluation.
  *
- * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
 package uk.ac.surrey.bets_framework.protocol.pplast.data;
 
@@ -13,9 +13,9 @@ import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
 
 /**
- * Implements user data for the PPETS-FGP NFC protocol as a state machine.
+ * Implements user data for the PPLAST NFC protocol as a state machine.
  * 
- * @author Matthew Casey
+ * @author Steve Wesemeyer
  */
 public class UserData implements PPLASTSharedMemory.ActorData {
 
@@ -23,13 +23,13 @@ public class UserData implements PPLASTSharedMemory.ActorData {
   public String         ID_U          = null;
 
   // TODO make this a longer list...Note that the names need to match the IDs of the verifiers
-  public final String[] VerifierList  = { Actor.VERIFIER[1],Actor.VERIFIER[2],Actor.VERIFIER[5] };
+  public final String[] VerifierList  = { Actor.VERIFIERS[1],Actor.VERIFIERS[2],Actor.VERIFIERS[5] };
 
-  /** User credentials: e_U */
-  public BigInteger     e_U           = null;
+  /** User credentials: e_u */
+  public BigInteger     e_u           = null;
 
-  /** User credentials: r_U */
-  public BigInteger     r_U           = null;
+  /** User credentials: r_u */
+  public BigInteger     r_u           = null;
 
   /** User credentials: sigma_U */
   public Element        sigma_U       = null;
@@ -41,7 +41,7 @@ public class UserData implements PPLASTSharedMemory.ActorData {
   public Element        Y_U           = null;
 
   /** secret ticket number */
-  public BigInteger     z_U           = null;
+  public BigInteger     z_u           = null;
 
   /** secret ticket element */
   public Element        C_U           = null;

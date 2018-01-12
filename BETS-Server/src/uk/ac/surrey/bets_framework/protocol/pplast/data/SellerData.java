@@ -1,7 +1,7 @@
 /**
  * DICE NFC evaluation.
  *
- * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
 package uk.ac.surrey.bets_framework.protocol.pplast.data;
 
@@ -12,9 +12,9 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
 
 /**
- * Implements seller data for the PPETS-FGP NFC protocol as a state machine.
+ * Implements seller data for the PPLAST NFC protocol as a state machine.
  *
- * @author Matthew Casey
+ * @author Steve Wesemeyer
  */
 public class SellerData implements PPLASTSharedMemory.ActorData {
 
@@ -72,7 +72,7 @@ public class SellerData implements PPLASTSharedMemory.ActorData {
     // Generate the required random numbers.
     final Crypto crypto = Crypto.getInstance();
 
-    // create the CA's master key
+    // create the seller's master key
     this.x_S = crypto.secureRandom(p);
 
     // compute the secret key

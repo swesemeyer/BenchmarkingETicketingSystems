@@ -19,5 +19,6 @@ public class NFCSharedMemory implements SharedMemory {
 
   /** The maximum size of a response before it needs to be chunked. */
   public static final int    APDU_CHUNK_SIZE = 32;
+  
 
 }
