@@ -28,4 +28,5 @@ public class NFCAndroidSharedMemory extends NFCSharedMemory {
   /** The response to be sent to the server. */
   public byte[] response = null;
 
+
 }

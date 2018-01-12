@@ -49,7 +49,7 @@ public class PPLASTIssuingStates {
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
-      // get some element from sharedMemory
+      // get some elements from sharedMemory
       final BigInteger p = sharedMemory.p;
       final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE).getImmutable();
       final Element xi = sharedMemory.xi.getImmutable();
@@ -59,16 +59,15 @@ public class PPLASTIssuingStates {
       final int numberOfVerifiers = userData.VerifierList.length;
 
       // compute some stuff for the ZKP PI_1_U
-      final Element B_U = g.add(h.mul(userData.r_U)).add(userData.Y_U);
+      final Element B_U = g.add(h.mul(userData.r_u)).add(userData.Y_U);
       final BigInteger v_1 = crypto.secureRandom(p);
       final BigInteger v_2 = crypto.secureRandom(p);
-      final BigInteger z_U = crypto.secureRandom(p);
+      final BigInteger z_u = crypto.secureRandom(p);
       // store z_U for later use...
-      userData.z_U = z_U;
+      userData.z_u = z_u;
 
-      // final BigInteger r_dash_U = crypto.secureRandom(p);
-      final BigInteger x_dash_U = crypto.secureRandom(p);
-      final BigInteger e_dash_U = crypto.secureRandom(p);
+      final BigInteger x_dash_u = crypto.secureRandom(p);
+      final BigInteger e_dash_u = crypto.secureRandom(p);
       final BigInteger v_dash_2 = crypto.secureRandom(p);
       final BigInteger v_dash_3 = crypto.secureRandom(p);
       final BigInteger v_dash = crypto.secureRandom(p);
@@ -78,25 +77,29 @@ public class PPLASTIssuingStates {
       }
       BigIntEuclidean gcd = BigIntEuclidean.calculate(v_1, p);
       final BigInteger v_3 = gcd.x.mod(p);
-      final BigInteger v = (userData.r_U.subtract(v_2.multiply(v_3))).mod(p);
+      final BigInteger v = (userData.r_u.subtract(v_2.multiply(v_3))).mod(p);
       final Element sigma_bar_U = userData.sigma_U.mul(v_1).getImmutable();
-      final Element sigma_tilde_U = (sigma_bar_U.mul(userData.e_U.negate().mod(p))).add(B_U.mul(v_1)).getImmutable();
+      final Element sigma_tilde_U = (sigma_bar_U.mul(userData.e_u.negate().mod(p))).add(B_U.mul
+              (v_1)).getImmutable();
       final Element B_bar_U = B_U.mul(v_1).add(sharedMemory.h.mul(v_2.negate().mod(p))).getImmutable();
-      final Element W_1 = ((sigma_bar_U.mul(e_dash_U.negate().mod(p))).add(h.mul(v_dash_2))).getImmutable();
-      final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_U))).add(h.mul(v_dash))).getImmutable();
+      final Element W_1 = ((sigma_bar_U.mul(e_dash_u.negate().mod(p))).add(h.mul(v_dash_2)))
+              .getImmutable();
+      final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_u))).add(h
+              .mul(v_dash))).getImmutable();
 
-      final byte[][] z_V = new byte[numberOfVerifiers][];
+      final byte[][] z_v = new byte[numberOfVerifiers][];
       final Element[] P_V = new Element[numberOfVerifiers];
       final Element[] P_dash_V = new Element[numberOfVerifiers];
       final Element[] Q_V = new Element[numberOfVerifiers];
       final Element[] Q_dash_V = new Element[numberOfVerifiers];
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-        final ListData zvData = new ListData(Arrays.asList(z_U.toByteArray(), userData.VerifierList[i].getBytes()));
-        z_V[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
-        final BigInteger z_Vnum = (new BigInteger(1, z_V[i])).mod(sharedMemory.p);
+        final ListData zvData = new ListData(Arrays.asList(z_u.toByteArray(), userData
+                .VerifierList[i].getBytes()));
+        z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
+        final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
         P_V[i] = userData.Y_U.add(Y_P.mul(z_Vnum)).getImmutable();
-        P_dash_V[i] = ((xi.mul(x_dash_U)).add(Y_P.mul(z_dash[i]))).getImmutable();
+        P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_P.mul(z_dash[i]))).getImmutable();
         Q_V[i] = xi.mul(z_Vnum).getImmutable();
         Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
       }
@@ -115,16 +118,16 @@ public class PPLASTIssuingStates {
       final byte[] c_hash = crypto.getHash((new ListData(c_DataList)).toBytes(), sharedMemory.Hash1);
       final BigInteger c_hashNum = (new BigInteger(1, c_hash)).mod(p);
 
-      final BigInteger e_hat_U = (e_dash_U.subtract(c_hashNum.multiply(userData.e_U))).mod(p);
+      final BigInteger e_hat_U = (e_dash_u.subtract(c_hashNum.multiply(userData.e_u))).mod(p);
       final BigInteger v_hat_2 = (v_dash_2.subtract(c_hashNum.multiply(v_2))).mod(p);
       final BigInteger v_hat_3 = (v_dash_3.subtract(c_hashNum.multiply(v_3))).mod(p);
       final BigInteger v_hat = (v_dash.subtract(c_hashNum.multiply(v))).mod(p);
-      final BigInteger x_hat_U = (x_dash_U.subtract(c_hashNum.multiply(userData.x_U))).mod(p);
+      final BigInteger x_hat_u = (x_dash_u.subtract(c_hashNum.multiply(userData.x_U))).mod(p);
 
-      final BigInteger[] z_hat_V = new BigInteger[numberOfVerifiers];
+      final BigInteger[] z_hat_v = new BigInteger[numberOfVerifiers];
       for (int i = 0; i < numberOfVerifiers; i++) {
-        final BigInteger z_VNum = (new BigInteger(1, z_V[i])).mod(p);
-        z_hat_V[i] = (z_dash[i].subtract(c_hashNum.multiply(z_VNum))).mod(p);
+        final BigInteger z_VNum = (new BigInteger(1, z_v[i])).mod(p);
+        z_hat_v[i] = (z_dash[i].subtract(c_hashNum.multiply(z_VNum))).mod(p);
       }
 
       final List<byte[]> sendDataList = new ArrayList<>();
@@ -147,10 +150,10 @@ public class PPLASTIssuingStates {
 
       // add the last few items...
       sendDataList.addAll(Arrays.asList(c_hash, e_hat_U.toByteArray(), v_hat_2.toByteArray(), v_hat_3.toByteArray(),
-              v_hat.toByteArray(), x_hat_U.toByteArray()));
+              v_hat.toByteArray(), x_hat_u.toByteArray()));
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-        sendDataList.add(z_hat_V[i].toByteArray());
+        sendDataList.add(z_hat_v[i].toByteArray());
       }
 
       final ListData sendData = new ListData(sendDataList);
@@ -253,13 +256,15 @@ public class PPLASTIssuingStates {
         for (int i = 0; i < numOfVerifiers; i++) {
           LOG.debug("Verifier: " + i + " is being checked.");
 
-          final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_V[i], Y_bar_S.add(g_frak.mul(ticketDetails.e_V[i]))))
+          final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_V[i], Y_bar_S.add
+                  (g_frak.mul(ticketDetails.e_v[i]))))
                   .getImmutable();
 
           LOG.debug(System.currentTimeMillis() + " computed lhs: " + lhs);
           final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
 
-          final Element rhs = (sharedMemory.pairing.pairing((g.add(h.mul(ticketDetails.w_V[i]))).add(h_tilde.mul(s_Vnum)), g_frak))
+          final Element rhs = (sharedMemory.pairing.pairing((g.add(h.mul(ticketDetails.w_v[i])))
+                  .add(h_tilde.mul(s_Vnum)), g_frak))
                   .getImmutable();
           LOG.debug(System.currentTimeMillis() + " computed rhs: " + rhs);
 

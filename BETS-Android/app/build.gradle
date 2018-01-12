@@ -1,7 +1,7 @@
 /**
  * DICE NFC evaluation.
  *
- * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
 
 /**
@@ -15,10 +15,10 @@ apply plugin: 'com.android.application'
 android {
   compileSdkVersion 25
   buildToolsVersion '26.0.2'
-  def verCode=20074
-  def verName="2.00.74"
+  def verCode=20076
+  def verName="2.00.76"
   defaultConfig {
-    applicationId "uk.co.pervasive_intelligence.dice"
+    applicationId "uk.ac.surrey.bets_framework.dice"
     minSdkVersion 19
     targetSdkVersion 25
     versionCode verCode

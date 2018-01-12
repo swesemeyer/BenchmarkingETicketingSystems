@@ -1,3 +1,8 @@
+/**
+ * DICE NFC evaluation.
+ *
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
+ */
 package uk.ac.surrey.bets_framework.protocol.pplast.data;
 
 import java.math.BigInteger;
@@ -9,12 +14,18 @@ import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
 
+/**
+ * store the ticket information for the PPLAST NFC protocol implementation
+ *
+ * @author Steve Wesemeyer
+ *
+ */
 public class TicketDetails {
 
   public String[]     VerifierList   = null;
-  public BigInteger[] d_V            = null;
-  public BigInteger[] w_V            = null;
-  public BigInteger[] e_V            = null;
+  public BigInteger[] d_v            = null;
+  public BigInteger[] w_v            = null;
+  public BigInteger[] e_v            = null;
   public Element[]    P_V            = null;
   public Element[]    Q_V            = null;
   public byte[][]     D_V            = null;
@@ -35,9 +46,9 @@ public class TicketDetails {
     this.numOfVerifiers = numOfVerifiers;
 
     this.VerifierList = new String[numOfVerifiers];
-    this.d_V = new BigInteger[numOfVerifiers];
-    this.w_V = new BigInteger[numOfVerifiers];
-    this.e_V = new BigInteger[numOfVerifiers];
+    this.d_v = new BigInteger[numOfVerifiers];
+    this.w_v = new BigInteger[numOfVerifiers];
+    this.e_v = new BigInteger[numOfVerifiers];
     this.P_V = new Element[numOfVerifiers];
     this.Q_V = new Element[numOfVerifiers];
     this.D_V = new byte[numOfVerifiers][];
@@ -59,8 +70,8 @@ public class TicketDetails {
       sendDataList.add(this.F_V[i].toBytes());
       sendDataList.add(this.K_V[i].toBytes());
       sendDataList.add(this.s_V[i]);
-      sendDataList.add(this.w_V[i].toByteArray());
-      sendDataList.add(this.e_V[i].toByteArray());
+      sendDataList.add(this.w_v[i].toByteArray());
+      sendDataList.add(this.e_v[i].toByteArray());
       sendDataList.add(this.sigma_V[i].toBytes());
     }
     sendDataList.add(this.s_P);
@@ -81,8 +92,8 @@ public class TicketDetails {
       this.F_V[i] = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
       this.K_V[i] = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
       this.s_V[i] = listData.getList().get(indx++);
-      this.w_V[i] = new BigInteger(1, listData.getList().get(indx++));
-      this.e_V[i] = new BigInteger(1, listData.getList().get(indx++));
+      this.w_v[i] = new BigInteger(1, listData.getList().get(indx++));
+      this.e_v[i] = new BigInteger(1, listData.getList().get(indx++));
       this.sigma_V[i] = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
     }
     this.s_P = listData.getList().get(indx++);

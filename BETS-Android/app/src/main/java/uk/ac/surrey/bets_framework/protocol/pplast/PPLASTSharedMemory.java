@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
     public static final String SELLER = "Seller1";
     public static final String USER = "User1";
     public static final String POLICE = "Police1";
-    public static final String[] VERIFIER = {"Verifier0", "Verifier1", "Verifier2", "Verifier3", "Verifier4", "Verifier5", "Verifier_Dummy"};
+    public static final String[] VERIFIERS = {"Verifier0", "Verifier1", "Verifier2", "Verifier3", "Verifier4", "Verifier5", "Verifier_Dummy"};
     public static int dummyVerifierIndx = 6;
   }
 
@@ -220,8 +221,8 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
     // On the server, we only act as the central authority, seller, verifier and the police.
     this.actorData.put(Actor.CENTRAL_AUTHORITY, new CentralAuthorityData(Actor.CENTRAL_AUTHORITY, this.p, this.g_frak));
     this.actorData.put(Actor.SELLER, new SellerData(Actor.SELLER, this.p, this.xi, this.g_frak));
-    for (int i = 0; i < Actor.VERIFIER.length; i++) {
-      this.actorData.put(Actor.VERIFIER[i], new VerifierData(Actor.VERIFIER[i], this.p, this.xi));
+    for (int i = 0; i < Actor.VERIFIERS.length; i++) {
+      this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
     }
     this.actorData.put(Actor.POLICE, new PoliceData(Actor.POLICE, this.p, this.xi));
 
@@ -238,15 +239,12 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
   public Element getPublicKey(String actorName) {
     if (actorName.equalsIgnoreCase(Actor.CENTRAL_AUTHORITY)) {
       return this.Y_A;
-    }
-    else if (actorName.equalsIgnoreCase(Actor.POLICE)){
+    } else if (actorName.equalsIgnoreCase(Actor.POLICE)) {
       return this.Y_P;
-    }
-    else if (actorName.equalsIgnoreCase(Actor.SELLER)){
+    } else if (actorName.equalsIgnoreCase(Actor.SELLER)) {
       return this.Y_S;
-    }
-    else {
-      LOG.debug("illegal argument!: "+actorName);
+    } else {
+      LOG.debug("illegal argument!: " + actorName);
       return null;
     }
   }
@@ -292,8 +290,8 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
     // During testing we act as everything...
     this.actorData.put(Actor.CENTRAL_AUTHORITY, new CentralAuthorityData(Actor.CENTRAL_AUTHORITY, this.p, this.g_frak));
     this.actorData.put(Actor.SELLER, new SellerData(Actor.SELLER, this.p, this.xi, this.g_frak));
-    for (int i = 0; i < Actor.VERIFIER.length; i++) {
-      this.actorData.put(Actor.VERIFIER[i], new VerifierData(Actor.VERIFIER[i], this.p, this.xi));
+    for (int i = 0; i < Actor.VERIFIERS.length; i++) {
+      this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
     }
     this.actorData.put(Actor.USER, new UserData(Actor.USER, this.p, this.xi));
     this.actorData.put(Actor.POLICE, new PoliceData(Actor.POLICE, this.p, this.xi));
@@ -312,6 +310,18 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
 
     return element.getImmutable();
   }
+
+  /**
+   * Convenience method to create a String from a byte array.
+   *
+   * @param bytes The bytes containing the string data.
+   * @return The new String.
+   */
+  public String stringFromBytes(byte[] bytes) {
+    final String string = new String(bytes, StandardCharsets.UTF_8);
+    return string;
+  }
+
 
 
   /**

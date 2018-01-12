@@ -71,7 +71,8 @@ public class PPLASTVerifyingStates {
       final Element xi = sharedMemory.xi.getImmutable();
       final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
 
-      final byte[] z_Vhash = crypto.getHash((new ListData(Arrays.asList(userData.z_U.toByteArray(), ID_V.getBytes()))).toBytes(),
+      final byte[] z_Vhash = crypto.getHash((new ListData(Arrays.asList(userData.z_u.toByteArray
+                      (), ID_V.getBytes()))).toBytes(),
               sharedMemory.Hash1);
       final BigInteger z_Vnum = (new BigInteger(1, z_Vhash)).mod(p);
 
@@ -94,7 +95,8 @@ public class PPLASTVerifyingStates {
       final ListData sendData = new ListData(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
               userTicket.Q_V[index].toBytes(), Q_dash_V.toBytes(), c_Vhash, x_hat_U.toByteArray(), z_hat_V.toByteArray(),
               userTicket.E_V[index].toBytes(), userTicket.F_V[index].toBytes(), userTicket.K_V[index].toBytes(), userTicket.s_V[index],
-              userTicket.w_V[index].toByteArray(), userTicket.e_V[index].toByteArray(), userTicket.sigma_V[index].toBytes()));
+              userTicket.w_v[index].toByteArray(), userTicket.e_v[index].toByteArray(),
+              userTicket.sigma_V[index].toBytes()));
       return sendData.toBytes();
     }
 

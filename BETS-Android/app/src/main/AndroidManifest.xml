@@ -31,7 +31,7 @@
     android:theme="@style/AppTheme">
 
     <!-- Launch activity. -->
-    <activity android:name="uk.co.pervasive_intelligence.uk.ac.surrey.bets_framework.LaunchActivity">
+    <activity android:name="uk.ac.surrey.bets_framework.LaunchActivity">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
@@ -40,7 +40,7 @@
 
     <!-- APDU service which responds to the NFC reader. -->
     <service
-      android:name="uk.co.pervasive_intelligence.uk.ac.surrey.bets_framework.APDUService"
+      android:name="uk.ac.surrey.bets_framework.APDUService"
       android:exported="true"
       android:permission="android.permission.BIND_NFC_SERVICE">
       <intent-filter>

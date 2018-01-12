@@ -99,27 +99,29 @@ public class PPLASTRegistrationStates {
       }
 
       final Element sigma_U = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
-      final BigInteger r_U = new BigInteger(listData.getList().get(1));
-      final BigInteger e_U = new BigInteger(listData.getList().get(2));
+      final BigInteger r_u = new BigInteger(listData.getList().get(1));
+      final BigInteger e_u = new BigInteger(listData.getList().get(2));
 
       // verify the credentials
-      //TODO: Make this a flag
+      //TODO: Need to send the CA public key across during set-up. Ignore check for now.
 
       if (1==0) {
 
         // get the public key of the CA
         final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
 
-        final Element lhs = sharedMemory.pairing.pairing(sigma_U, Y_A.add(sharedMemory.g_frak.mul(e_U))).getImmutable();
+        final Element lhs = sharedMemory.pairing.pairing(sigma_U, Y_A.add(sharedMemory.g_frak.mul
+                (e_u))).getImmutable();
         final Element rhs = sharedMemory.pairing
-                .pairing(sharedMemory.g.add(sharedMemory.h.mul(r_U)).add(userData.Y_U), sharedMemory.g_frak).getImmutable();
+                .pairing(sharedMemory.g.add(sharedMemory.h.mul(r_u)).add(userData.Y_U),
+                        sharedMemory.g_frak).getImmutable();
 
         if (!lhs.isEqual(rhs)) {
           return false;
         }
       }
-      userData.e_U = e_U;
-      userData.r_U = r_U;
+      userData.e_u = e_u;
+      userData.r_u = r_u;
       userData.sigma_U = sigma_U;
       return true;
     }
