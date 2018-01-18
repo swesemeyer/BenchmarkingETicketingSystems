@@ -79,7 +79,7 @@ public class PPETSFGPRegistrationStates {
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 5) {
+      if (listData.getList().size() != 6) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         return null;
       }
@@ -90,7 +90,11 @@ public class PPETSFGPRegistrationStates {
       final byte[] c = listData.getList().get(3);
       final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
       final BigInteger s = new BigInteger(listData.getList().get(4));
-
+      //How long does the seller want to request credentials for
+      final String VP_S = sharedMemory.stringFromBytes(listData.getList().get(5));
+      //NB this period might get changed by the CA if it thinks the requested period is not appropriate.
+      
+      
       // Verify PI_1_S via c.
       final Element check = sharedMemory.rho.mul(s).add(Y_S.mul(cNum));
       final ListData cVerifyData = new ListData(Arrays.asList(M_1_S.toBytes(), Y_S.toBytes(), check.toBytes()));
@@ -140,7 +144,11 @@ public class PPETSFGPRegistrationStates {
       // Since (1/a) * P = m*P, and we have m from above, then we know d.
 
       final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x.add(c_s).mod(sharedMemory.p), sharedMemory.p);
-      final CurveElement<?, ?> delta_S = (CurveElement<?, ?>) sharedMemory.g_n[0].add(Y_S).add(sharedMemory.g_frak.mul(r_s))
+      final byte[] vpsHash = crypto.getHash(VP_S.getBytes());
+      final BigInteger vpsHashNum = new BigInteger(1, vpsHash).mod(sharedMemory.p);
+      LOG.debug("vpsHashNum: "+vpsHashNum);
+     
+      final CurveElement<?, ?> delta_S = (CurveElement<?, ?>) sharedMemory.g_n[0].add(sharedMemory.g_n[1].mul(vpsHashNum)).add(Y_S).add(sharedMemory.g_frak.mul(r_s))
           .mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
       // Store the seller credentials for later use when we are the
@@ -151,10 +159,13 @@ public class PPETSFGPRegistrationStates {
       sellerData.c_s = c_s;
       sellerData.r_s = r_s;
       sellerData.delta_S = delta_S;
+      sellerData.VP_S=VP_S;
       sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 
-      // Send c_s, r_s, delta_S.
-      final ListData sendData = new ListData(Arrays.asList(c_s.toByteArray(), r_s.toByteArray(), delta_S.toBytes()));
+      // Send c_s, r_s, delta_S, VP_S
+      //note that VP_S might have changed if the CA does not like to issue
+      //credentials for the period requested
+      final ListData sendData = new ListData(Arrays.asList(c_s.toByteArray(), r_s.toByteArray(), delta_S.toBytes(), sharedMemory.stringToBytes(VP_S)));
       return sendData.toBytes();
 
     }
@@ -227,7 +238,7 @@ public class PPETSFGPRegistrationStates {
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() < 11) {
+      if (listData.getList().size() < 12) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         return null;
       }
@@ -237,9 +248,6 @@ public class PPETSFGPRegistrationStates {
       final Element M_1_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
       final Element Y_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
       final Element R = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      // TODO: do not send the following two...
-      index++; // Ignore Y_dash_U
-      index++; // Ignore R_dash
       final byte[] c_1 = listData.getList().get(index++);
       final BigInteger c_1Num = new BigInteger(1, c_1).mod(sharedMemory.p);
       final byte[] c_2 = listData.getList().get(index++);
@@ -256,7 +264,10 @@ public class PPETSFGPRegistrationStates {
       for (int i = 0; i < sharedMemory.N2(); i++) {
         A_U_set[i] = new String(listData.getList().get(index++));
       }
-
+ 
+      final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
+      //NB the validity period could be changed by the CA if required.
+      
       // Verify PI_1_U via c_1 and c_2.
       LOG.debug("Verifying PI_1_U c1:...");
       final Element check1 = sharedMemory.xi.mul(s_1).add(Y_U.mul(c_1Num));
@@ -286,6 +297,9 @@ public class PPETSFGPRegistrationStates {
       // Select random c_u and r_dash.
       final BigInteger c_u = crypto.secureRandom(sharedMemory.p);
       final BigInteger r_dash = crypto.secureRandom(sharedMemory.p);
+      
+      final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
+      final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
 
       // Compute delta_U using the same GCD approach from above.
       final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x.add(c_u).mod(sharedMemory.p), sharedMemory.p);
@@ -307,8 +321,8 @@ public class PPETSFGPRegistrationStates {
       }
       sum2 = sum2.getImmutable();
 
-      Element delta_U = sharedMemory.g_n[0].add(Y_U).add(R).add(sharedMemory.g_frak.mul(r_dash).add(sum1).add(sum2)).getImmutable();
-      delta_U = delta_U.mul(gcd.x.mod(sharedMemory.p));
+      Element delta_U = sharedMemory.g_n[0].add(sharedMemory.g_n[1].mul(vpuHashNum)).add(Y_U).add(R).add(sharedMemory.g_frak.mul(r_dash).add(sum1).add(sum2)).getImmutable();
+      delta_U = delta_U.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
       // Store ID_U, A_U, Y_U and delta_U.
       centralAuthorityData.ID_U = ID_U;
@@ -316,10 +330,11 @@ public class PPETSFGPRegistrationStates {
       centralAuthorityData.A_U_set = A_U_set;
       centralAuthorityData.Y_U = Y_U;
       centralAuthorityData.delta_U = delta_U;
+      centralAuthorityData.VP_U = VP_U;
 
-      // Send c_u, r_dash, delta_U.
+      // Send c_u, r_dash, delta_U, VP_U
 
-      final ListData sendData = new ListData(Arrays.asList(c_u.toByteArray(), r_dash.toByteArray(), delta_U.toBytes()));
+      final ListData sendData = new ListData(Arrays.asList(c_u.toByteArray(), r_dash.toByteArray(), delta_U.toBytes(), sharedMemory.stringToBytes(VP_U)));
       return sendData.toBytes();
 
     }

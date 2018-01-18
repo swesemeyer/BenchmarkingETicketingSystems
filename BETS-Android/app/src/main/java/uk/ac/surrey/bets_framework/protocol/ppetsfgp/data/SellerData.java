@@ -49,4 +49,14 @@ public class SellerData implements PPETSFGPSharedMemory.ActorData {
 
   /** Random x_s. */
   public BigInteger x_s = null;
+
+  /** some generic valid period for the seller credentials */
+  public String VP_S        = "one-year";
+
+  /** some generic valid period for a ticket */
+  public String VP_T       = "one week";
+
+  /** store the user's policy membership details during issuing  */
+  public String U_membershipDetails = null;
+
 }

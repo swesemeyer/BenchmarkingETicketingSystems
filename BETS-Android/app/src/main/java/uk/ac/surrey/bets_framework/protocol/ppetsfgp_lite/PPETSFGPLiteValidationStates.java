@@ -70,10 +70,12 @@ public class PPETSFGPLiteValidationStates {
       final BigInteger pi_BAR = pi.subtract(cNum.multiply(userData.x_u)).mod(sharedMemory.p);
       final BigInteger lambda_BAR = lambda.subtract(cNum.multiply(userData.d)).mod(sharedMemory.p);
 
-      // Sends Ticket_U = (T_U, Time, Service, Price, Valid_Period), M_3_U, Y, Y_S, omega_u, c, pi_BAR, lambda_BAR
-      final ListData sendData = new ListData(Arrays.asList(userData.T_U.toBytes(), userData.time, userData.service, userData
-          .price, userData.validPeriod, M_3_U.toBytes(), userData.Y.toBytes(), userData.Y_S.toBytes(), userData.omega_u
-          .toByteArray(), userData.d_dash.toByteArray(), c, pi_BAR.toByteArray(), lambda_BAR.toByteArray()));
+      // Sends Ticket_U = (P_U, Service, Price, VP_T), M_3_U, Y, Y_S, omega_u, c, pi_BAR,
+      // lambda_BAR
+      final ListData sendData = new ListData(Arrays.asList(userData.T_U.toBytes(), userData.service, userData
+          .price, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(), userData.Y.toBytes(),
+              userData.Y_S.toBytes(), userData.omega_u.toByteArray(), userData.d_dash.toByteArray(),
+              c, pi_BAR.toByteArray(), lambda_BAR.toByteArray()));
       return sendData.toBytes();
     }
 

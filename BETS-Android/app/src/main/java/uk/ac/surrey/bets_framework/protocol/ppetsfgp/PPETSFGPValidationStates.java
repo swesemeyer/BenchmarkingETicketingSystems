@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
@@ -29,7 +30,9 @@ import uk.ac.surrey.bets_framework.state.Message;
  */
 public class PPETSFGPValidationStates {
 
-  /** Logback logger. */
+  /**
+   * Logback logger.
+   */
   private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPValidationStates.class);
 
   /**
@@ -52,12 +55,16 @@ public class PPETSFGPValidationStates {
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 1) {
+      if (listData.getList().size() != 2) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         return null;
       }
 
-      final BigInteger r = new BigInteger(listData.getList().get(0));
+      final byte[] ID_V = listData.getList().get(0);
+      // TODO: check that ID_V has not asked us for a ticket before - ignored for
+      // now...
+
+      final BigInteger r = new BigInteger(listData.getList().get(1));
 
       // Select random pi, lambda, x_bar_u, s_bar_u, pi_bar, lambda_bar,
       // pi_bar_dash, lambda_bar_dash, omega_bar_u, d_bar_u
@@ -77,18 +84,25 @@ public class PPETSFGPValidationStates {
       // Compute:
       // D = g^s_u
       // D_bar = g^s_bar_u
-      final BigInteger s_uNum = new BigInteger(1, userData.s_u).mod(sharedMemory.p);
-      final Element D = sharedMemory.g.mul(s_uNum).getImmutable();
+      final Element D = sharedMemory.g.mul(userData.s_u).getImmutable();
       final Element D_bar = sharedMemory.g.mul(s_bar_u).getImmutable();
 
       // Compute:
-      // E = xi^x_u * g_s^(r*s_u)
+      // Ps_U = Y_U * g_1^d_u
+      // Ps_bar_U = xi^x-bar_u*g_1^d_bar_u
+      final Element Ps_U = userData.Y_U.add(sharedMemory.g_n[1].mul(userData.d_u)).getImmutable();
+      final Element Ps_bar_U = (sharedMemory.xi.mul(x_bar_u)).add(sharedMemory.g_n[1].mul(d_bar_u)).getImmutable();
+
+
+      final byte[] hashID_V = crypto.getHash(ID_V);
+      final Element elementFromHashID_V = sharedMemory.pairing.getG1().newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
+      // Compute:
+      // E = Y_U * H'(ID_V)^(r*s_u)
       // E_bar = xi^x_bar_u * g_2^(r*s_bar_u)
       // F = T_U * theta^pi
-      final Element E = sharedMemory.xi.mul(userData.x_u).add(sharedMemory.g_n[2].mul(r.multiply(s_uNum).mod(sharedMemory.p)))
+      final Element E = (userData.Y_U).add(elementFromHashID_V.mul(r.multiply(userData.s_u).mod(sharedMemory.p)))
               .getImmutable();
-      final Element E_bar = sharedMemory.xi.mul(x_bar_u).add(sharedMemory.g_n[2].mul(r.multiply(s_bar_u).mod(sharedMemory.p)))
-              .getImmutable();
+      final Element E_bar = sharedMemory.xi.mul(x_bar_u).add(elementFromHashID_V.mul(r.multiply(s_bar_u).mod(sharedMemory.p))).getImmutable();
       final Element F = userData.T_U.add(sharedMemory.theta.mul(pi)).getImmutable();
 
       // Compute:
@@ -102,25 +116,36 @@ public class PPETSFGPValidationStates {
       final Element J_bar_dash = J.mul(omega_bar_u).getImmutable();
 
       // Compute:
-      // R = e(F,Y_S) / e(g_0,rho)
+      // R = e(F,Y_S) / (e(g_0,rho) e(Y,rho) e(g_3, rho)^psi_u
       // R_bar = e(xi,rho)^x_bar_u * e(g_1,rho)^d_bar_u * e(g_2,rho)^s_bar_u *
       // e(F,rho)^-omega_bar_u * e(theta,rho)^pi_bar_dash *
       // e(theta,rho)^pi_bar
-      final Element R = sharedMemory.pairing.pairing(F, userData.Y_S)
-              .div(sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.rho)).getImmutable();
-      final Element R_bar1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.rho).pow(x_bar_u).getImmutable();
-      final Element R_bar2 = sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.rho).pow(d_bar_u).getImmutable();
-      final Element R_bar3 = sharedMemory.pairing.pairing(sharedMemory.g_n[2], sharedMemory.rho).pow(s_bar_u).getImmutable();
-      final Element R_bar4 = sharedMemory.pairing.pairing(F, sharedMemory.rho).pow(omega_bar_u.negate().mod(sharedMemory.p))
-              .getImmutable();
-      final Element R_bar5 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.rho).pow(pi_bar_dash).getImmutable();
-      final Element R_bar6 = sharedMemory.pairing.pairing(sharedMemory.theta, userData.Y_S).pow(pi_bar).getImmutable();
-      final Element R_bar = R_bar1.mul(R_bar2).mul(R_bar3).mul(R_bar4).mul(R_bar5).mul(R_bar6).getImmutable();
+      final Element R_1 = sharedMemory.pairing.pairing(F, userData.Y_S);
+      final Element R_2 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.rho).getImmutable();
+      final Element R_3 = sharedMemory.pairing.pairing(Ps_U, sharedMemory.rho).getImmutable();
 
-      // Compute c = H(M_3_U || D || E || J || J_dash || R || D_bar || E_bar
+      final Element R_4 = sharedMemory.pairing.pairing(sharedMemory.g_n[3], sharedMemory.rho).pow(userData.psi_uNum)
+              .getImmutable();
+
+      final Element R = R_1.div(R_2.mul(R_3).mul(R_4)).getImmutable();
+
+      final Element R_bar1 = sharedMemory.pairing.pairing(sharedMemory.g_n[2], sharedMemory.rho).pow(s_bar_u)
+              .getImmutable();
+      final Element R_bar2 = sharedMemory.pairing.pairing(F, sharedMemory.rho)
+              .pow(omega_bar_u.negate().mod(sharedMemory.p)).getImmutable();
+      final Element R_bar3 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.rho).pow(pi_bar_dash)
+              .getImmutable();
+
+      final Element R_bar4 = sharedMemory.pairing.pairing(sharedMemory.theta, userData.Y_S).pow(pi_bar)
+              .getImmutable();
+      final Element R_bar = R_bar1.mul(R_bar2).mul(R_bar3).mul(R_bar4).getImmutable();
+
+      // Compute c = H(M_3_U || D || Ps_U|| E || J || J_dash || R || D_bar || PS_bar_U
+      // ||E_bar
       // || J_bar || J_bar_dash || R_dash)
-      final ListData cData = new ListData(Arrays.asList(M_3_U.toBytes(), D.toBytes(), E.toBytes(), J.toBytes(), J_dash.toBytes(),
-              R.toBytes(), D_bar.toBytes(), E_bar.toBytes(), J_bar.toBytes(), J_bar_dash.toBytes(), R_bar.toBytes()));
+      final ListData cData = new ListData(Arrays.asList(M_3_U.toBytes(), D.toBytes(), Ps_U.toBytes(), E.toBytes(),
+              J.toBytes(), J_dash.toBytes(), R.toBytes(), D_bar.toBytes(), Ps_bar_U.toBytes(), E_bar.toBytes(),
+              J_bar.toBytes(), J_bar_dash.toBytes(), R_bar.toBytes()));
       final byte[] c = crypto.getHash(cData.toBytes());
       final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
 
@@ -134,21 +159,29 @@ public class PPETSFGPValidationStates {
       // pi_BAR_dash = pi_bar_dash - c*pi
       // lambda_BAR = lambda_bar - c*lambda
       // omega_BAR_u = omega_bar_u - c*omega_u
-      final BigInteger s_BAR_u = s_bar_u.subtract(cNum.multiply(s_uNum)).mod(sharedMemory.p);
+      final BigInteger s_BAR_u = s_bar_u.subtract(cNum.multiply(userData.s_u)).mod(sharedMemory.p);
       final BigInteger x_BAR_u = x_bar_u.subtract(cNum.multiply(userData.x_u)).mod(sharedMemory.p);
-      final BigInteger s_hat_u = r.multiply(s_bar_u).subtract(cNum.multiply(r).multiply(s_uNum)).mod(sharedMemory.p);
+      final BigInteger s_hat_u = r.multiply(s_bar_u).subtract(cNum.multiply(r).multiply(userData.s_u))
+              .mod(sharedMemory.p);
       final BigInteger pi_BAR = pi_bar.subtract(cNum.multiply(pi)).mod(sharedMemory.p);
       final BigInteger lambda_BAR = lambda_bar.subtract(cNum.multiply(lambda)).mod(sharedMemory.p);
       final BigInteger omega_BAR_u = omega_bar_u.subtract(cNum.multiply(userData.omega_u)).mod(sharedMemory.p);
-      final BigInteger pi_BAR_dash = pi_bar_dash.subtract(cNum.multiply(pi).multiply(userData.omega_u)).mod(sharedMemory.p);
+      final BigInteger pi_BAR_dash = pi_bar_dash.subtract(cNum.multiply(pi).multiply(userData.omega_u))
+              .mod(sharedMemory.p);
       final BigInteger d_BAR_u = d_bar_u.subtract(cNum.multiply(userData.d_u)).mod(sharedMemory.p);
 
-      // Sends M_3_U, D, E, F, J, J_dash, R, c, s_BAR_u, x_BAR_u, s_hat_u,
-      // pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash, d_BAR_u
-      final ListData sendData = new ListData(
-              Arrays.asList(M_3_U.toBytes(), D.toBytes(), E.toBytes(), F.toBytes(), J.toBytes(), J_dash.toBytes(), R.toBytes(), c,
-                      s_BAR_u.toByteArray(), x_BAR_u.toByteArray(), s_hat_u.toByteArray(), pi_BAR.toByteArray(), lambda_BAR.toByteArray(),
-                      omega_BAR_u.toByteArray(), pi_BAR_dash.toByteArray(), d_BAR_u.toByteArray(), userData.Y_S.toBytes()));
+
+      // Sends P_U, Price, Service, VP_T, M_3_U, D, Ps_U, E, F, J, J_dash, R,  c,
+      // s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash, d_BAR_u, psi_uNum
+      // U also needs to send Y_S as the verifier won't have it otherwise
+
+      final ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(userData.memberOfPolicies),
+              userData.price, userData.service, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(),
+              D.toBytes(), Ps_U.toBytes(), E.toBytes(), F.toBytes(), J.toBytes(), J_dash.toBytes(), R.toBytes(), c,
+              s_BAR_u.toByteArray(), x_BAR_u.toByteArray(), s_hat_u.toByteArray(), pi_BAR.toByteArray(),
+              lambda_BAR.toByteArray(), omega_BAR_u.toByteArray(), pi_BAR_dash.toByteArray(), d_BAR_u.toByteArray(),
+              userData.psi_uNum.toByteArray(), userData.Y_S.toBytes()));
+
       return sendData.toBytes();
     }
 

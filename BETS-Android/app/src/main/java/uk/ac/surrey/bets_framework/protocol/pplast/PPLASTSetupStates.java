@@ -14,7 +14,7 @@ import uk.ac.surrey.bets_framework.state.Message;
 
 /**
  * The set-up states for the PPLAST protocol.
- *
+ * <p>
  * (c) Steve Wesemeyer 2017
  */
 
@@ -59,19 +59,15 @@ public class PPLASTSetupStates {
      */
     private boolean processSetup(byte[] data) {
       // Use the data to re-create the shared memory so that we have all of the public parameters.
-      try {
-        // Decode the shared memory.
-        PPLASTSharedMemory sharedMemory = PPLASTSharedMemory.fromJson(new String(data, Data.UTF8));
+      // Decode the shared memory.
+      PPLASTSharedMemory sharedMemory = PPLASTSharedMemory.fromJson(new String(data, Data.UTF8));
 
-        // Initialise the shared memory which has not been copied in.
-        sharedMemory.clearAndroid();
+      // Initialise the shared memory which has not been copied in.
+      sharedMemory.clearAndroid();
 
-        this.setSharedMemory(sharedMemory);
-        LOG.debug("deserialised the shared memory");
+      this.setSharedMemory(sharedMemory);
+      LOG.debug("deserialised the shared memory");
 
-      } catch (UnsupportedEncodingException e) {
-        LOG.error("could not setup", e);
-      }
 
       return true;
     }

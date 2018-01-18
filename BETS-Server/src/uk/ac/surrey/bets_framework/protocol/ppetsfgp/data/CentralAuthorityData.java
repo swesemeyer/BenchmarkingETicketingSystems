@@ -29,6 +29,9 @@ public class CentralAuthorityData implements PPETSFGPSharedMemory.ActorData {
 
   /** The identity of U. */
   public byte[]       ID_U      = null;
+  
+  /** The validity period of U. */
+  public String       VP_U      = null;
 
   /** Random numbers mu_1 to mu_N2. */
   public BigInteger[] mu_n      = null;

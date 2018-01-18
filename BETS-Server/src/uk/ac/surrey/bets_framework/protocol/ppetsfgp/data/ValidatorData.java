@@ -17,40 +17,43 @@ import java.math.BigInteger;
  */
 public class ValidatorData implements PPETSFGPSharedMemory.ActorData {
 
-  /** Ticket transcript D. */
-  public Element    D      = null;
+	/** The identity of V as an arbitrary array of bytes. */
+	public static final byte[] ID_V = "Validator".getBytes();
 
-  /** Previous ticket transcript D. */
-  public Element    D_last = null;
+	/** Ticket transcript D. */
+	public Element D = null;
 
-  /** Ticket transcript E. */
-  public Element    E      = null;
+	/** Previous ticket transcript D. */
+	public Element D_last = null;
 
-  /** Previous ticket transcript E. */
-  public Element    E_last = null;
+	/** Ticket transcript E. */
+	public Element E = null;
 
-  /** Ticket transcript F. */
-  public Element    F      = null;
+	/** Previous ticket transcript E. */
+	public Element E_last = null;
 
-  /** Previous ticket transcript F. */
-  public Element    F_last = null;
+	/** Ticket transcript F. */
+	public Element F = null;
 
-  /** Ticket transcript J. */
-  public Element    J      = null;
+	/** Previous ticket transcript F. */
+	public Element F_last = null;
 
-  /** Previous ticket transcript J. */
-  public Element    J_last = null;
+	/** Ticket transcript J. */
+	public Element J = null;
 
-  /** Ticket transcript r. */
-  public BigInteger r      = null;
+	/** Previous ticket transcript J. */
+	public Element J_last = null;
 
-  /** Previous ticket transcript r. */
-  public BigInteger r_last = null;
+	/** Ticket transcript r. */
+	public BigInteger r = null;
 
-  /** Ticket transcript Y. */
-  public Element    Y      = null;
+	/** Previous ticket transcript r. */
+	public BigInteger r_last = null;
 
-  /** Previous ticket transcript Y. */
-  public Element    Y_last = null;
+	/** Ticket transcript Y. */
+	public Element Y = null;
+
+	/** Previous ticket transcript Y. */
+	public Element Y_last = null;
 
 }

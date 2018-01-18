@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp.data;
@@ -32,6 +32,9 @@ public class CentralAuthorityData implements PPETSFGPSharedMemory.ActorData {
 
   /** The user credentials. */
   public Element delta_U = null;
+
+  /** The validity period of U. */
+  public String VP_U = null;
 
   /** Random numbers mu_1 to mu_N2. */
   public BigInteger[] mu_n = null;

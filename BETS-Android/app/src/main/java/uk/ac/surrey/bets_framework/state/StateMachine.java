@@ -126,13 +126,13 @@ public abstract class StateMachine<T> {
 
     // Run the state machine until we get an end message.
     this.startTiming(this.getClass().getSimpleName());
-    LOG.debug("started timing of "+this.getClass().getSimpleName());
+    LOG.trace("started timing of "+this.getClass().getSimpleName());
     boolean finished = false;
 
     while (!finished) {
       if ((this.currentState >= 0) && (this.currentState < this.states.size())) {
         final State<T> state = this.states.get(this.currentState);
-        LOG.debug("processing {} in state {}", message, state);
+        LOG.trace("processing {} in state {}", message, state);
 
         this.startTiming(state.getClass().getSimpleName() + TIMING_ACTION,message.getData());
         final Action<T> action = state.getAction(message);
@@ -146,7 +146,7 @@ public abstract class StateMachine<T> {
 
         // Perform the required action and construct the next message.
         if (action.getCommand() != null) {
-          LOG.debug("executing action {}", action);
+          LOG.trace("executing action {}", action);
 
           this.startTiming(state.getClass().getSimpleName() + TIMING_COMMAND,action.getCommandData());
           message = this.performAction(action);
@@ -161,7 +161,7 @@ public abstract class StateMachine<T> {
         if (action.getStatus().equals(Status.END_SUCCESS)) {
           finished = true;
           result = true;
-          LOG.debug("ending successfully");
+          LOG.trace("ending successfully");
         }
         else if (action.getStatus().equals(Status.END_FAILURE)) {
           finished = true;
@@ -174,7 +174,7 @@ public abstract class StateMachine<T> {
     }
 
     this.stopTiming(this.getClass().getSimpleName());
-    LOG.debug("stopped timing of "+this.getClass().getSimpleName());
+    LOG.trace("stopped timing of "+this.getClass().getSimpleName());
     return result;
   }
 

@@ -1,15 +1,15 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.data;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Encapsulates the data exchanged between the server and the client.
@@ -18,8 +18,10 @@ import java.io.UnsupportedEncodingException;
  */
 public abstract class Data {
 
-  /** Character set used for byte conversion. */
-  public static final String UTF8 = "UTF-8";
+  /**
+   * Character set used for byte conversion.
+   */
+  public static final Charset UTF8 = StandardCharsets.UTF_8;
 
   /**
    * Default constructor.
@@ -43,16 +45,11 @@ public abstract class Data {
    */
   protected final void setFromBytes(byte[] bytes) throws DataException {
     // Convert the bytes into a UTF8 JSON string and convert into JSON (hopefully).
-    try {
-      final String utf8 = new String(bytes, UTF8);
-      final JsonObject json = new JsonParser().parse(utf8).getAsJsonObject();
+    final String utf8 = new String(bytes, UTF8);
+    final JsonObject json = new JsonParser().parse(utf8).getAsJsonObject();
 
-      // Decode the JSON and set the fields.
-      this.fromJson(json);
-    }
-    catch (final UnsupportedEncodingException | IllegalStateException | JsonSyntaxException e) {
-      throw new DataException("could not decode bytes", e);
-    }
+    // Decode the JSON and set the fields.
+    this.fromJson(json);
   }
 
   /**
@@ -67,12 +64,8 @@ public abstract class Data {
     final JsonObject json = this.toJson();
 
     // Convert the JSON object into a UTF8 byte array.
-    try {
-      bytes = json.toString().getBytes(UTF8);
-    }
-    catch (final UnsupportedEncodingException e) {
-      // Ignore - will be null.
-    }
+    bytes = json.toString().getBytes(UTF8);
+
 
     return bytes;
   }

@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
@@ -62,20 +62,15 @@ public class PPETSFGPSetupStates {
      */
     private boolean processSetup(byte[] data) {
       // Use the data to re-create the shared memory so that we have all of the public parameters.
-      try {
-        // Decode the shared memory.
-        PPETSFGPSharedMemory sharedMemory = PPETSFGPSharedMemory.fromJson(new String(data, Data.UTF8));
+      // Decode the shared memory.
+      PPETSFGPSharedMemory sharedMemory = PPETSFGPSharedMemory.fromJson(new String(data, Data.UTF8));
 
-        // Initialise the shared memory which has not been copied in.
-        sharedMemory.clearAndroid();
+      // Initialise the shared memory which has not been copied in.
+      sharedMemory.clearAndroid();
 
-        this.setSharedMemory(sharedMemory);
-        LOG.debug("deserialised the shared memory");
+      this.setSharedMemory(sharedMemory);
+      LOG.debug("deserialised the shared memory");
 
-      }
-      catch (UnsupportedEncodingException e) {
-        LOG.error("could not setup", e);
-      }
 
       return true;
     }

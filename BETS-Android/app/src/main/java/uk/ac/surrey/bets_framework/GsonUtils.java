@@ -84,21 +84,17 @@ public class GsonUtils {
 
       CurveElement<?, ?> curveElement = null;
 
-      try {
-        String type = json.getAsString().substring(0, 1);
+      String type = json.getAsString().substring(0, 1);
 
-        byte[] bytes = Base64.decode(json.getAsString().substring(1).getBytes(Data.UTF8), Base64.NO_WRAP);
+      byte[] bytes = Base64.decode(json.getAsString().substring(1).getBytes(Data.UTF8), Base64.NO_WRAP);
 
-        if (type.equalsIgnoreCase("1")) {
-          curveElement = new CurveElement<>(this.field1);
-        } else {
-          curveElement = new CurveElement<>(this.field2);
-        }
-        curveElement.setFromBytes(bytes);
-
-      } catch (final UnsupportedEncodingException e) {
-        LOG.error("could not decode Base 64 string", e);
+      if (type.equalsIgnoreCase("1")) {
+        curveElement = new CurveElement<>(this.field1);
+      } else {
+        curveElement = new CurveElement<>(this.field2);
       }
+      curveElement.setFromBytes(bytes);
+
 
       return (CurveElement<?, ?>) curveElement.getImmutable();
     }
@@ -152,15 +148,12 @@ public class GsonUtils {
       if ((this.field2 != null) && (src.getField().equals(this.field2))) {
         type = "2";
       }
-      try {
-        // Get the CurveElement bytes as a string.
 
-        curveElement = new JsonPrimitive(type + (new String(Base64.encode(src.toBytes(),
-                Base64.NO_WRAP), Data
-                .UTF8)));
-      } catch (final UnsupportedEncodingException e) {
-        LOG.error("could not encode Base 64 string", e);
-      }
+      // Get the CurveElement bytes as a string.
+
+      curveElement = new JsonPrimitive(type + (new String(Base64.encode(src.toBytes(),
+              Base64.NO_WRAP), Data
+              .UTF8)));
 
       return curveElement;
     }

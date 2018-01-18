@@ -44,14 +44,26 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
   /** Name used for timing the critical part of the protocol. */
   public static final String TIMING_NAME = "Validation Timing";
 
-  /** Fixed set of range policies. */
-  public final int[][] rangePolicies = new int[][]{{0, 5}, // Age: children.
-      {0, 3}, // Days: rail card for a year.
-  };
+  /**
+   * Fixed set of range policies.
+   * R1={0,5} AgeRange:Child
+   * R2={0,3} Days:railcard for x days
+   */
+  public final int[][]                          rangePolicies       = new int[][] { { 0, 5 }, { 0, 3 } };
+
+  /**
+   * The labels for these range policies
+   */
+  public final String[] rangePoliciesNames= {"R1", "R2"};
 
   /** Fixed set of set policies: we use arbitrary strings. */
-  public transient final String[][] setPolices = new String[][]{{"North", "South"}, {"Commuter", "Non-commuter"}, {"No " +
-      "disability", "Mobility"}};
+  public transient final String[][]             setPolices          = new String[][] { { "North", "South" },
+          { "Commuter", "Non-commuter" }, { "Visually Impaired", "Mobility Impaired", "Epilepsy"} } ;
+
+  /**
+   * The labels for these set policies
+   */
+  public final String[] setPolicyNames= {"S1", "S2", "S3"};
 
   /** Mapping of actor to their data. */
   private transient final Map<Actor, ActorData> actorData = new HashMap<>();
@@ -132,6 +144,7 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
 
   /** The current actor so that access to shared memory can be checked. */
   private transient Actor actor = Actor.CENTRAL_AUTHORITY;
+
 
   /**
    * Deserialises the shared memory from a JSON string.
@@ -331,7 +344,7 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
     // Generate the required elements from the pairing. Note that CurveElement is used instead of Element for deserialization with
     // Gson.
     this.g = (CurveElement<?, ?>) this.pairing.getG1().newRandomElement().getImmutable();
-    this.g_n = new CurveElement<?, ?>[3];
+    this.g_n = new CurveElement<?, ?>[4];
     for (int i = 0; i < this.g_n.length; i++) {
       this.g_n[i] = (CurveElement<?, ?>) this.pairing.getG1().newRandomElement().getImmutable();
     }

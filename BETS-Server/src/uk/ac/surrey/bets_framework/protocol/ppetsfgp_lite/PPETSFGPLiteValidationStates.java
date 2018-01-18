@@ -135,17 +135,16 @@ public class PPETSFGPLiteValidationStates {
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 13) {
+      if (listData.getList().size() != 12) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         return false;
       }
 
       int index = 0;
       final Element T_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final byte[] time = listData.getList().get(index++);
       final byte[] service = listData.getList().get(index++);
       final byte[] price = listData.getList().get(index++);
-      final byte[] validPeriod = listData.getList().get(index++);
+      final String VP_T = sharedMemory.stringFromBytes(listData.getList().get(index++));
       final Element M_3_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
       final Element Y = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
       final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
@@ -174,8 +173,8 @@ public class PPETSFGPLiteValidationStates {
       }
       LOG.debug("SUCCESS: verify PI_3_U: c" );
 
-      // Compute s_u = H(Y || Time || Service || Price || Valid_Period)
-      final ListData s_uData = new ListData(Arrays.asList(Y.toBytes(), time, service, price, validPeriod));
+      // Compute s_u = H(Y || Service || Price || Valid_Period)
+      final ListData s_uData = new ListData(Arrays.asList(Y.toBytes(), service, price, VP_T.getBytes()));
       final byte[] s_u = crypto.getHash(s_uData.toBytes());
       final BigInteger s_uNum = new BigInteger(1, s_u);
 

@@ -67,11 +67,8 @@ public class PPLASTSetupStates {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
 			byte[] result = null;
 
-			try {
-				result = sharedMemory.toJson().getBytes(Data.UTF8);
-			} catch (final UnsupportedEncodingException e) {
-				LOG.error("could not encode setup", e);
-			}
+			result = sharedMemory.toJson().getBytes(Data.UTF8);
+
 			LOG.debug("serialised the shared Memory");
 			return result;
 		}

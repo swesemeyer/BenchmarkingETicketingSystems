@@ -6,7 +6,6 @@ package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 import static org.junit.Assert.fail;
 
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
 /**
  * @author swesemeyer
  *
- */
+ */	
 public class TestPPETSFGP_Lite {
 
   /** Logback logger. */

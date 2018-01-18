@@ -145,11 +145,16 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 
   /**
    * Fixed set of range policies.
-   * P1={0,5} AgeRange:Child
-   * P2={0,3} Days:railcard for x days
+   * R1={0,5} AgeRange:Child
+   * R2={0,3} Days:railcard for x days
    */
   public final int[][]                          rangePolicies       = new int[][] { { 0, 5 }, { 0, 3 } };
 
+  /**
+   * The labels for these range policies
+   */
+  public final String[] rangePoliciesNames= {"R1", "R2"};
+  
   /**
    * Number of r bits in type a elliptic curve - optionally set as a
    * parameter.
@@ -161,14 +166,19 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 
   /** Fixed set of set policies: we use arbitrary strings. */
   public transient final String[][]             setPolices          = new String[][] { { "North", "South" },
-      { "Commuter", "Non-commuter" }, { "No disability", "Mobility" } };
+      { "Commuter", "Non-commuter" }, { "Visually Impaired", "Mobility Impaired", "Epilepsy"} } ;
+      
+  /**
+  * The labels for these set policies
+  */
+  public final String[] setPolicyNames= {"S1", "S2", "S3"};
 
   /** Random element theta as a generator of the group G. */
   public CurveElement<?, ?>                     theta               = null;
 
   /** Random element xi as a generator of the group G. */
   public CurveElement<?, ?>                     xi                  = null;
-
+  
   /**
    * Deserialises the shared memory from a JSON string.
    *
@@ -319,7 +329,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
    */
   private int longestRangeInterval() {
     int maxInterval = 0;
-
+  
     for (final int[] policy : this.rangePolicies) {
       maxInterval = Math.max(maxInterval, Math.abs(policy[1] - policy[0]));
     }
@@ -380,7 +390,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
     // Generate the required elements from the pairing. Note that CurveElement is used instead of Element for deserialization with
     // Gson.
     this.g = (CurveElement<?, ?>) this.pairing.getG1().newRandomElement().getImmutable();
-    this.g_n = new CurveElement<?, ?>[3];
+    this.g_n = new CurveElement<?, ?>[4];
     for (int i = 0; i < this.g_n.length; i++) {
       this.g_n[i] = (CurveElement<?, ?>) this.pairing.getG1().newRandomElement().getImmutable();
     }

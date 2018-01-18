@@ -17,66 +17,75 @@ import java.math.BigInteger;
  */
 public class UserData implements PPETSFGPSharedMemory.ActorData {
 
-  /** The range policy attributes of U. */
-  public static final BigInteger[] A_U_range   = { BigInteger.valueOf(3), BigInteger.valueOf(2) };
+	/** The range policy attributes of U. */
+	public static BigInteger[] A_U_range = { BigInteger.valueOf(3), BigInteger.valueOf(2) };
 
-  /** The set policy attributes of U. */
-  public static final String[]     A_U_set     = { "South", "Commuter", "No disability" };
+	/** The set policy attributes of U. */
+	public static String[] A_U_set = { "South", "Commuter", "Visually Impaired" };
 
-  /** The identity of U as an arbitrary array of bytes. */
-  public static final byte[]       ID_U        = new byte[] { 0x01, 0x01, 0x02, 0x03 };
+	/**
+	 * String capturing which range and set policies the user is a member of TODO:
+	 * Need to store this differently. Will do for the prototype
+	 */
+	public String memberOfPolicies = "R1-R2-S1-S2-S3";
 
-  /** User credentials: c_u. */
-  public BigInteger                c_u         = null;
+	/** The identity of U as an arbitrary array of bytes. */
+	public byte[] ID_U = new byte[] { 0x01, 0x01, 0x02, 0x03 };
 
-  /** Random d for ticket. */
-  public BigInteger                d           = null;
+	/** User credentials: c_u. */
+	public BigInteger c_u = null;
 
-  /** Ticket_U (d_dash). */
-  public BigInteger                d_dash      = null;
+	/** Random d for ticket. */
+	public BigInteger d = null;
 
-  /** Ticket_U (d_u). */
-  public BigInteger                d_u         = null;
+	/** Ticket_U (d_dash). */
+	public BigInteger d_dash = null;
 
-  /** User credentials: delta_U. */
-  public Element                   delta_U     = null;
+	/** Ticket_U (d_u). */
+	public BigInteger d_u = null;
 
-  /** Ticket_U (omega_u). */
-  public BigInteger                omega_u     = null;
+	/** User credentials: delta_U. */
+	public Element delta_U = null;
 
-  /** Ticket price. */
-  public byte[]                    price       = null;
+	/** Ticket_U (omega_u). */
+	public BigInteger omega_u = null;
 
-  /** Random r. */
-  public BigInteger                r           = null;
+	/** Ticket price. */
+	public byte[] price = null;
 
-  /** User credentials: r_u. */
-  public BigInteger                r_u         = null;
+	/** Random r. */
+	public BigInteger r = null;
 
-  /** Ticket_U (s_u). */
-  public byte[]                    s_u         = null;
+	/** User credentials: r_u. */
+	public BigInteger r_u = null;
 
-  /** Ticket service. */
-  public byte[]                    service     = null;
+	/** Ticket_U (s_u). */
+	public BigInteger s_u = null;
 
-  /** Ticket_U (T_U). */
-  public Element                   T_U         = null;
+	/** Ticket service. */
+	public byte[] service = null;
 
-  /** Ticket time. */
-  public byte[]                    time        = null;
+	/** Ticket_U (T_U). */
+	public Element T_U = null;
 
-  /** Ticket valid period. */
-  public byte[]                    validPeriod = null;
+	/** Ticket valid period. */
+	public String VP_T = null;
 
-  /** Random x_u. */
-  public BigInteger                x_u         = null;
+	/** Ticket hash content. */
+	public BigInteger psi_uNum = null;
 
-  /** User ticket identifier. */
-  public Element                   Y           = null;
+	/** Random x_u. */
+	public BigInteger x_u = null;
 
-  /** Seller pseudonym */
-  public Element                   Y_S         = null;
+	/** User ticket identifier. */
+	public Element Y = null;
 
-  /** User pseudonym. */
-  public Element                   Y_U         = null;
+	/** Seller pseudonym */
+	public Element Y_S = null;
+
+	/** User pseudonym. */
+	public Element Y_U = null;
+
+	/** some generic valid period for the user credentials */
+	public String VP_U = "six months";
 }

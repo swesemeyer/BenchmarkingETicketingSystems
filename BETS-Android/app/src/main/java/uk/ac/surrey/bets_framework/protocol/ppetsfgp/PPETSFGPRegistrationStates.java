@@ -72,9 +72,10 @@ public class PPETSFGPRegistrationStates {
 
       final BigInteger s = (t_s.subtract(cNum.multiply(sellerData.x_s))).mod(sharedMemory.p);
 
-      // Send ID_S, PI_1_S (which includes Y_S).
+      // Send ID_S, PI_1_S (which includes Y_S) and VP_S
       final ListData sendData = new ListData(
-              Arrays.asList(SellerData.ID_S, M_1_S.toBytes(), sellerData.Y_S.toBytes(), c, s.toByteArray()));
+              Arrays.asList(SellerData.ID_S, M_1_S.toBytes(), sellerData.Y_S.toBytes(), c, s
+                      .toByteArray(), sharedMemory.stringToBytes(sellerData.VP_S)));
 
       return sendData.toBytes();
     }
@@ -122,11 +123,12 @@ public class PPETSFGPRegistrationStates {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
       final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
       final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+      final Crypto crypto = Crypto.getInstance();
 
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 3) {
+      if (listData.getList().size() != 4) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         return false;
       }
@@ -134,14 +136,25 @@ public class PPETSFGPRegistrationStates {
       final BigInteger c_s = new BigInteger(listData.getList().get(0));
       final BigInteger r_s = new BigInteger(listData.getList().get(1));
       final Element delta_S = sharedMemory.curveElementFromBytes(listData.getList().get(2));
+      sellerData.VP_S = sharedMemory.stringFromBytes(listData.getList().get(3));
+
 
       // Verify e(delta_S, g_bar g^c_s) = e(g_0, g) e(Y_S, g) e(g, g_frac)^r_s
       final Element left = sharedMemory.pairing.pairing(delta_S, sharedMemory.g_bar.add(sharedMemory.g.mul(c_s)));
-      final Element right1 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g);
-      final Element right2 = sharedMemory.pairing.pairing(sellerData.Y_S, sharedMemory.g);
-      final Element right3 = sharedMemory.pairing.pairing(sharedMemory.g, sharedMemory.g_frak).pow(r_s);
 
-      final Element RHS = right1.mul(right2).mul(right3);
+      final byte[] vpsHash = crypto.getHash(sellerData.VP_S.getBytes());
+      final BigInteger vpsHashNum = new BigInteger(1, vpsHash).mod(sharedMemory.p);
+      LOG.debug("vpsHashNum: "+vpsHashNum);
+
+      final Element right1 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g).getImmutable();
+      final Element right2 = sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory
+              .g).pow(vpsHashNum).getImmutable();
+      final Element right3 = sharedMemory.pairing.pairing(sellerData.Y_S, sharedMemory.g)
+              .getImmutable();
+      final Element right4 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g)
+              .pow(r_s).getImmutable();
+
+      final Element RHS = right1.mul(right2).mul(right3).mul(right4).getImmutable();
       if (!left.equals(RHS)) {
         LOG.error("invalid seller credentials");
         if (!sharedMemory.passVerification) {
@@ -225,22 +238,17 @@ public class PPETSFGPRegistrationStates {
       final BigInteger s_1 = (x_bar.subtract(c_1Num.multiply(userData.x_u))).mod(sharedMemory.p);
       final BigInteger s_2 = r_bar.subtract(c_2Num.multiply(userData.r)).mod(sharedMemory.p);
 
-      // Send ID_U, A_U, PI_1_U (which includes Y_U, R).
+      // Send ID_U, PI_1_U (which includes Y_U, R), A_U, VP_U
       final List<byte[]> list = new ArrayList<>();
-      // TODO: do not send Y_dash_U and R_dash as they are not needed.
-      list.addAll(Arrays.asList(UserData.ID_U, M_1_U.toBytes(), userData.Y_U.toBytes(), R.toBytes(), Y_dash_U.toBytes(),
-              R_dash.toBytes(), c_1, c_2, s_1.toByteArray(), s_2.toByteArray()));
-      for (final BigInteger attribute : UserData.A_U_range) {
+      list.addAll(Arrays.asList(userData.ID_U, M_1_U.toBytes(), userData.Y_U.toBytes(), R.toBytes
+              (), c_1, c_2, s_1.toByteArray(), s_2.toByteArray()));
+      for (final BigInteger attribute : userData.A_U_range) {
         list.add(attribute.toByteArray());
       }
-      for (final String attribute : UserData.A_U_set) {
-        try {
-          list.add(attribute.getBytes(Data.UTF8));
-        }
-        catch (final UnsupportedEncodingException e) {
-          // Ignore.
-        }
+      for (final String attribute : userData.A_U_set) {
+        list.add(attribute.getBytes(Data.UTF8));
       }
+      list.add(sharedMemory.stringToBytes(userData.VP_U));
 
       final ListData sendData = new ListData(list);
       return sendData.toBytes();
@@ -293,7 +301,7 @@ public class PPETSFGPRegistrationStates {
       // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 3) {
+      if (listData.getList().size() != 4) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
         if (!sharedMemory.passVerification) {
           return false;
@@ -303,40 +311,41 @@ public class PPETSFGPRegistrationStates {
       final BigInteger c_u = new BigInteger(listData.getList().get(0));
       final BigInteger r_dash = new BigInteger(listData.getList().get(1));
       final Element delta_U = sharedMemory.curveElementFromBytes(listData.getList().get(2));
+      userData.VP_U = sharedMemory.stringFromBytes(listData.getList().get(3));
+
       // Compute r_u.
       final BigInteger r_u = userData.r.add(r_dash).mod(sharedMemory.p);
 
-      // Verify e(delta_U, g_bar g^c_u) = e(g_0, g) e(xi, g) e(g_frac, g)^r_u
+      // Verify e(delta_U, g_bar g^c_u) = e(g_0, g) e(g_0,g_1)^H(VP_U) e(Y_U, g)
+      // e(g_frac, g)^r_u
       final Element left = sharedMemory.pairing.pairing(delta_U, sharedMemory.g_bar.add(sharedMemory.g.mul(c_u)));
-      final Element right1 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g);
-      // error in paper should be Y_U and not xi
-      final Element right2 = sharedMemory.pairing.pairing(userData.Y_U, sharedMemory.g);
-      final Element right3 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_u);
+      final Element right1 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g).getImmutable();
+
+      final byte[] vpuHash = crypto.getHash(userData.VP_U.getBytes());
+      final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
+      final Element right2 = sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.g).pow(vpuHashNum)
+              .getImmutable();
+      final Element right3 = sharedMemory.pairing.pairing(userData.Y_U, sharedMemory.g).getImmutable();
+      final Element right4 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_u)
+              .getImmutable();
       Element product1 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
       for (int i = 0; i < sharedMemory.N1(); i++) {
-        final Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(UserData.A_U_range[i])
-                .getImmutable();
+        final Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g)
+                .pow(userData.A_U_range[i]).getImmutable();
         product1 = product1.mul(value);
       }
       product1 = product1.getImmutable();
 
       Element product2 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
-      try {
-        for (int i = 0; i < sharedMemory.N2(); i++) {
-          final byte[] hash = crypto.getHash(UserData.A_U_set[i].getBytes(Data.UTF8));
-          final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
-          final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(hashNum).getImmutable();
-          product2 = product2.mul(value);
-        }
-      }
-      catch (final UnsupportedEncodingException e) {
-        // something odd happened - we terminate gracefully
-        LOG.debug("UnsupportedEncodingException happened: " + e);
-        return false;
+      for (int i = 0; i < sharedMemory.N2(); i++) {
+        final byte[] hash = crypto.getHash(userData.A_U_set[i].getBytes(Data.UTF8));
+        final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
+        final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(hashNum)
+                .getImmutable();
+        product2 = product2.mul(value);
       }
 
-      // Element RHS = right1.mul(right2).mul(right3).mul(product1).mul(product2);
-      final Element RHS = right1.mul(right2).mul(right3).mul(product1).mul(product2);
+      final Element RHS = right1.mul(right2).mul(right3).mul(right4).mul(product1).mul(product2);
       if (!left.isEqual(RHS)) {
         LOG.error("invalid user credentials");
         if (!sharedMemory.passVerification) {

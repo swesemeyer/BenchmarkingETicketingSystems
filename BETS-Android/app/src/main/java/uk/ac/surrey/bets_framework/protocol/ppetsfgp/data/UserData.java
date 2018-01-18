@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp.data;
@@ -18,13 +18,20 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
 public class UserData implements PPETSFGPSharedMemory.ActorData {
 
   /** The range policy attributes of U. */
-  public static final BigInteger[] A_U_range = {BigInteger.valueOf(3), BigInteger.valueOf(2)};
+  public static BigInteger[] A_U_range = {BigInteger.valueOf(3), BigInteger.valueOf(2)};
 
   /** The set policy attributes of U. */
-  public static final String[] A_U_set = {"South", "Commuter", "No disability"};
+  public static String[] A_U_set = {"South", "Commuter", "Visually Impaired"};
+
+  /**
+   * String capturing which range and set policies the user is a member of
+   * TODO: Need to store this differently. Will do for the prototype
+   */
+  public String memberOfPolicies = "R1-R2-S1-S2-S3";
+
 
   /** The identity of U as an arbitrary array of bytes. */
-  public static final byte[] ID_U = new byte[]{0x01, 0x01, 0x02, 0x03};
+  public byte[] ID_U = new byte[]{0x01, 0x01, 0x02, 0x03};
 
   /** Ticket_U (T_U). */
   public Element T_U = null;
@@ -66,18 +73,21 @@ public class UserData implements PPETSFGPSharedMemory.ActorData {
   public BigInteger r_u = null;
 
   /** Ticket_U (s_u). */
-  public byte[] s_u = null;
+  public BigInteger s_u = null;
 
   /** Ticket service. */
   public byte[] service = null;
 
-  /** Ticket time. */
-  public byte[] time = null;
+    /** Ticket valid period. */
+  public String VP_T = null;
 
-  /** Ticket valid period. */
-  public byte[] validPeriod = null;
+  /** Ticket hash content. */
+  public BigInteger psi_uNum = null;
 
   /** Random x_u. */
   public BigInteger x_u = null;
+
+  /** some generic valid period for the user credentials */
+  public String VP_U = "six months";
 
 }

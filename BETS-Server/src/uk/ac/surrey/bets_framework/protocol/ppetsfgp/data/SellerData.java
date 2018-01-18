@@ -29,9 +29,6 @@ public class SellerData implements PPETSFGPSharedMemory.ActorData {
   /** The fixed ticket time as an arbitrary array of bytes. */
   public static final byte[] TICKET_TIME         = new byte[] { 0x10 };
 
-  /** The fixed ticket validity period as an arbitrary array of bytes. */
-  public static final byte[] TICKET_VALID_PERIOD = new byte[] { 0x13 };
-
   /** Seller credentials: c_s. */
   public BigInteger          c_s                 = null;
 
@@ -49,4 +46,17 @@ public class SellerData implements PPETSFGPSharedMemory.ActorData {
 
   /** Seller pseudonym. */
   public Element             Y_S                 = null;
+  
+  /** some generic valid period for the seller credentials */
+  public String VP_S        = "one-year";
+
+  /** some generic valid period for a ticket */
+  public String VP_T       = "one week";
+  
+  /** store the user's policy membership details during issuing  */
+  public String U_membershipDetails = null;
+
 }
+
+
+

@@ -8,7 +8,6 @@ package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -143,7 +142,8 @@ public class PPETSFGPIssuingStates {
       final Element[] Z_bar_dash_n = new Element[sharedMemory.N1()];
 
       for (int i = 0; i < sharedMemory.N1(); i++) {
-        Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(UserData.A_U_range[i])).getImmutable();
+        Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(userData.A_U_range[i]))
+                .getImmutable();
         Z_dash_n[i] = sharedMemory.g.mul(gamma_bar_n[i]).add(sharedMemory.h.mul(a_bar_n[i]).getImmutable());
 
         Element sum1 = sharedMemory.g.mul(gamma_bar_n[i]).getImmutable();
@@ -169,14 +169,16 @@ public class PPETSFGPIssuingStates {
         // Calculate w_l_i member of [0, q-1], and since q = 2, w_l_i is
         // binary. Here w_l_i represents which bits are set in the
         // number A_U_range[i] - lower bound of range policy[i]
-        final BigInteger lowerDiff = UserData.A_U_range[i].subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][0]));
+        final BigInteger lowerDiff = userData.A_U_range[i].subtract(BigInteger.valueOf
+                (sharedMemory.rangePolicies[i][0]));
         final String reverseLowerDiff = new StringBuilder(lowerDiff.toString(sharedMemory.q)).reverse().toString();
 
         // Calculate w_dash_l_i member of [0, q-1], and since q = 2,
         // w_dash_l_i is binary. Here w_dash_l_i represents which bits
         // are set in the number A_U_range[i] - upper bound of range
         // policy[i] + q^k
-        final BigInteger upperDiff = UserData.A_U_range[i].subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][1]))
+        final BigInteger upperDiff = userData.A_U_range[i].subtract(BigInteger.valueOf
+                (sharedMemory.rangePolicies[i][1]))
                 .add(BigInteger.valueOf(sharedMemory.q).pow(sharedMemory.k));
         final String reverseUpperDiff = new StringBuilder(upperDiff.toString(sharedMemory.q)).reverse().toString();
 
@@ -244,12 +246,19 @@ public class PPETSFGPIssuingStates {
       final Element Y_bar = sharedMemory.xi.mul(x_bar_u).add(sharedMemory.g_n[1].mul(d_bar)).getImmutable();
 
       // Compute:
-      // R = e(C,g_bar) / e(g_0,g)
+      // R = e(C,g_bar) / (e(g_0,g) e(g_1,g)^H(VP_U)
       // R_dash = e(xi,g)^x_bar_u * e(g_frak,g)^r_bar_u *
       // PRODUCT_1-N1(e(g_hat,g)^a_bar_l * PRODUCT_1-N2(e(eta_i,g)^e_hat_i * e
       // (C,g)^c_bar_u * e(theta,g)^a_bar_dash * e(theta,g_bar)^alpha_bar
-      final Element R = sharedMemory.pairing.pairing(C, sharedMemory.g_bar)
-              .div(sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g)).getImmutable();
+
+      final byte[] vpuHash = crypto.getHash(userData.VP_U.getBytes());
+      final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
+
+      final Element R_1 = sharedMemory.pairing.pairing(C, sharedMemory.g_bar).getImmutable();
+      final Element R_2 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g).getImmutable();
+      final Element R_3 = sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.g).pow(vpuHashNum).getImmutable();
+      final Element R=R_1.div(R_2.mul(R_3)).getImmutable();
+
       final Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_bar_u).getImmutable();
       final Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_bar_u).getImmutable();
 
@@ -260,7 +269,7 @@ public class PPETSFGPIssuingStates {
       }
 
       Element product2 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
-      ;
+
       for (int i = 0; i < sharedMemory.N2(); i++) {
         final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_hat_n[i]);
         product2 = product2.mul(value);
@@ -288,7 +297,7 @@ public class PPETSFGPIssuingStates {
 
       for (int i = 0; i < sharedMemory.N2(); i++) {
         for (int j = 0; j < sharedMemory.zeta(); j++) {
-          if (UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
+          if (userData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
             B_n_m[i][j] = sharedMemory.eta_n_n[i][j].mul(e_n[i]).getImmutable();
             W_n_m[i][j] = sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_bar_n[i]).getImmutable();
             Element part1 = sharedMemory.pairing.pairing(sharedMemory.eta, sharedMemory.eta_n[i]).pow(e_bar_n[i]).getImmutable();
@@ -353,7 +362,8 @@ public class PPETSFGPIssuingStates {
 
       for (int i = 0; i < sharedMemory.N1(); i++) {
         gammac_BAR_n[i] = gamma_bar_n[i].subtract(c_BARNum.multiply(gamma_n[i])).mod(sharedMemory.p);
-        ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(UserData.A_U_range[i])).mod(sharedMemory.p);
+        ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(userData.A_U_range[i])).mod
+                (sharedMemory.p);
       }
 
       // Compute:
@@ -363,19 +373,16 @@ public class PPETSFGPIssuingStates {
       final BigInteger[] e_BAR_dash_n = new BigInteger[sharedMemory.N2()];
       final BigInteger[] e_BAR_dash_dash_n = new BigInteger[sharedMemory.N2()];
 
-      try {
-        for (int i = 0; i < sharedMemory.N2(); i++) {
-          e_BAR_n[i] = e_bar_n[i].subtract(c_BARNum.multiply(e_n[i])).mod(sharedMemory.p);
+      for (int i = 0; i < sharedMemory.N2(); i++) {
+        e_BAR_n[i] = e_bar_n[i].subtract(c_BARNum.multiply(e_n[i])).mod(sharedMemory.p);
 
-          final byte[] hash = crypto.getHash(UserData.A_U_set[i].getBytes(Data.UTF8));
-          final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
+        final byte[] hash = crypto.getHash(userData.A_U_set[i].getBytes(Data.UTF8));
+        final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
 
-          e_BAR_dash_n[i] = e_hat_n[i].subtract(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for R' verification
-          e_BAR_dash_dash_n[i] = e_hat_n[i].add(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for W_bar_n_m verification
-        }
-      } catch (final UnsupportedEncodingException e) {
-        // Ignore.
+        e_BAR_dash_n[i] = e_hat_n[i].subtract(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for R' verification
+        e_BAR_dash_dash_n[i] = e_hat_n[i].add(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for W_bar_n_m verification
       }
+
 
       // Compute:
       // c_BAR_u = c_bar_u - c_BAR * c_u
@@ -413,10 +420,12 @@ public class PPETSFGPIssuingStates {
         gammae_BAR_n[i] = (gamma_bar_n[i].subtract(e_BAR_mNum[i].multiply(gamma_n[i]))).mod(sharedMemory.p);
 
         final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
-        ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(lower)))).mod(sharedMemory.p);
+        ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i].subtract
+                (lower)))).mod(sharedMemory.p);
 
         final BigInteger upper = BigInteger.valueOf(sharedMemory.rangePolicies[i][1]);
-        ae_BAR_dash_n[i] = a_bar_n[i].subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(upper).add(limit)));
+        ae_BAR_dash_n[i] = a_bar_n[i].subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i]
+                .subtract(upper).add(limit)));
 
         // do some tests
 
@@ -478,12 +487,12 @@ public class PPETSFGPIssuingStates {
 
       // Save d, Y for later.
       userData.d = d;
-      userData.Y = Y;
+      userData.Y = Y; // the user pseudonym
 
       // Send PI_2_U, which includes Y.
       final List<byte[]> sendDataList = new ArrayList<>();
       sendDataList.addAll(
-              Arrays.asList(M_2_U.toBytes(), C.toBytes(), D.toBytes(), phi.toBytes(), Y.toBytes(), R.toBytes(), R_dash.toBytes()));
+              Arrays.asList(M_2_U.toBytes(), C.toBytes(), D.toBytes(), phi.toBytes(), Y.toBytes(), R.toBytes()));
 
       for (int i = 0; i < sharedMemory.N1(); i++) {
         sendDataList.add(Z_n[i].toBytes());
@@ -549,6 +558,12 @@ public class PPETSFGPIssuingStates {
         }
       }
 
+      //add all the user policies to the list
+      sendDataList.add(sharedMemory.stringToBytes(userData.memberOfPolicies));
+
+      //add the validity period of the user's credentials as well
+      sendDataList.add(sharedMemory.stringToBytes(userData.VP_U));
+
       final ListData sendData = new ListData(sendDataList);
       return sendData.toBytes();
     }
@@ -572,7 +587,7 @@ public class PPETSFGPIssuingStates {
             byte[] data = this.generateUserPseudonym();
 
             if (data != null) {
-              LOG.debug("generate seller pseudonym complete");
+              LOG.debug("generate user pseudonym complete");
 
               // Save the data for the corresponding GET.
               ((NFCAndroidSharedMemory) this.getSharedMemory()).delayedResponse = data;
@@ -594,8 +609,6 @@ public class PPETSFGPIssuingStates {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
       final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
       final Crypto crypto = Crypto.getInstance();
-
-      // Decode the received data.
       final ListData listData = ListData.fromBytes(data);
 
       if (listData.getList().size() != 20) {
@@ -650,8 +663,10 @@ public class PPETSFGPIssuingStates {
 
       // Verify c_bar_2 = H(M_2_S || gamma || g^s_hat_1 * theta^s_hat_2 *
       // gamma^c_bar_2)
-      final Element check2 = sharedMemory.g.mul(s_hat_1).add(sharedMemory.theta.mul(s_hat_2)).add(gamma.mul(c_bar_2Num));
-      final ListData c_bar_2VerifyData = new ListData(Arrays.asList(M_2_S.toBytes(), gamma.toBytes(), check2.toBytes()));
+      final Element check2 = sharedMemory.g.mul(s_hat_1).add(sharedMemory.theta.mul(s_hat_2))
+              .add(gamma.mul(c_bar_2Num));
+      final ListData c_bar_2VerifyData = new ListData(
+              Arrays.asList(M_2_S.toBytes(), gamma.toBytes(), check2.toBytes()));
       final byte[] c_bar_2Verify = crypto.getHash(c_bar_2VerifyData.toBytes());
 
       if (!Arrays.equals(c_bar_2, c_bar_2Verify)) {
@@ -664,17 +679,23 @@ public class PPETSFGPIssuingStates {
       // Verify c_bar_3 = H(M_2_S || omega || e(rho,g)^r_bar_1 *
       // e(g_frak,g)^r_bar_2 * e(Q,g)^-r_bar_3 * e(theta,g)^r_bar_4 * e
       // (theta,g_bar)^r_bar_5 * omega^c_bar_3)
-      final Element check3_1 = sharedMemory.pairing.pairing(sharedMemory.rho, sharedMemory.g).pow(r_bar_1).getImmutable();
-      final Element check3_2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_bar_2).getImmutable();
-      final Element check3_3 = sharedMemory.pairing.pairing(Q, sharedMemory.g).pow(r_bar_3.negate().mod(sharedMemory.p))
+      final Element check3_1 = sharedMemory.pairing.pairing(sharedMemory.rho, sharedMemory.g).pow(r_bar_1)
               .getImmutable();
-      final Element check3_4 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(r_bar_4).getImmutable();
-      final Element check3_5 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g_bar).pow(r_bar_5).getImmutable();
+      final Element check3_2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_bar_2)
+              .getImmutable();
+      final Element check3_3 = sharedMemory.pairing.pairing(Q, sharedMemory.g)
+              .pow(r_bar_3.negate().mod(sharedMemory.p)).getImmutable();
+      final Element check3_4 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(r_bar_4)
+              .getImmutable();
+      final Element check3_5 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g_bar).pow(r_bar_5)
+              .getImmutable();
 
       final Element check3_6 = omega.pow(c_bar_3Num).getImmutable();
-      final Element check3 = check3_1.mul(check3_2).mul(check3_3).mul(check3_4).mul(check3_5).mul(check3_6).getImmutable();
+      final Element check3 = check3_1.mul(check3_2).mul(check3_3).mul(check3_4).mul(check3_5).mul(check3_6)
+              .getImmutable();
 
-      final ListData c_bar_3VerifyData = new ListData(Arrays.asList(M_2_S.toBytes(), omega.toBytes(), check3.toBytes()));
+      final ListData c_bar_3VerifyData = new ListData(
+              Arrays.asList(M_2_S.toBytes(), omega.toBytes(), check3.toBytes()));
       final byte[] c_bar_3Verify = crypto.getHash(c_bar_3VerifyData.toBytes());
 
       if (!Arrays.equals(c_bar_3, c_bar_3Verify)) {
@@ -743,14 +764,13 @@ public class PPETSFGPIssuingStates {
 
       final Element T_U = sharedMemory.curveElementFromBytes(listData.getList().get(0));
       final BigInteger d_dash = new BigInteger(listData.getList().get(1));
-      final BigInteger omega_u = new BigInteger(listData.getList().get(2));
-      final byte[] s_u = listData.getList().get(3);
-      final BigInteger s_uNum = new BigInteger(1, s_u);
-      final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(4));
-      byte[] time = listData.getList().get(5);
-      byte[] service = listData.getList().get(6);
-      byte[] price = listData.getList().get(7);
-      byte[] validPeriod = listData.getList().get(8);
+      final BigInteger s_u = new BigInteger(listData.getList().get(2));
+      final BigInteger omega_u = new BigInteger(listData.getList().get(3));
+      final BigInteger psi_uNum = new BigInteger(listData.getList().get(4));
+      final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(5));
+      final byte[] service = listData.getList().get(6);
+      final byte[] price = listData.getList().get(7);
+      final String VP_T = sharedMemory.stringFromBytes(listData.getList().get(8));
 
       // Compute d_u = d + d_dash
       final BigInteger d_u = userData.d.add(d_dash);
@@ -762,26 +782,31 @@ public class PPETSFGPIssuingStates {
       final Element right1 = sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.rho).getImmutable();
       final Element right2 = sharedMemory.pairing.pairing(userData.Y_U, sharedMemory.rho).getImmutable();
       final Element right3 = sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.rho).pow(d_u).getImmutable();
-      final Element right4 = sharedMemory.pairing.pairing(sharedMemory.g_n[2], sharedMemory.rho).pow(s_uNum).getImmutable();
+      final Element right4 = sharedMemory.pairing.pairing(sharedMemory.g_n[2], sharedMemory.rho).pow(s_u).getImmutable();
+      final Element right5= sharedMemory.pairing.pairing(sharedMemory.g_n[3],sharedMemory.rho)
+              .pow(psi_uNum).getImmutable();
 
-      if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4))) {
+      if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4).mul(right5))) {
         LOG.error("failed to verify e(T_U, Y_S * rho^omega_u)");
         if (!sharedMemory.passVerification) {
           return false;
         }
       }
 
-      // Keep the ticket Ticket_U = (d_u, d_dash, s_u, omega_u, T_U, Time, Service, Price, Valid_Period).
+
+      // Keep the  ticket Ticket_U = (d_u, d_dash, s_u, omega_u, T_U,
+      // Time, Service, Priice, Valid_Period).
+
       userData.d_u = d_u;
       userData.d_dash = d_dash;
       userData.s_u = s_u;
       userData.omega_u = omega_u;
       userData.T_U = T_U.getImmutable();
       userData.Y_S = Y_S.getImmutable();
-      userData.time = time;
       userData.service = service;
       userData.price = price;
-      userData.validPeriod = validPeriod;
+      userData.VP_T = VP_T;
+      userData.psi_uNum=psi_uNum;
 
       LOG.debug("SUCCESS: verified Ticket serial number");
 

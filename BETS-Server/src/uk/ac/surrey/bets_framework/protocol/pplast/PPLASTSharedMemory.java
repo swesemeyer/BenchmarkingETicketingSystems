@@ -282,17 +282,6 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		return element.getImmutable();
 	}
 
-	/**
-	 * Convenience method to create a String from a byte array.
-	 *
-	 * @param bytes
-	 *            The bytes containing the string data.
-	 * @return The new String.
-	 */
-	public String stringFromBytes(byte[] bytes) {
-		final String string = new String(bytes, StandardCharsets.UTF_8);
-		return string;
-	}
 
 	/**
 	 * Convenience method to create a G2curve element from a byte array.

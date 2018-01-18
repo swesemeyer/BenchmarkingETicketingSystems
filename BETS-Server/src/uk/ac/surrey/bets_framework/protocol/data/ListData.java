@@ -22,118 +22,112 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Encapsulates a generic list of bytes to be exchanged between the server and the client.
+ * Encapsulates a generic list of bytes to be exchanged between the server and
+ * the client.
  *
  * @author Matthew Casey
  */
 public class ListData extends Data {
 
-  /** JSON encoded list of bytes. */
-  private static final String JSON_LIST_BYTES_KEY = "listBytes";
+	/** JSON encoded list of bytes. */
+	private static final String JSON_LIST_BYTES_KEY = "listBytes";
 
-  /** Logback logger. */
-  private static final Logger LOG                 = LoggerFactory.getLogger(ListData.class);
+	/** Logback logger. */
+	private static final Logger LOG = LoggerFactory.getLogger(ListData.class);
 
-  /** The list of bytes. */
-  private final List<byte[]>  list                = new ArrayList<>();
+	/** The list of bytes. */
+	private final List<byte[]> list = new ArrayList<>();
 
-  /**
-   * Private default constructor.
-   */
-  private ListData() {
-    super();
-  }
+	/**
+	 * Private default constructor.
+	 */
+	private ListData() {
+		super();
+	}
 
-  /**
-   * Constructor which requires the mandatory fields.
-   *
-   * @param list The list of bytes.
-   */
-  public ListData(List<byte[]> list) {
-    super();
+	/**
+	 * Constructor which requires the mandatory fields.
+	 *
+	 * @param list
+	 *            The list of bytes.
+	 */
+	public ListData(List<byte[]> list) {
+		super();
 
-    this.list.addAll(list);
-  }
+		this.list.addAll(list);
+	}
 
-  /**
-   * Creates a new object from the byte data.
-   *
-   * @param bytes The bytes to load from.
-   * @return The corresponding data object.
-   */
-  public static ListData fromBytes(byte[] bytes) {
-    ListData listData = null;
+	/**
+	 * Creates a new object from the byte data.
+	 *
+	 * @param bytes
+	 *            The bytes to load from.
+	 * @return The corresponding data object.
+	 */
+	public static ListData fromBytes(byte[] bytes) {
+		ListData listData = null;
 
-    try {
-      listData = new ListData();
-      listData.setFromBytes(bytes);
-    }
-    catch (final DataException e) {
-      LOG.error("could not decode the data", e);
-      listData = null;
-    }
+		try {
+			listData = new ListData();
+			listData.setFromBytes(bytes);
+		} catch (final DataException e) {
+			LOG.error("could not decode the data", e);
+			listData = null;
+		}
 
-    return listData;
-  }
+		return listData;
+	}
 
-  /**
-   * Sets the fields from JSON data.
-   *
-   * @param json The source JSON data.
-   */
-  @Override
-  protected void fromJson(JsonObject json) {
-    final Gson gson = new Gson();
-    final Type listType = new TypeToken<List<String>>() {
-    }.getType();
+	/**
+	 * Sets the fields from JSON data.
+	 *
+	 * @param json
+	 *            The source JSON data.
+	 */
+	@Override
+	protected void fromJson(JsonObject json) {
+		final Gson gson = new Gson();
+		final Type listType = new TypeToken<List<String>>() {
+		}.getType();
 
-    // Convert the list of Base 64 strings into bytes.
-    final Decoder base64 = Base64.getDecoder();
-    final List<String> strings = gson.fromJson(json.get(JSON_LIST_BYTES_KEY), listType);
-    this.list.clear();
+		// Convert the list of Base 64 strings into bytes.
+		final Decoder base64 = Base64.getDecoder();
+		final List<String> strings = gson.fromJson(json.get(JSON_LIST_BYTES_KEY), listType);
+		this.list.clear();
 
-    try {
-      for (final String string : strings) {
-        this.list.add(base64.decode(string.getBytes(UTF8)));
-      }
-    }
-    catch (final UnsupportedEncodingException e) {
-      LOG.error("could not encode Base 64 string", e);
-    }
-  }
+		for (final String string : strings) {
+			this.list.add(base64.decode(string.getBytes(UTF8)));
+		}
 
-  /**
-   * @return The list of bytes.
-   */
-  public List<byte[]> getList() {
-    return Collections.unmodifiableList(this.list);
-  }
+	}
 
-  /**
-   * Creates a JSON object containing the data.
-   *
-   * @return The corresponding JSON object.
-   */
-  @Override
-  protected JsonObject toJson() {
-    final JsonObject json = super.toJson();
+	/**
+	 * @return The list of bytes.
+	 */
+	public List<byte[]> getList() {
+		return Collections.unmodifiableList(this.list);
+	}
 
-    // Convert each array in the list to Base64.
-    final Encoder base64 = Base64.getEncoder();
-    final List<String> strings = new ArrayList<>();
+	/**
+	 * Creates a JSON object containing the data.
+	 *
+	 * @return The corresponding JSON object.
+	 */
+	@Override
+	protected JsonObject toJson() {
+		final JsonObject json = super.toJson();
 
-    try {
-      for (final byte[] bytes : this.list) {
-        strings.add(new String(base64.encode(bytes), UTF8));
-      }
-    }
-    catch (final UnsupportedEncodingException e) {
-      LOG.error("could not encode Base 64 string", e);
-    }
+		// Convert each array in the list to Base64.
+		final Encoder base64 = Base64.getEncoder();
+		final List<String> strings = new ArrayList<>();
 
-    final Gson gson = new Gson();
-    json.add(JSON_LIST_BYTES_KEY, gson.toJsonTree(strings));
+		for (final byte[] bytes : this.list) {
+			strings.add(new String(base64.encode(bytes), UTF8));
+		}
 
-    return json;
-  }
+		final Gson gson = new Gson();
+		json.add(JSON_LIST_BYTES_KEY, gson.toJsonTree(strings));
+
+		return json;
+	}
 }

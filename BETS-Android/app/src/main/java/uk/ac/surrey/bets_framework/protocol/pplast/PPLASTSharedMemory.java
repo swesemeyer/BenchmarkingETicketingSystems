@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
@@ -310,18 +309,6 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
 
     return element.getImmutable();
   }
-
-  /**
-   * Convenience method to create a String from a byte array.
-   *
-   * @param bytes The bytes containing the string data.
-   * @return The new String.
-   */
-  public String stringFromBytes(byte[] bytes) {
-    final String string = new String(bytes, StandardCharsets.UTF_8);
-    return string;
-  }
-
 
 
   /**

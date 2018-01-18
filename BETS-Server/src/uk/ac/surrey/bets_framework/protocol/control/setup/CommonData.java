@@ -24,66 +24,59 @@ import uk.ac.surrey.bets_framework.protocol.data.Data;
  */
 public class CommonData extends Data {
 
-  /** JSON encoded public key key. */
-  private static final String JSON_ENCODED_PUBLIC_KEY = "encodedPublicKey";
+	/** JSON encoded public key key. */
+	private static final String JSON_ENCODED_PUBLIC_KEY = "encodedPublicKey";
 
-  /** Logback logger. */
-  private static final Logger LOG                     = LoggerFactory.getLogger(CommonData.class);
+	/** Logback logger. */
+	private static final Logger LOG = LoggerFactory.getLogger(CommonData.class);
 
-  /** The public key bytes used to encrypt messages. */
-  private byte[]              encodedPublicKey        = null;
+	/** The public key bytes used to encrypt messages. */
+	private byte[] encodedPublicKey = null;
 
-  /**
-   * Constructor which requires the mandatory fields.
-   *
-   * @param encodedPublicKey The public key bytes used to encrypt messages.
-   */
-  public CommonData(byte[] encodedPublicKey) {
-    super();
+	/**
+	 * Constructor which requires the mandatory fields.
+	 *
+	 * @param encodedPublicKey
+	 *            The public key bytes used to encrypt messages.
+	 */
+	public CommonData(byte[] encodedPublicKey) {
+		super();
 
-    this.encodedPublicKey = encodedPublicKey;
-  }
+		this.encodedPublicKey = encodedPublicKey;
+	}
 
-  /**
-   * Sets the fields from JSON data.
-   *
-   * @param json The source JSON data.
-   */
-  @Override
-  protected void fromJson(JsonObject json) {
-    try {
-      final Decoder base64 = Base64.getDecoder();
-      this.encodedPublicKey = base64.decode(json.get(JSON_ENCODED_PUBLIC_KEY).getAsString().getBytes(UTF8));
-    }
-    catch (final UnsupportedEncodingException e) {
-      LOG.error("could not decode Base 64 string", e);
-    }
-  }
+	/**
+	 * Sets the fields from JSON data.
+	 *
+	 * @param json
+	 *            The source JSON data.
+	 */
+	@Override
+	protected void fromJson(JsonObject json) {
+		final Decoder base64 = Base64.getDecoder();
+		this.encodedPublicKey = base64.decode(json.get(JSON_ENCODED_PUBLIC_KEY).getAsString().getBytes(UTF8));
 
-  /**
-   * @return The public key bytes used to encrypt messages.
-   */
-  public byte[] getEncodedPublicKey() {
-    return this.encodedPublicKey;
-  }
+	}
 
-  /**
-   * Creates a JSON object containing the data.
-   *
-   * @return The corresponding JSON object.
-   */
-  @Override
-  protected JsonObject toJson() {
-    final JsonObject json = super.toJson();
+	/**
+	 * @return The public key bytes used to encrypt messages.
+	 */
+	public byte[] getEncodedPublicKey() {
+		return this.encodedPublicKey;
+	}
 
-    try {
-      final Encoder base64 = Base64.getEncoder();
-      json.addProperty(JSON_ENCODED_PUBLIC_KEY, new String(base64.encode(this.encodedPublicKey), UTF8));
-    }
-    catch (final UnsupportedEncodingException e) {
-      LOG.error("could not encode Base 64 string", e);
-    }
+	/**
+	 * Creates a JSON object containing the data.
+	 *
+	 * @return The corresponding JSON object.
+	 */
+	@Override
+	protected JsonObject toJson() {
+		final JsonObject json = super.toJson();
 
-    return json;
-  }
+		final Encoder base64 = Base64.getEncoder();
+		json.addProperty(JSON_ENCODED_PUBLIC_KEY, new String(base64.encode(this.encodedPublicKey), UTF8));
+
+		return json;
+	}
 }
