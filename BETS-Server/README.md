@@ -62,7 +62,7 @@ You can add your own timing blocks in code with an associated name which will th
 
 ## E-Ticket Protocol ##
 
-The Guasch (2013) protocol has been implemented in a state machine class "ETicket"
+The Guasch (2013) protocol has been implemented in the state machine class "ETicket"
 
 The parameters available for the ETicket protocol are:
 
@@ -80,7 +80,7 @@ will run the ETicket protocol once, using each ticket twice, with log level 3 (i
 
 ## PPETS-FGP Protocol ##
 
-The Han et al (submitted) protocol has been implemented in a state machine class "PPETSFGP".
+The Han et al (draft) protocol has been implemented in the state machine class "PPETSFGP".
 
 The parameters available for the PPETSFGP protocol are:
 * (boolean) always pass verification tests, e.g. false (default).
@@ -96,8 +96,45 @@ will run the PPETSFGP protocol once, failing whenever a verification test fails,
 
 The pass verification option determines whether all the protocol verification steps continue event if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
+
+## PPETS-FGPLite Protocol ##
+
+There is also a "Lite" version of the PPETSFGP protocol which has been implemented in the state machine class "PPETSFGPLite".
+
+The parameters available for the PPETSFGPLite protocol are:
+* (boolean) always pass verification tests, e.g. false (default).
+* (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
+* (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
+* (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
+
+For example:
+
+-r PPETSFGPLite:1:2:false:512:1024 -l 4 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
+
+will run the PPETSFGPLite protocol once, failing whenever a verification test fails, running ticket validation twice, with elliptic curve pairing R bit length 512, Q bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
+
+The pass verification option determines whether all the protocol verification steps continue event if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
+
+## PPLast Protocol ##
+
+Han et al have proposed a Privacy Preserving Location Aware Smart Ticketing/Coupon (PPLAST) protocol which has been implemented in the state machine class "PPLAST".
+
+The parameters available for the PPLAST protocol are:
+* (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
+* (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
+* (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
+
+For example:
+
+-r PPLAST:1:320 -s log/serverPPLAST_1.csv -c log/clientPPLAST_1.csv -l 4
+
+will run the PPLAST protocol once with an elliptic curve whose elements are r=320 bit long, with log level 4 (debug), and only saving the server and client protocol timings to file.
+
+
 ## References ##
 
 Guasch, A.V. (2013). "Contributions to the Security and Privacy of Electronic Ticketing Systems". Ph.D Dissertation, Universitat Rovira i Virgili.
 
-Han, J., Chen, L., Schneider, S. & Treharne, H. (submitted). "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
+Han, J., Chen, L., Schneider, S., Treharne, H., Casey, M & Wesemeyer, S. (draft). "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
+
+Han, J., Chen, L., Schneider, S., Treharne, H., Casey, M & Wesemeyer, S. (draft). "Privacy-Preserving Multi-Use E-Coupon With Traceability".

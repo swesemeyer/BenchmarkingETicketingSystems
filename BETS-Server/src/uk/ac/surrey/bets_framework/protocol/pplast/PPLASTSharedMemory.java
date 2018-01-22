@@ -104,9 +104,6 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 	/** The bilinear group pairing parameters. */
 	public PropertiesParameters pairingParameters = null;
 
-	/** Always pass verification steps? */
-	public boolean passVerification = false;
-
 	/**
 	 * Number of r bits in type a elliptic curve - optionally set as a parameter.
 	 */
@@ -118,8 +115,6 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 	/** The name of the second hash algorithm */
 	public String Hash2 = "SHA-256";
 
-	/** The name of the third hash algorithm */
-	public String Hash3 = "BLAKE2B-256";
 
 	/** The public key of the CA */
 

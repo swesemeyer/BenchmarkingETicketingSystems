@@ -64,7 +64,6 @@ public class PPLAST extends NFCReaderStateMachine {
    *
    * Parameters are:
    * (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
-   * (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
    *
    * @param parameters The list of parameters.
    */
