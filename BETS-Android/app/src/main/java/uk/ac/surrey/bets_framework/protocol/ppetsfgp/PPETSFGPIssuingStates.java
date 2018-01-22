@@ -559,7 +559,7 @@ public class PPETSFGPIssuingStates {
       }
 
       //add all the user policies to the list
-      sendDataList.add(sharedMemory.stringToBytes(userData.memberOfPolicies));
+      sendDataList.add(sharedMemory.stringToBytes(userData.P_U));
 
       //add the validity period of the user's credentials as well
       sendDataList.add(sharedMemory.stringToBytes(userData.VP_U));
@@ -793,6 +793,9 @@ public class PPETSFGPIssuingStates {
         }
       }
 
+      //compute and store the user's pseudonym
+      //PS_U=xi^x_u g_1^d_u= Y_U g_1^d_u
+      userData.PS_U=userData.Y_U.add(sharedMemory.g_n[1].mul(d_u)).getImmutable();
 
       // Keep the  ticket Ticket_U = (d_u, d_dash, s_u, omega_u, T_U,
       // Time, Service, Priice, Valid_Period).

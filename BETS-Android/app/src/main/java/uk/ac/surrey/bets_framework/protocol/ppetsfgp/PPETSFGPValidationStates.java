@@ -175,7 +175,7 @@ public class PPETSFGPValidationStates {
       // s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash, d_BAR_u, psi_uNum
       // U also needs to send Y_S as the verifier won't have it otherwise
 
-      final ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(userData.memberOfPolicies),
+      final ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(userData.P_U),
               userData.price, userData.service, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(),
               D.toBytes(), Ps_U.toBytes(), E.toBytes(), F.toBytes(), J.toBytes(), J_dash.toBytes(), R.toBytes(), c,
               s_BAR_u.toByteArray(), x_BAR_u.toByteArray(), s_hat_u.toByteArray(), pi_BAR.toByteArray(),

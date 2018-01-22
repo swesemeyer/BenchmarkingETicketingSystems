@@ -129,72 +129,98 @@ public class PPETSFGPLiteValidationStates {
      */
     private boolean verifyTicketProof(byte[] data) {
       final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
-      final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
-      final Crypto crypto = Crypto.getInstance();
+		final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
+		final Crypto crypto = Crypto.getInstance();
 
-      // Decode the received data.
-      final ListData listData = ListData.fromBytes(data);
+		// Decode the received data.
+		final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() != 12) {
-        LOG.error("wrong number of data elements: " + listData.getList().size());
-        return false;
-      }
+		if (listData.getList().size() != 15) {
+			LOG.error("wrong number of data elements: " + listData.getList().size());
+			return false;
+		}
+		// Receive Trans_T = (PI^3_U, s_u, psi_u, omega_u, T_U, P_U, Price, Service, VP_T, PS_U) where
+		// PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_S (as the verifier does not have
+		// Y_S)
 
-      int index = 0;
-      final Element T_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final byte[] service = listData.getList().get(index++);
-      final byte[] price = listData.getList().get(index++);
-      final String VP_T = sharedMemory.stringFromBytes(listData.getList().get(index++));
-      final Element M_3_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final Element Y = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final BigInteger omega_u = new BigInteger(listData.getList().get(index++));
-      final BigInteger d_dash = new BigInteger(listData.getList().get(index++));
-      final byte[] c = listData.getList().get(index++);
-      final BigInteger pi_BAR = new BigInteger(listData.getList().get(index++));
-      final BigInteger lambda_BAR = new BigInteger(listData.getList().get(index++));
+		int index = 0;
+		final Element M_3_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final Element Y = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final byte[] c = listData.getList().get(index++);
+		//turn the hash into a number
+		final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
+		final BigInteger pi_BAR = new BigInteger(listData.getList().get(index++));
+		final BigInteger lambda_BAR = new BigInteger(listData.getList().get(index++));
+		final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final BigInteger s_u = new BigInteger(listData.getList().get(index++));
+		final BigInteger psi_uNum = new BigInteger(listData.getList().get(index++));
+		final BigInteger omega_u = new BigInteger(listData.getList().get(index++));
+		final Element T_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final String P_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
+		final byte[] price = listData.getList().get(index++);
+		final byte[] service = listData.getList().get(index++);
+		final String VP_T = sharedMemory.stringFromBytes(listData.getList().get(index++));
+		final Element PS_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 
-      // Verify c.
-      final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
-      final List<byte[]> cVerifyList = new ArrayList<>();
-      cVerifyList.addAll(Arrays.asList(M_3_U.toBytes(), Y.toBytes()));
+		//Verify psi_uNum
+		
+		// Compute check_psi_u = H(P_U || Price || Service || Ticket Valid_Period)
+		final ListData check_psi_uData = new ListData(
+				Arrays.asList(sharedMemory.stringToBytes(P_U), price,
+						service, sharedMemory.stringToBytes(VP_T)));
+		final byte[] check_psi_u = crypto.getHash(check_psi_uData.toBytes());
+		final BigInteger check_psi_uNum = new BigInteger(1, check_psi_u).mod(sharedMemory.p);
+		
+		if (!psi_uNum.equals(check_psi_uNum)) {
+			LOG.error("failed to verify psi_uNum");
+			if (!sharedMemory.passVerification) {
+				return false;
+			}
+		}
+		LOG.debug("SUCCESS: verify psi_uNum");
+		
+		//Verify e(T_U,Y_S rho^omega_u)=?e(g_0, rho) e(PS_U, rho) e(g_2,rho)^s_u e(g_3,rho)^psi_u
+		
+		final Element LHS=sharedMemory.pairing.pairing(T_U, Y_S.add(sharedMemory.rho.mul(omega_u))).getImmutable();
+		final Element RHS1=sharedMemory.pairing.pairing(sharedMemory.g_n[0],sharedMemory.rho).getImmutable();
+		final Element RHS2=sharedMemory.pairing.pairing(PS_U,sharedMemory.rho).getImmutable();
+		final Element RHS3=sharedMemory.pairing.pairing(sharedMemory.g_n[2],sharedMemory.rho).pow(s_u).getImmutable();
+		final Element RHS4=sharedMemory.pairing.pairing(sharedMemory.g_n[3],sharedMemory.rho).pow(psi_uNum).getImmutable();
+		final Element RHS=RHS1.mul(RHS2).mul(RHS3).mul(RHS4).getImmutable();
 
-      final Element cCheck = sharedMemory.xi.mul(pi_BAR).add(sharedMemory.g_n[1].mul(lambda_BAR)).add(Y.mul(cNum)).getImmutable();
-      cVerifyList.add(cCheck.toBytes());
+		if (!LHS.equals(RHS)) {
+			LOG.error("failed to verify pairing check");
+			if (!sharedMemory.passVerification) {
+				return false;
+			}
+		}
+		LOG.debug("SUCCESS: verify pairing check");
 
-      final ListData cVerifyData = new ListData(cVerifyList);
-      final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
+		// Verify c.
+		
+		final List<byte[]> cVerifyList = new ArrayList<>();
+		cVerifyList.addAll(Arrays.asList(M_3_U.toBytes(), Y.toBytes()));
 
-      if (!Arrays.equals(c, cVerify)) {
-        LOG.error("failed to verify PI_3_U: c");
-        if (!sharedMemory.passVerification) {
-          return false;
-        }
-      }
-      LOG.debug("SUCCESS: verify PI_3_U: c" );
+		final Element cCheck = sharedMemory.xi.mul(pi_BAR).add(sharedMemory.g_n[1].mul(lambda_BAR)).add(Y.mul(cNum))
+				.getImmutable();
+		cVerifyList.add(cCheck.toBytes());
 
-      // Compute s_u = H(Y || Service || Price || Valid_Period)
-      final ListData s_uData = new ListData(Arrays.asList(Y.toBytes(), service, price, VP_T.getBytes()));
-      final byte[] s_u = crypto.getHash(s_uData.toBytes());
-      final BigInteger s_uNum = new BigInteger(1, s_u);
+		final ListData cVerifyData = new ListData(cVerifyList);
+		final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
 
-      // Check that e(T_U, Y_S * rho^omega_u) = e(g_0 * Y * g_1^d_dash * g_2^s_u, rho)
-      final Element left = sharedMemory.pairing.pairing(T_U, Y_S.add(sharedMemory.rho.mul(omega_u))).getImmutable();
-      final Element right = sharedMemory.pairing.pairing(
-          sharedMemory.g_n[0].add(Y).add(sharedMemory.g_n[1].mul(d_dash)).add(sharedMemory.g_n[2].mul(s_uNum)), sharedMemory.rho);
+		if (!Arrays.equals(c, cVerify)) {
+			LOG.error("failed to verify PI_3_U: c");
+			if (!sharedMemory.passVerification) {
+				return false;
+			}
+		}
+		LOG.debug("SUCCESS: verify PI_3_U: c");
 
-      if (!left.isEqual(right)) {
-        LOG.error("failed to verify e(T_U, Y_S * rho^omega_u)");
-        if (!sharedMemory.passVerification) {
-          return false;
-        }
-      }
-      LOG.debug("SUCCESS: verified e(T_U, Y_S * rho^omega_u)" );
-      // Store Y, saving any previous value.
-      validatorData.Y_last = validatorData.Y;
-      validatorData.Y = Y;
+		// Store Y, saving any previous value.
+		validatorData.Y_last = validatorData.Y;
+		validatorData.Y = PS_U;
 
-      return true;
+		return true;
     }
   }
 

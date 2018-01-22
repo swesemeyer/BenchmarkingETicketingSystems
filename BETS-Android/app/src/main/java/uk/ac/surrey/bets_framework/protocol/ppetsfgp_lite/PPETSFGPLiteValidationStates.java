@@ -70,12 +70,15 @@ public class PPETSFGPLiteValidationStates {
       final BigInteger pi_BAR = pi.subtract(cNum.multiply(userData.x_u)).mod(sharedMemory.p);
       final BigInteger lambda_BAR = lambda.subtract(cNum.multiply(userData.d)).mod(sharedMemory.p);
 
-      // Sends Ticket_U = (P_U, Service, Price, VP_T), M_3_U, Y, Y_S, omega_u, c, pi_BAR,
-      // lambda_BAR
-      final ListData sendData = new ListData(Arrays.asList(userData.T_U.toBytes(), userData.service, userData
-          .price, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(), userData.Y.toBytes(),
-              userData.Y_S.toBytes(), userData.omega_u.toByteArray(), userData.d_dash.toByteArray(),
-              c, pi_BAR.toByteArray(), lambda_BAR.toByteArray()));
+      // Sends Trans_T = (PI^3_U, s_u, psi_u, omega_u. T_U, P_U, Price, Service, VP_T, PS_U) where
+      // PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_S (as the verifier does not have
+      // Y_S)
+
+      final ListData sendData = new ListData(Arrays.asList(M_3_U.toBytes(), userData.Y.toBytes(), c,
+              pi_BAR.toByteArray(), lambda_BAR.toByteArray(), userData.Y_S.toBytes(), userData.s_u.toByteArray(),
+              userData.psi_uNum.toByteArray(), userData.omega_u.toByteArray(), userData.T_U.toBytes(),
+              sharedMemory.stringToBytes(userData.P_U), userData.price,
+              userData.service, sharedMemory.stringToBytes(userData.VP_T), userData.PS_U.toBytes()));
       return sendData.toBytes();
     }
 

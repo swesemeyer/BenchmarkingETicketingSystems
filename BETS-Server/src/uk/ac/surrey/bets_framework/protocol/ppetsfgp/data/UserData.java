@@ -27,7 +27,7 @@ public class UserData implements PPETSFGPSharedMemory.ActorData {
 	 * String capturing which range and set policies the user is a member of TODO:
 	 * Need to store this differently. Will do for the prototype
 	 */
-	public String memberOfPolicies = "R1-R2-S1-S2-S3";
+	public String P_U = "R1-R2-S1-S2-S3";
 
 	/** The identity of U as an arbitrary array of bytes. */
 	public byte[] ID_U = new byte[] { 0x01, 0x01, 0x02, 0x03 };
@@ -85,6 +85,9 @@ public class UserData implements PPETSFGPSharedMemory.ActorData {
 
 	/** User pseudonym. */
 	public Element Y_U = null;
+	
+	/** User pseudonym for a given ticket */
+	public Element PS_U = null;
 
 	/** some generic valid period for the user credentials */
 	public String VP_U = "six months";
