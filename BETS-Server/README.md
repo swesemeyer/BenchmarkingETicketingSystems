@@ -120,9 +120,8 @@ The pass verification option determines whether all the protocol verification st
 Han et al have proposed a Privacy Preserving Location Aware Smart Ticketing/Coupon (PPLAST) protocol which has been implemented in the state machine class "PPLAST".
 
 The parameters available for the PPLAST protocol are:
-* (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
 * (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
-* (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
+
 
 For example:
 
