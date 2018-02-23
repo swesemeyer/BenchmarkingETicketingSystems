@@ -132,6 +132,14 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 
 	public CurveElement<?, ?> Y_S = null;
 
+	/** The public keys of the Verifiers **/
+	
+	public Map<String, CurveElement<?,?>> Y_V=new HashMap<>();
+	
+	/** flag to indicate whether to validate verifiers */
+	
+	boolean validateVerifiers = false; //default to false as it is very time-consuming! 
+
 	/**
 	 * Deserialises the shared memory from a JSON string.
 	 *
@@ -199,6 +207,8 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		this.actorData.put(Actor.SELLER, new SellerData(Actor.SELLER, this.p, this.xi, this.g_frak));
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
+			//save the public key in a hashmap
+			this.Y_V.put(Actor.VERIFIERS[i],(CurveElement<?,?>) this.getPublicKey(Actor.VERIFIERS[i]));
 		}
 		this.actorData.put(Actor.POLICE, new PoliceData(Actor.POLICE, this.p, this.xi));
 

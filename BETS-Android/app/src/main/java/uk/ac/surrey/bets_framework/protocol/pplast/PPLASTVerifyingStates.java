@@ -66,7 +66,7 @@ public class PPLASTVerifyingStates {
       }
       // found the verifier - now proceed with ZKP PI^2_U.
       // get some constants from shared memory...
-
+      LOG.debug("generating ZK_PI_2_U");
       final BigInteger p = sharedMemory.p;
       final Element xi = sharedMemory.xi.getImmutable();
       final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
@@ -91,6 +91,7 @@ public class PPLASTVerifyingStates {
 
       final BigInteger x_hat_U = (x_dash_U.subtract(c_Vnum.multiply(userData.x_U))).mod(p);
       final BigInteger z_hat_V = (z_dash_V.subtract(c_Vnum.multiply(z_Vnum))).mod(p);
+      LOG.debug("finished generating ZK_PI_2_U");
 
       final ListData sendData = new ListData(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
               userTicket.Q_V[index].toBytes(), Q_dash_V.toBytes(), c_Vhash, x_hat_U.toByteArray(), z_hat_V.toByteArray(),

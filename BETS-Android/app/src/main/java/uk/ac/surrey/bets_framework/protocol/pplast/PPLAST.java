@@ -67,6 +67,11 @@ public class PPLAST extends NFCAndroidStateMachine {
       }
 
       LOG.debug("bilinear group parameters r = " + this.sharedMemory.rBits);
+
+      if (parameters.size() > 1) {
+        this.sharedMemory.validateVerifiers = (1 == Integer.parseInt(parameters.get(1)));
+      }
+      LOG.debug("validateVerifiers = " + this.sharedMemory.validateVerifiers);
     } catch (final Exception e) {
       LOG.error("could not set parameters", e);
     }

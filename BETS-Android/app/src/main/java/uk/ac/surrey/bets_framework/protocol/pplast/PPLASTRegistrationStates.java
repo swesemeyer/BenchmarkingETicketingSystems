@@ -103,23 +103,22 @@ public class PPLASTRegistrationStates {
       final BigInteger e_u = new BigInteger(listData.getList().get(2));
 
       // verify the credentials
-      //TODO: Need to send the CA public key across during set-up. Ignore check for now.
+      // get the public key of the CA
+      final Element Y_A = sharedMemory.Y_A;
 
-      if (1==0) {
+      LOG.debug("About to verify user credentials - computing lhs");
+      final Element lhs = sharedMemory.pairing.pairing(sigma_U, Y_A.add(sharedMemory.g_frak.mul
+              (e_u))).getImmutable();
+      LOG.debug("still verifying user credentials - computing rhs");
+      final Element rhs = sharedMemory.pairing
+              .pairing(sharedMemory.g.add(sharedMemory.h.mul(r_u)).add(userData.Y_U),
+                      sharedMemory.g_frak).getImmutable();
 
-        // get the public key of the CA
-        final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
-
-        final Element lhs = sharedMemory.pairing.pairing(sigma_U, Y_A.add(sharedMemory.g_frak.mul
-                (e_u))).getImmutable();
-        final Element rhs = sharedMemory.pairing
-                .pairing(sharedMemory.g.add(sharedMemory.h.mul(r_u)).add(userData.Y_U),
-                        sharedMemory.g_frak).getImmutable();
-
-        if (!lhs.isEqual(rhs)) {
-          return false;
-        }
+      if (!lhs.isEqual(rhs)) {
+        LOG.error("Failed to verify user credentials");
+        return false;
       }
+      LOG.debug("Successfully verified user credentials");
       userData.e_u = e_u;
       userData.r_u = r_u;
       userData.sigma_U = sigma_U;

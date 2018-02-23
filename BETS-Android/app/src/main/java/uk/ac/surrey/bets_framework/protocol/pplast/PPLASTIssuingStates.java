@@ -50,6 +50,7 @@ public class PPLASTIssuingStates {
       final Crypto crypto = Crypto.getInstance();
 
       // get some elements from sharedMemory
+      LOG.debug("computing ZK_PI_1_U");
       final BigInteger p = sharedMemory.p;
       final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE).getImmutable();
       final Element xi = sharedMemory.xi.getImmutable();
@@ -94,6 +95,7 @@ public class PPLASTIssuingStates {
       final Element[] Q_dash_V = new Element[numberOfVerifiers];
 
       for (int i = 0; i < numberOfVerifiers; i++) {
+        LOG.debug("adding verifier: "+i);
         final ListData zvData = new ListData(Arrays.asList(z_u.toByteArray(), userData
                 .VerifierList[i].getBytes()));
         z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
@@ -103,7 +105,7 @@ public class PPLASTIssuingStates {
         Q_V[i] = xi.mul(z_Vnum).getImmutable();
         Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
       }
-
+      LOG.debug("finished computing ZK_PI_1_U");
       final List<byte[]> c_DataList = new ArrayList<>();
 
 
@@ -175,6 +177,7 @@ public class PPLASTIssuingStates {
       if (message.getType() == Message.Type.DATA) {
         // Send back the user identity data.
         if (message.getData() == null) {
+          LOG.debug("about to generate a ticket request");
           byte[] data = this.generateTicketRequest();
 
           if (data != null) {
@@ -217,12 +220,10 @@ public class PPLASTIssuingStates {
       final TicketDetails ticketDetails = new TicketDetails(numOfVerifiers);
       indx = ticketDetails.populateTicketDetails(sharedMemory, listData, indx);
 
-      // verify ticket details
-      //TODO: make this a flag:
-
-      if (1 == 0) {
+      //only check the verifiers if we really want to...
+      if (sharedMemory.validateVerifiers) {
         for (int i = 0; i < numOfVerifiers; i++) {
-          // final Element Y_V = sharedMemory.getPublicKey(ticketDetails.VerifierList[i]);
+          //Element Y_V = sharedMemory.Y_V.get(ticketDetails.VerifierList[i]);
           final byte[] verifyD_V = crypto.getHash(
                   (new ListData(Arrays.asList(C_U.toBytes(), ticketDetails.VerifierList[i].getBytes()))).toBytes(), sharedMemory.Hash2);
           if (!Arrays.equals(ticketDetails.D_V[i], verifyD_V)) {
@@ -246,7 +247,7 @@ public class PPLASTIssuingStates {
         LOG.debug("Passed s_V verification!");
 
         // some elements from sharedMemory
-        final Element Y_bar_S = sharedMemory.getPublicKey(Actor.SELLER).getImmutable();
+        final Element Y_bar_S = sharedMemory.Y_S;
         final Element g = sharedMemory.g.getImmutable();
         final Element g_frak = sharedMemory.g_frak.getImmutable();
         final Element h = sharedMemory.h.getImmutable();

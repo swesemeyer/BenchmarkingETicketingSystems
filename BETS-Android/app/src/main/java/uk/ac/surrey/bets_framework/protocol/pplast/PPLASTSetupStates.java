@@ -60,14 +60,15 @@ public class PPLASTSetupStates {
     private boolean processSetup(byte[] data) {
       // Use the data to re-create the shared memory so that we have all of the public parameters.
       // Decode the shared memory.
+      LOG.debug("deserialising the shared memory");
       PPLASTSharedMemory sharedMemory = PPLASTSharedMemory.fromJson(new String(data, Data.UTF8));
 
+      LOG.debug("initialising the Android client");
       // Initialise the shared memory which has not been copied in.
       sharedMemory.clearAndroid();
 
+      LOG.debug("storing the shared memory");
       this.setSharedMemory(sharedMemory);
-      LOG.debug("deserialised the shared memory");
-
 
       return true;
     }
