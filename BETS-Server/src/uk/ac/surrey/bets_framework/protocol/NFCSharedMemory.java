@@ -20,7 +20,7 @@ public class NFCSharedMemory implements SharedMemory {
   public static final byte[] AID             = new byte[] { (byte) 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
 
   /** The maximum size of a response before it needs to be chunked. */
-  public static final int    APDU_CHUNK_SIZE = 32;
+  public static final int    APDU_CHUNK_SIZE = 50;
   
   
   /**

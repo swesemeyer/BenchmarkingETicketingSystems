@@ -16,10 +16,10 @@ import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
  *
  * @author Steve Wesemeyer
  */
-public class SellerData implements PPLASTSharedMemory.ActorData {
+public class IssuerData implements PPLASTSharedMemory.ActorData {
 
-  /** The identity of S. */
-  public String              ID_S                = null;
+  /** The identity of ISSUER */
+  public String              ID_I                = null;
   
   /** The text included with a ticket */
   public static final String TICKET_TEXT="Some Text";
@@ -36,59 +36,59 @@ public class SellerData implements PPLASTSharedMemory.ActorData {
   /** The fixed ticket validity period as an arbitrary array of bytes. */
   public static final byte[] TICKET_VALID_PERIOD = new byte[] { 0x13 };
 
-  /** Seller credentials: e_S */
-  public BigInteger          e_S                 = null;
+  /** Seller credentials: e_I */
+  public BigInteger          e_I                 = null;
 
-  /** Seller credentials: r_S */
-  public BigInteger          r_S                 = null;
+  /** Seller credentials: r_I */
+  public BigInteger          r_I                 = null;
 
-  /** Seller credentials: sigma_S. */
-  public Element             sigma_S             = null;
+  /** Seller credentials: sigma_I. */
+  public Element             sigma_I             = null;
 
   /** Random x_s. */
-  public BigInteger          x_S                 = null;
+  public BigInteger          x_I                 = null;
 
   /** Seller secret key. */
-  public Element             Y_S                 = null;
+  public Element             Y_I                 = null;
 
   /** Seller public key. */
-  public Element             Y_bar_S            = null;
+  public Element             Y_bar_I            = null;
 
-  public SellerData() {
+  public IssuerData() {
     super();
   }
 
   /**
-   * constructor of SellerData
+   * constructor of IssuerData
    * 
    * @param p a prime number representing the size of the G1
    * @param xi a generator of G1
    * @param g_frak a generator of G2
    */
-  public SellerData(String name, BigInteger p, Element xi, Element g_frak) {
+  public IssuerData(String name, BigInteger p, Element xi, Element g_frak) {
     super();
 
-    this.ID_S = name;
+    this.ID_I = name;
     // Generate the required random numbers.
     final Crypto crypto = Crypto.getInstance();
 
     // create the seller's master key
-    this.x_S = crypto.secureRandom(p);
+    this.x_I = crypto.secureRandom(p);
 
     // compute the secret key
-    this.Y_S = xi.mul(this.x_S).getImmutable();
+    this.Y_I = xi.mul(this.x_I).getImmutable();
 
     // compute the public key
-    this.Y_bar_S = g_frak.mul(this.x_S).getImmutable();
+    this.Y_bar_I = g_frak.mul(this.x_I).getImmutable();
 
   }
 
   @Override
   public Element getPublicKey() {
-    return this.Y_bar_S;
+    return this.Y_bar_I;
   }
   
   public Element getTraceKey() {
-    return this.Y_S;
+    return this.Y_I;
   }
 }

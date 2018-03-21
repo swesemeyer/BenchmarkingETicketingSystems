@@ -26,7 +26,7 @@ public class VerifierData implements PPLASTSharedMemory.ActorData {
   /** Verifier credentials: r_V */
   public BigInteger r_V     = null;
 
-  /** Verifier credentials: sigma_V. */
+  /** Verifier credentials: Z_V. */
   public Element    sigma_V = null;
 
   /** the private key of the verifier */

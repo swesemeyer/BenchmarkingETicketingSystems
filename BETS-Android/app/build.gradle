@@ -15,8 +15,8 @@ apply plugin: 'com.android.application'
 android {
   compileSdkVersion 25
   buildToolsVersion '26.0.2'
-  def verCode=20087
-  def verName="2.00.87"
+  def verCode=20093
+  def verName="2.00.93"
   defaultConfig {
     applicationId "uk.ac.surrey.bets_framework.dice"
     minSdkVersion 19

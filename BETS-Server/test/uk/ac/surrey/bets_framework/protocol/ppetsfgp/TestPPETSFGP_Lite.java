@@ -266,7 +266,7 @@ public class TestPPETSFGP_Lite {
 			return null;
 		}
 
-		// ID_S not used.
+		// ID_I not used.
 		final Element M_1_S = sharedMemory.curveElementFromBytes(listData.getList().get(1));
 		final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(2));
 		final byte[] c = listData.getList().get(3);
@@ -369,10 +369,10 @@ public class TestPPETSFGP_Lite {
 
 		final CurveElement<?, ?> rho = sharedMemory.rho;
 
-		// Calculate Y_S. Note that x_s has already been obtained.
+		// Calculate Y_I. Note that x_s has already been obtained.
 		sellerData.Y_S = rho.mul(sellerData.x_s).getImmutable();
 
-		// Compute proof PI_1_S = (c, s, M_1_S, Y_S):
+		// Compute proof PI_1_S = (c, s, M_1_S, Y_I):
 		final BigInteger t_s = crypto.secureRandom(sharedMemory.p);
 		final Element M_1_S = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
 
@@ -383,7 +383,7 @@ public class TestPPETSFGP_Lite {
 
 		final BigInteger s = (t_s.subtract(cNum.multiply(sellerData.x_s))).mod(sharedMemory.p);
 
-		// Send ID_S, PI_1_S (which includes Y_S) and VP_S
+		// Send ID_I, PI_1_S (which includes Y_I) and VP_S
 		final ListData sendData = new ListData(Arrays.asList(SellerData.ID_S, M_1_S.toBytes(), sellerData.Y_S.toBytes(),
 				c, s.toByteArray(), sharedMemory.stringToBytes(sellerData.VP_S)));
 
@@ -421,7 +421,7 @@ public class TestPPETSFGP_Lite {
 				.add(sharedMemory.g_n[2].mul(s_u)).add(sharedMemory.g_n[3].mul(psi_uNum)))
 						.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
-		/// Send T_U, d_dash, s_u, omega_u, psi_uNum, Y_S, Service, Price, Valid_Period.
+		/// Send T_U, d_dash, s_u, omega_u, psi_uNum, Y_I, Service, Price, Valid_Period.
 		final ListData sendData = new ListData(Arrays.asList(T_U.toBytes(), d_dash.toByteArray(), s_u.toByteArray(),
 				omega_u.toByteArray(), psi_uNum.toByteArray(), sellerData.Y_S.toBytes(), SellerData.TICKET_SERVICE,
 				SellerData.TICKET_PRICE, sharedMemory.stringToBytes(sellerData.VP_T)));
@@ -465,8 +465,8 @@ public class TestPPETSFGP_Lite {
 		final BigInteger lambda_BAR = lambda.subtract(cNum.multiply(userData.d)).mod(sharedMemory.p);
 
 		// Sends Trans_T = (PI^3_U, s_u, psi_u, omega_u. T_U, P_U, Price, Service, VP_T, PS_U) where
-		// PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_S (as the verifier does not have
-		// Y_S)
+		// PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_I (as the verifier does not have
+		// Y_I)
 
 		final ListData sendData = new ListData(Arrays.asList(M_3_U.toBytes(), userData.Y.toBytes(), c,
 				pi_BAR.toByteArray(), lambda_BAR.toByteArray(), userData.Y_S.toBytes(), userData.s_u.toByteArray(),
@@ -1237,7 +1237,7 @@ public class TestPPETSFGP_Lite {
 		final Element delta_S = sharedMemory.curveElementFromBytes(listData.getList().get(2));
 		sellerData.VP_S = sharedMemory.stringFromBytes(listData.getList().get(3));
 
-		// Verify e(delta_S, g_bar g^c_s) = e(g_0, g) e(Y_S, g) e(g, g_frac)^r_s
+		// Verify e(delta_S, g_bar g^c_s) = e(g_0, g) e(Y_I, g) e(g, g_frac)^r_s
 		final Element left = sharedMemory.pairing.pairing(delta_S, sharedMemory.g_bar.add(sharedMemory.g.mul(c_s)));
 
 		final byte[] vpsHash = crypto.getHash(sellerData.VP_S.getBytes());
@@ -1396,8 +1396,8 @@ public class TestPPETSFGP_Lite {
 			return false;
 		}
 		// Receive Trans_T = (PI^3_U, s_u, psi_u, omega_u, T_U, P_U, Price, Service, VP_T, PS_U) where
-		// PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_S (as the verifier does not have
-		// Y_S)
+		// PI^3_U=M_3_U, Y, c, pi_BAR, lambda_BAR, Y_I (as the verifier does not have
+		// Y_I)
 
 		int index = 0;
 		final Element M_3_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
@@ -1435,7 +1435,7 @@ public class TestPPETSFGP_Lite {
 		}
 		LOG.debug("SUCCESS: verify psi_uNum");
 		
-		//Verify e(T_U,Y_S rho^omega_u)=?e(g_0, rho) e(PS_U, rho) e(g_2,rho)^s_u e(g_3,rho)^psi_u
+		//Verify e(T_U,Y_I rho^omega_u)=?e(g_0, rho) e(PS_U, rho) e(g_2,rho)^s_u e(g_3,rho)^psi_u
 		
 		final Element LHS=sharedMemory.pairing.pairing(T_U, Y_S.add(sharedMemory.rho.mul(omega_u))).getImmutable();
 		final Element RHS1=sharedMemory.pairing.pairing(sharedMemory.g_n[0],sharedMemory.rho).getImmutable();
@@ -1507,7 +1507,7 @@ public class TestPPETSFGP_Lite {
 		// Compute d_u = d + d_dash
 		final BigInteger d_u = userData.d.add(d_dash).mod(sharedMemory.p);
 
-		// Check that e(T_U, Y_S * rho^omega_u) =? e(g_0,rho) * e(Y,rho) *
+		// Check that e(T_U, Y_I * rho^omega_u) =? e(g_0,rho) * e(Y,rho) *
 		// e(g_1,rho)^d_u * e(g_2,rho)^s_u
 		final Element left = sharedMemory.pairing.pairing(T_U, Y_S.add(sharedMemory.rho.mul(omega_u))).getImmutable();
 
@@ -1521,7 +1521,7 @@ public class TestPPETSFGP_Lite {
 				.getImmutable();
 
 		if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4).mul(right5))) {
-			LOG.error("failed to verify e(T_U, Y_S * rho^omega_u)");
+			LOG.error("failed to verify e(T_U, Y_I * rho^omega_u)");
 			if (!sharedMemory.passVerification) {
 				return false;
 			}

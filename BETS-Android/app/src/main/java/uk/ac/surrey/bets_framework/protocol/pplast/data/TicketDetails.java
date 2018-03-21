@@ -33,11 +33,11 @@ public class TicketDetails {
   public Element[]    F_V            = null;
   public Element[]    K_V            = null;
   public byte[][]     s_V            = null;
-  public Element[]    sigma_V        = null;
-  public byte[]       s_P            = null;
-  public BigInteger   w_P            = null;
-  public BigInteger   e_P            = null;
-  public Element      sigma_P        = null;
+  public Element[]    Z_V        	 = null;
+  public byte[]       s_CV            = null;
+  public BigInteger   w_CV            = null;
+  public BigInteger   e_CV            = null;
+  public Element      Z_CV        = null;
   public int          numOfVerifiers = -1;
   public String       ticketText     = null;
 
@@ -56,7 +56,7 @@ public class TicketDetails {
     this.F_V = new Element[numOfVerifiers];
     this.K_V = new Element[numOfVerifiers];
     this.s_V = new byte[numOfVerifiers][];
-    this.sigma_V = new Element[numOfVerifiers];
+    this.Z_V = new Element[numOfVerifiers];
 
   }
 
@@ -72,12 +72,12 @@ public class TicketDetails {
       sendDataList.add(this.s_V[i]);
       sendDataList.add(this.w_v[i].toByteArray());
       sendDataList.add(this.e_v[i].toByteArray());
-      sendDataList.add(this.sigma_V[i].toBytes());
+      sendDataList.add(this.Z_V[i].toBytes());
     }
-    sendDataList.add(this.s_P);
-    sendDataList.add(this.w_P.toByteArray());
-    sendDataList.add(this.e_P.toByteArray());
-    sendDataList.add(this.sigma_P.toBytes());
+    sendDataList.add(this.s_CV);
+    sendDataList.add(this.w_CV.toByteArray());
+    sendDataList.add(this.e_CV.toByteArray());
+    sendDataList.add(this.Z_CV.toBytes());
     sendDataList.add(this.ticketText.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -94,12 +94,12 @@ public class TicketDetails {
       this.s_V[i] = listData.getList().get(indx++);
       this.w_v[i] = new BigInteger(1, listData.getList().get(indx++));
       this.e_v[i] = new BigInteger(1, listData.getList().get(indx++));
-      this.sigma_V[i] = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
+      this.Z_V[i] = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
     }
-    this.s_P = listData.getList().get(indx++);
-    this.w_P = new BigInteger(1, listData.getList().get(indx++));
-    this.e_P = new BigInteger(1, listData.getList().get(indx++));
-    this.sigma_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
+    this.s_CV = listData.getList().get(indx++);
+    this.w_CV = new BigInteger(1, listData.getList().get(indx++));
+    this.e_CV = new BigInteger(1, listData.getList().get(indx++));
+    this.Z_CV = sharedMemory.curveG1ElementFromBytes(listData.getList().get(indx++));
     this.ticketText=new String (listData.getList().get(indx++),StandardCharsets.UTF_8);
     return indx;
   }

@@ -16,7 +16,7 @@ import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
@@ -65,7 +65,7 @@ public class PPLASTIssuingStates {
 
     private byte[] generateTicketDetails(byte[] data) {
       final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-      final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+      final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
       final Crypto crypto = Crypto.getInstance();
 
       // Decode the received data.
@@ -186,7 +186,7 @@ public class PPLASTIssuingStates {
 
       LOG.debug("passed W_2 verification!");
 
-      final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
+      final Element Y_P = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER);
 
       for (int i = 0; i < numberOfVerifiers; i++) {
         final Element P_dash_Vlhs = (xi.mul(x_hat_u)).add(Y_P.mul(z_hat_v[i])).add(ticketDetails.P_V[i].mul(c_hashNum))
@@ -215,9 +215,12 @@ public class PPLASTIssuingStates {
       LOG.debug("C_U = " + C_U);
 
       BigIntEuclidean gcd = null;
+      boolean hasCV=false;
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-
+    	if (ticketDetails.VerifierList[i].equalsIgnoreCase(Actor.CENTRAL_VERIFIER)) {
+    		hasCV=true;
+    	}
         ticketDetails.d_v[i] = crypto.secureRandom(p);
         ticketDetails.E_V[i] = xi.mul(ticketDetails.d_v[i]).getImmutable();
 
@@ -230,15 +233,20 @@ public class PPLASTIssuingStates {
         ticketDetails.K_V[i] = Y_V.add(Y_P.mul(ticketDetails.d_v[i])).getImmutable();
         final ListData s_Vdata = new ListData(
             Arrays.asList(ticketDetails.P_V[i].toBytes(), ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V[i].toBytes(),
-                ticketDetails.F_V[i].toBytes(), ticketDetails.K_V[i].toBytes(), SellerData.TICKET_TEXT.getBytes()));
+                ticketDetails.F_V[i].toBytes(), ticketDetails.K_V[i].toBytes(), IssuerData.TICKET_TEXT.getBytes()));
         ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
         final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-        gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_v[i]).mod(p), p);
+        gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
         final BigInteger xs_plus_ev_inverse = gcd.x.mod(p);
-        ticketDetails.sigma_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
+        ticketDetails.Z_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
             .getImmutable();
-        ticketDetails.ticketText = SellerData.TICKET_TEXT;
+        ticketDetails.ticketText = IssuerData.TICKET_TEXT;
 
+      }
+      
+      if (!hasCV) {
+          LOG.debug("Central Verifier was not included: verification failed!");
+          return null;
       }
 /** remove dummy verifier for now 
 
@@ -256,7 +264,7 @@ public class PPLASTIssuingStates {
         // TODO: Discuss with Jinguang
         final BigInteger z_Vdu = crypto.secureRandom(p);
         // final Element P_du = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
-        final Element P_du = sharedMemory.getPublicKey(Actor.USER).add(Y_P.mul(z_Vdu));
+        final Element P_du = sharedMemory.getPublicKey(Actor.USER).add(Y_CV.mul(z_Vdu));
         final Element Q_du = xi.mul(z_Vdu).getImmutable();
         final Element F_du = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
         // compute the equivalent values as above but for this dummy verifier
@@ -265,9 +273,9 @@ public class PPLASTIssuingStates {
         final ListData hashDataList = new ListData(Arrays.asList(ticketDetails.VerifierList[numberOfVerifiers].getBytes()));
         final byte[] hashData = crypto.getHash(hashDataList.toBytes(), sharedMemory.Hash3);
         final BigInteger hashNum = (new BigInteger(1, hashData)).mod(p);
-        final Element K_du = Y_P.mul(d_dash).add(sharedMemory.pairing.getG1().newOneElement().mul(hashNum)).getImmutable();
+        final Element K_du = Y_CV.mul(d_dash).add(sharedMemory.pairing.getG1().newOneElement().mul(hashNum)).getImmutable();
         final ListData s_dashList = new ListData(Arrays.asList(P_du.toBytes(), Q_du.toBytes(), E_du.toBytes(), F_du.toBytes(),
-            K_du.toBytes(), SellerData.TICKET_TEXT.getBytes()));
+            K_du.toBytes(), IssuerData.TICKET_TEXT.getBytes()));
         final byte[] s_dash = crypto.getHash(s_dashList.toBytes(), sharedMemory.Hash1);
         final BigInteger s_dashNum = new BigInteger(1, s_dash).mod(p);
         gcd = BigIntEuclidean.calculate(sellerData.x_S.add(e_dash).mod(p), p);
@@ -288,16 +296,16 @@ public class PPLASTIssuingStates {
       }
 **/
       
-      ticketDetails.w_P = crypto.secureRandom(p);
-      ticketDetails.e_P = crypto.secureRandom(p);
+      ticketDetails.w_CV = crypto.secureRandom(p);
+      ticketDetails.e_CV = crypto.secureRandom(p);
       final List<byte[]> s_pDataList = new ArrayList<>();
       for (int i = 0; i < numberOfVerifiers; i++) {
         s_pDataList.add(ticketDetails.s_V[i]);
       }
-      ticketDetails.s_P = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
-      final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_P).mod(p);
-      gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_P).mod(p), p);
-      ticketDetails.sigma_P = ((g.add(h.mul(ticketDetails.w_P))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
+      ticketDetails.s_CV = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
+      final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_CV).mod(p);
+      gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_CV).mod(p), p);
+      ticketDetails.Z_CV = ((g.add(h.mul(ticketDetails.w_CV))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
 
       final List<byte[]> sendDataList = new ArrayList<>();
       sendDataList.add(C_U.toBytes());
@@ -318,7 +326,7 @@ public class PPLASTIssuingStates {
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
       final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-      sharedMemory.actAs(Actor.SELLER);
+      sharedMemory.actAs(Actor.ISSUER);
       if (message.getType() == Type.DATA) {
         // Send the setup data.
         final byte[] data = this.generateTicketDetails(message.getData());

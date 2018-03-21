@@ -20,8 +20,8 @@ import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.PoliceData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
@@ -46,11 +46,11 @@ public class PPLASTRegistrationStates {
 
 		private byte[] generateSellerIdentity() {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
-			// Send ID_S, Y_S, Y_S_bar
+			// Send ID_I, Y_bar_I, Y_S_bar
 			final ListData sendData = new ListData(
-					Arrays.asList(sellerData.ID_S.getBytes(), sellerData.Y_S.toBytes(), sellerData.Y_bar_S.toBytes()));
+					Arrays.asList(sellerData.ID_I.getBytes(), sellerData.Y_I.toBytes(), sellerData.Y_bar_I.toBytes()));
 			return sendData.toBytes();
 		}
 
@@ -64,7 +64,7 @@ public class PPLASTRegistrationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			sharedMemory.actAs(Actor.SELLER);
+			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
 				final byte[] data = this.generateSellerIdentity();
@@ -131,12 +131,12 @@ public class PPLASTRegistrationStates {
 			final Element sigma_S = (sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(Y_S))
 					.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
-			centralAuthorityData.ID_S = ID_S;
-			centralAuthorityData.Y_S = Y_S;
-			centralAuthorityData.Y_bar_S = Y_bar_S;
-			centralAuthorityData.r_S = r_S;
-			centralAuthorityData.e_S = e_S;
-			centralAuthorityData.sigma_S = sigma_S;
+			centralAuthorityData.ID_I = ID_S;
+			centralAuthorityData.Y_I = Y_S;
+			centralAuthorityData.Y_bar_I = Y_bar_S;
+			centralAuthorityData.r_I = r_S;
+			centralAuthorityData.e_I = e_S;
+			centralAuthorityData.sigma_I = sigma_S;
 
 			// Send sigma_s, e_s, r_s
 			final ListData sendData = new ListData(
@@ -194,7 +194,7 @@ public class PPLASTRegistrationStates {
 
 		private boolean verifySellerCredentials(byte[] data) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
@@ -212,16 +212,16 @@ public class PPLASTRegistrationStates {
 			final Element lhs = sharedMemory.pairing.pairing(sigma_S, Y_A.add(sharedMemory.g_frak.mul(e_S)))
 					.getImmutable();
 			final Element rhs = sharedMemory.pairing
-					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_S), sharedMemory.g_frak)
+					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_I), sharedMemory.g_frak)
 					.getImmutable();
 
 			if (!lhs.isEqual(rhs)) {
 				return false;
 			}
 
-			sellerData.e_S = e_S;
-			sellerData.r_S = r_S;
-			sellerData.sigma_S = sigma_S;
+			sellerData.e_I = e_S;
+			sellerData.r_I = r_S;
+			sellerData.sigma_I = sigma_S;
 			return true;
 		}
 
@@ -235,7 +235,7 @@ public class PPLASTRegistrationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			sharedMemory.actAs(Actor.SELLER);
+			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
 				final boolean success = this.verifySellerCredentials(message.getData());
@@ -372,10 +372,10 @@ public class PPLASTRegistrationStates {
 
 		private byte[] generatePoliceIdentity() {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			final PoliceData policeData = (PoliceData) sharedMemory.getData(Actor.POLICE);
+			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
 			// Send ID_U, Y_U
-			final ListData sendData = new ListData(Arrays.asList(policeData.ID_P.getBytes(), policeData.Y_P.toBytes()));
+			final ListData sendData = new ListData(Arrays.asList(cenVerData.ID_V.getBytes(), cenVerData.Y_V.toBytes()));
 			return sendData.toBytes();
 		}
 
@@ -389,7 +389,7 @@ public class PPLASTRegistrationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			sharedMemory.actAs(Actor.POLICE);
+			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
 				final byte[] data = this.generatePoliceIdentity();
@@ -448,7 +448,7 @@ public class PPLASTRegistrationStates {
 			final String ID_P = sharedMemory.stringFromBytes(listData.getList().get(0));
 			final Element Y_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(1));
 
-			// compute sigma_P
+			// compute Z_CV
 			final BigInteger e_P = crypto.secureRandom(sharedMemory.p);
 			final BigInteger r_P = crypto.secureRandom(sharedMemory.p);
 			final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x_a.add(e_P).mod(sharedMemory.p),
@@ -457,11 +457,11 @@ public class PPLASTRegistrationStates {
 			final Element sigma_P = (sharedMemory.g.add(sharedMemory.h.mul(r_P)).add(Y_P))
 					.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
-			centralAuthorityData.ID_P = ID_P;
-			centralAuthorityData.Y_P = Y_P;
-			centralAuthorityData.r_P = r_P;
-			centralAuthorityData.e_P = e_P;
-			centralAuthorityData.sigma_P = sigma_P;
+			centralAuthorityData.ID_CV = ID_P;
+			centralAuthorityData.Y_CV = Y_P;
+			centralAuthorityData.r_CV = r_P;
+			centralAuthorityData.e_CV = e_P;
+			centralAuthorityData.sigma_CV = sigma_P;
 
 			// Send sigma_s, e_s, r_s
 			final ListData sendData = new ListData(
@@ -523,7 +523,7 @@ public class PPLASTRegistrationStates {
 
 		private boolean verifyPoliceCredentials(byte[] data) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			final PoliceData policeData = (PoliceData) sharedMemory.getData(Actor.POLICE);
+			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
@@ -533,28 +533,28 @@ public class PPLASTRegistrationStates {
 				return false;
 			}
 
-			final Element sigma_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
-			final BigInteger r_P = new BigInteger(listData.getList().get(1));
-			final BigInteger e_P = new BigInteger(listData.getList().get(2));
+			final Element sigma_CV = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
+			final BigInteger r_CV = new BigInteger(listData.getList().get(1));
+			final BigInteger e_CV = new BigInteger(listData.getList().get(2));
 
 			// verify the credentials
 
 			// get the public key of the CA
 			final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
 
-			final Element lhs = sharedMemory.pairing.pairing(sigma_P, Y_A.add(sharedMemory.g_frak.mul(e_P)))
+			final Element lhs = sharedMemory.pairing.pairing(sigma_CV, Y_A.add(sharedMemory.g_frak.mul(e_CV)))
 					.getImmutable();
 			final Element rhs = sharedMemory.pairing
-					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_P)).add(policeData.Y_P), sharedMemory.g_frak)
+					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_CV)).add(cenVerData.Y_V), sharedMemory.g_frak)
 					.getImmutable();
 
 			if (!lhs.isEqual(rhs)) {
 				return false;
 			}
 
-			policeData.e_P = e_P;
-			policeData.r_P = r_P;
-			policeData.sigma_P = sigma_P;
+			cenVerData.e_V = e_CV;
+			cenVerData.r_V = r_CV;
+			cenVerData.sigma_V = sigma_CV;
 			return true;
 		}
 
@@ -568,7 +568,7 @@ public class PPLASTRegistrationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
-			sharedMemory.actAs(Actor.POLICE);
+			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
 				final boolean success = this.verifyPoliceCredentials(message.getData());
@@ -706,7 +706,7 @@ public class PPLASTRegistrationStates {
 
 				centralAuthorityData.verifiers.put(ID_V, veriferDetails);
 			}
-			// Send sigma_V, e_V, r_V back
+			// Send Z_V, e_V, r_V back
 			final ListData sendData = new ListData(
 					Arrays.asList(sigma_V.toBytes(), r_V.toByteArray(), e_V.toByteArray()));
 

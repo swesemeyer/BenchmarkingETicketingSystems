@@ -18,23 +18,17 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
-import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveField;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
-import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.PoliceData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
@@ -55,12 +49,12 @@ public class TestPPLast {
 	public void setUp() throws Exception {
 		// set the desired log level
 		LOG.setLevel(Level.DEBUG);
-
-		LOG.info("Starting Setup");
-
+		LOG.info("=============================================================");
+		LOG.info("                     Starting Setup");
+		LOG.info("=============================================================");
 		crypto = Crypto.getInstance();
 		sharedMemory = new PPLASTSharedMemory();
-		sharedMemory.rBits = 160;
+		sharedMemory.rBits = 80;
 		sharedMemory.clearTest();
 		LOG.debug("Y_A=" + sharedMemory.Y_A);
 		LOG.debug("g_frak=" + sharedMemory.g_frak);
@@ -112,262 +106,392 @@ public class TestPPLast {
 		long durationInMS;
 
 		// Registration States:
+		LOG.info("=============================================================");
+		LOG.info("            Going through Registration states");
+		LOG.info("=============================================================");
 
-		LOG.info("Going through Registration states");
-
-		// Generate Seller Identify: RStateXX (Server)
+		// Generate Issuer Identify: RState04 (Server)
 		time_start = Instant.now().toEpochMilli();
 		overall_start = time_start;
-		sharedMemory.actAs(Actor.SELLER);
-		data = this.generateSellerIdentity();
+		sharedMemory.actAs(Actor.ISSUER);
+		data = this.generateIssuerIdentity();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate Seller Identify: RState02 (Android) took (ms): " + durationInMS);
+		LOG.info("Generate Issuer Identify: RState04 (Server) took (ms): " + durationInMS);
 		LOG.info("Data sent to server (in bytes): " + data.length);
 
-		// Generates the seller's credentials: RStateXX (Server)
+		// Generates the issuer's credentials: RState06 (Server)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
-		data = this.generateSellerCredentials(data);
+		data = this.generateIssuerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generates the seller's credentials: RState05 (Server) took (ms): " + durationInMS);
+		LOG.info("Generates the issuer's credentials: RState06 (Server) took (ms): " + durationInMS);
 		if (data == null) {
-			fail("Seller credential creation failed");
+			fail("Issuer credential creation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
 
-		// Verify Seller credentials: RState03 (Android)
+		// Verify Issuer credentials: RState08 (Server)
 		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		success = this.verifySellerCredentials(data);
+		sharedMemory.actAs(Actor.ISSUER);
+		success = this.verifyIssuerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Verify Seller credentials: RState03 (Android) took (ms): " + durationInMS);
+		LOG.info("Verify Issuer credentials: RState08 (Server) took (ms): " + durationInMS);
 		if (!success) {
-			fail("Seller credentials did not validate");
+			fail("Issuer credentials did not validate");
 		}
 
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
-			// Generate Verifier Identify: RStateXX (Server)
+			// Generate Verifier Identify: RState17 (Server)
 			time_start = Instant.now().toEpochMilli();
 			overall_start = time_start;
 			sharedMemory.actAs(Actor.VERIFIERS[i]);
 			data = this.generateVerifierIdentity(Actor.VERIFIERS[i]);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
-			LOG.info("Generate Verifier Identify: RStateXX (Server) took (ms): " + durationInMS);
+			LOG.info("Generate Verifier Identify: RState17 (Server) took (ms): " + durationInMS);
 
-			// Generates the verifier's credentials: RStateXX (Server)
+			// Generates the verifier's credentials: RState19 (Server)
 			time_start = Instant.now().toEpochMilli();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			data = this.generateVerifierCredentials(data);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
-			LOG.info("Generates the verifier's credentials: RStateXX (Server) took (ms): " + durationInMS);
+			LOG.info("Generate the verifier's credentials: RState19 (Server) took (ms): " + durationInMS);
 			if (data == null) {
 				fail("Verifier credential creation failed");
 			}
 
-			// Verify Verifier's credentials: RStateXX (Server)
+			// Verify Verifier's credentials: RState21 (Server)
 			time_start = Instant.now().toEpochMilli();
 			sharedMemory.actAs(Actor.VERIFIERS[i]);
 			success = this.verifyVerifierCredentials(Actor.VERIFIERS[i], data);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
-			LOG.info("Verify Verifier's credentials: RState03 (Server) took (ms): " + durationInMS);
+			LOG.info("Verify Verifier's credentials: RState21 (Server) took (ms): " + durationInMS);
 			if (!success) {
 				fail("Verifier credentials did not validate");
 			}
 
 		}
-		// Generate User's Identify: RStateXX (Android)
+		// Generate User's Identify: RState02 (Android)
 		time_start = Instant.now().toEpochMilli();
 		overall_start = time_start;
 		sharedMemory.actAs(Actor.USER);
 		data = this.generateUserIdentity();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate User Identify: RStateXX (Android) took (ms): " + durationInMS);
+		LOG.info("Retrieve User Identify: RState02 (Android) took (ms): " + durationInMS);
 		LOG.info("Data sent to server (in bytes): " + data.length);
 
-		// Generates the user's credentials: RStateXX (Server)
+		// Generate the user's credentials: RState10 (Server)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 		data = this.generateUserCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generates the user's credentials: RStateXX (Server) took (ms): " + durationInMS);
+		LOG.info("Generated the user's credentials: RState10 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("User credential creation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
 
-		// Verify user's credentials: RStateXX (Server)
+		// Verify user's credentials: RState03 (Android)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.USER);
 		success = this.verifyUserCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Verify User credentials: RState03 (Server) took (ms): " + durationInMS);
+		LOG.info("Verify User credentials: RState03 (Android) took (ms): " + durationInMS);
 		if (!success) {
 			fail("User credentials did not validate");
 		}
 
-		// Generate Police's Identify: RStateXX (Server)
+		// Generate Central Verifier Identify: RState12 (Server)
 		time_start = Instant.now().toEpochMilli();
 		overall_start = time_start;
-		sharedMemory.actAs(Actor.POLICE);
-		data = this.generatePoliceIdentity();
+		sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
+		data = this.generateCenVerIdentity();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate Police Identify: RStateXX (Server) took (ms): " + durationInMS);
+		LOG.info("Generate Central Verifier Identify: RState12 (Server) took (ms): " + durationInMS);
 
-		// Generates the user's credentials: RStateXX (Server)
+		// Generates the CV's credentials: RState14 (Server)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
-		data = this.generatePoliceCredentials(data);
+		data = this.generateCenVerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generates the police's credentials: RStateXX (Server) took (ms): " + durationInMS);
+		LOG.info("Generated the CV's credentials: RState14 (Server) took (ms): " + durationInMS);
 		if (data == null) {
-			fail("Police credential creation failed");
+			fail("CV credential creation failed");
 		}
 
-		// Verify police's credentials: RStateXX (Server)
+		// Verify CV credentials: RState16 (Server)
 		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.POLICE);
-		success = this.verifyPoliceCredentials(data);
+		sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
+		success = this.verifyCenVerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Verify Police credentials: RStateXX (Server) took (ms): " + durationInMS);
+		LOG.info("Verify CV credentials: RState16 (Server) took (ms): " + durationInMS);
 		if (!success) {
-			fail("Police credentials did not validate");
+			fail("CV credentials did not validate");
 		}
+		LOG.info("=============================================================");
+		LOG.info("                Finished Registration states");
+		LOG.info("=============================================================");
+		LOG.info("                Going through Issuing states");
+		LOG.info("=============================================================");
 
-		LOG.info("Finished Registration states");
-
-		LOG.info("Going through Issuing states");
-
-		// Generate the user ticket request: IStateXX (Android)
+		// Generate the user ticket request: IState04 (Android)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.USER);
 		data = this.generateTicketRequest();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate the user's ticket request: IStateXX (Android) took (ms): " + durationInMS);
+		LOG.info("Generate the user's ticket request: IState04 (Android) took (ms): " + durationInMS);
 		LOG.info("Data sent to server: " + data.length);
 
-		// Generate ticket serial number: IState10 (Server)
+		// Generate ticket serial number: IState23 (Server)
 		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
+		sharedMemory.actAs(Actor.ISSUER);
 		data = this.generateTicketDetails(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate ticket details: IState10 (Server) took (ms): " + durationInMS);
+		LOG.info("Generate ticket details: IState23 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("ticket details verification failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
 
-		// Verify the returned ticket serial number data: IState08 (Android)
+		// Verify the returned ticket data: IState05 (Android)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.USER);
 		success = this.verifyTicketDetails(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Verify the returned ticket details: IState08 (Android) took (ms): " + durationInMS);
+		LOG.info("Verify the returned ticket details: IState05 (Android) took (ms): " + durationInMS);
 		if (!success) {
 			fail("ticket details verification failed");
 		}
-		LOG.info("Finished Issuing states");
+		LOG.info("=============================================================");
+		LOG.info("                 Finished Issuing states");
+		LOG.info("=============================================================");
+		LOG.info("             Going through Verification states");
+		LOG.info("=============================================================");
 
-		LOG.info("Going through Verification states");
+		String[] VerifierList = ((UserData) sharedMemory.getData(Actor.USER)).VerifierList;
 
-		// Generate the verifier ID vStateXX(Server)
+		for (int i = 0; i < VerifierList.length; i++) {
+
+			// Generate the verifier ID vState25(Server)
+			time_start = Instant.now().toEpochMilli();
+			String verifierID = VerifierList[i];
+			sharedMemory.actAs(verifierID);
+			data = this.generateVerifierID(verifierID);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			LOG.info("Generating the verifier ID finished: vState25(Server) " + durationInMS);
+			if (data == null) {
+				fail("Verifier ID generation failed");
+			}
+			LOG.info("Data sent to client (in bytes): " + data.length);
+
+			// Generate ticket proof: VState06 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			data = this.generateTagProof(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			LOG.info("Generate ticket proof: VState06 (Android) took (ms): " + durationInMS);
+			if (data == null) {
+				fail("ticket proof generation failed");
+			}
+			LOG.info("Data sent to server (in bytes): " + data.length);
+
+			// check the user's proof of his ticket vStateXX(Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(verifierID);
+			success = this.verifyTagProof(data, verifierID);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			LOG.info("Checking the user's proof took (ms): " + durationInMS);
+			if (!success) {
+				fail("Checking the user's proof failed");
+			}
+		}
+		LOG.info("=============================================================");
+		LOG.info("              Finished Verfication states");
+		LOG.info("=============================================================");
+		LOG.info("            Going through tracing states states");
+		LOG.info("=============================================================");
+		// Generate the verifier ID vState25(Server)
 		time_start = Instant.now().toEpochMilli();
-		String verifierID = Actor.VERIFIERS[1];
+		String verifierID = Actor.CENTRAL_VERIFIER;
 		sharedMemory.actAs(verifierID);
 		data = this.generateVerifierID(verifierID);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generating the verifier ID finished: " + durationInMS);
+		LOG.info("Generating the verifier ID finished: vState25(Server) " + durationInMS);
 		if (data == null) {
 			fail("Verifier ID generation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
 
-		// Generate ticket proof: VStateXX (Android)
+		// Generate ticket proof: VState06 (Android)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.USER);
-		data = this.generateTicketProof(data);
+		data = this.generateTagProof(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate ticket proof: VStateXX (Android) took (ms): " + durationInMS);
+		LOG.info("Generate ticket proof: VState06 (Android) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("ticket proof generation failed");
 		}
 		LOG.info("Data sent to server (in bytes): " + data.length);
 
-		// check the user's proof of his ticket vStateXX(Server)
+
+		// retrieve the verifier IDs from the ticket: vState29(Server)
 		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(verifierID);
-		success = this.verifyTicketProof(data, verifierID);
+		sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
+		data = this.traceTicket(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Checking the user's proof took (ms): " + durationInMS);
-		if (!success) {
-			fail("Checking the user's proof failed");
-		}
-
-		LOG.info("Finished Verfication states");
-
-		LOG.info("Going through tracing states states");
-
-		// send the user's ticket: tStateXX(Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		data = this.sendTicketDetails();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("sending the user's ticket details took (ms): " + durationInMS);
-		if (data == null) {
-			fail("sending the user's ticket failed");
-		}
-
-		// retrieve the verifier IDs from the ticket
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.POLICE);
-		data = this.extractVerifierIDs(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("extraction of the verifier IDs finished: " + durationInMS);
+		LOG.info("extraction of the verifier IDs finished: vState29(Server)" + durationInMS);
 		if (data == null) {
 			fail("Verifier ID extraction failed");
 		}
-
+		LOG.info("=============================================================");
+		LOG.info("            Finished tracing states states");
+		LOG.info("=============================================================");
 		LOG.info("Total run of the protocol with no comms overhead took (ms):" + (time_end - overall_start));
 	}
 
-	private byte[] extractVerifierIDs(byte[] data) {
-		final PoliceData policeData = (PoliceData) sharedMemory.getData(Actor.POLICE);
+	private byte[] traceTicket(byte[] data) {
+		final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 		// final Crypto crypto = Crypto.getInstance();
 		// Decode the received data.
 		final ListData listData = ListData.fromBytes(data);
-		if ((listData.getList().size() - 5) % 11 != 0) {
+		
+		//each verifier has 11 entries
+		//there are 14 entries for the ZKP and the CV tag
+		//there are 5 extra entries for checking the integrity of the overall ticket.
+		//so (the number of elements in the list sent through - (14+5)) must be divisible by 11.
+		
+		if ((listData.getList().size() - 19) % 11 != 0) {
 			LOG.error("wrong number of data elements: " + listData.getList().size());
 			return null;
 		}
-		int numOfVerifiers = (listData.getList().size() - 4) / 11;
+		
+		// some constants from shared Memory
+		final Element Y_bar_I = sharedMemory.getPublicKey(Actor.ISSUER).getImmutable();
+		final BigInteger p = sharedMemory.p;
+		final Element xi = sharedMemory.xi.getImmutable();
+		final Element g = sharedMemory.g.getImmutable();
+		final Element h = sharedMemory.h.getImmutable();
+		final Element h_tilde = sharedMemory.h_tilde.getImmutable();
+		final Element g_frak = sharedMemory.g_frak.getImmutable();
+		final Element Y_P = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER).getImmutable();
+
+		// get the elements needed for the ZKP
+		int index = 0;
+		final Element P_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final Element P_dash_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final Element Q_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final Element Q_dash_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final byte[] c_Vhash = listData.getList().get(index++);
+		final BigInteger c_Vnum = (new BigInteger(1, c_Vhash)).mod(p);
+		final BigInteger x_hat_U = (new BigInteger(1, listData.getList().get(index++))).mod(p);
+		final BigInteger z_hat_V = (new BigInteger(1, listData.getList().get(index++))).mod(p);
+
+		final byte[] verifyc_Vhash = crypto.getHash(
+				(new ListData(Arrays.asList(P_V.toBytes(), P_dash_V.toBytes(), Q_V.toBytes(), Q_dash_V.toBytes())))
+						.toBytes(),
+				sharedMemory.Hash1);
+		if (!Arrays.equals(c_Vhash, verifyc_Vhash)) {
+			LOG.debug("c_Vhash verification failed");
+			return null;
+		}
+
+		LOG.debug("passed c_Vhash verification");
+
+		final Element P_dash_Vlhs = (((xi.mul(x_hat_U)).add(Y_P.mul(z_hat_V))).add(P_V.mul(c_Vnum))).getImmutable();
+		LOG.debug("P_dash_Vlhs = " + P_dash_Vlhs);
+		if (!P_dash_V.isEqual(P_dash_Vlhs)) {
+			LOG.debug("P_dash_V verification failed");
+			return null;
+		}
+		LOG.debug("passed P_dash_V verification");
+
+		final Element Q_dash_Vlhs = ((xi.mul(z_hat_V)).add(Q_V.mul(c_Vnum))).getImmutable();
+		if (!Q_dash_V.isEqual(Q_dash_Vlhs)) {
+			LOG.debug("Q_dash_V verification failed");
+			return null;
+		}
+
+		LOG.debug("passed Q_dash_V verification. This completes the ZKP.");
+
+		// get the elements for the remaining checks
+
+		final Element E_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final Element F_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final Element K_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+		final byte[] s_Vhash = listData.getList().get(index++);
+		BigInteger s_Vnum = (new BigInteger(1, s_Vhash)).mod(p);
+		final BigInteger w_V = (new BigInteger(1, listData.getList().get(index++))).mod(p);
+		final BigInteger e_V = (new BigInteger(1, listData.getList().get(index++))).mod(p);
+		final Element sigma_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
+
+		final ListData s_Vdata = new ListData(Arrays.asList(P_V.toBytes(), Q_V.toBytes(), E_V.toBytes(), F_V.toBytes(),
+				K_V.toBytes(), IssuerData.TICKET_TEXT.getBytes()));
+		final byte[] s_Vrhs = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
+		if (!Arrays.equals(s_Vhash, s_Vrhs)) {
+			LOG.debug("s_V hash verification failed!");
+			return null;
+		}
+		LOG.debug("passed s_V hash verification!");
+
+		final Element F_Vrhs = (E_V.mul(cenVerData.x_V)).getImmutable();
+		if (!F_V.isEqual(F_Vrhs)) {
+			LOG.debug("F_V verification failed!");
+			return null;
+		}
+		LOG.debug("passed F_V verification!");
+
+		Element lhs = sharedMemory.pairing.pairing(sigma_V, Y_bar_I.add(g_frak.mul(e_V))).getImmutable();
+		Element rhs = sharedMemory.pairing.pairing(g.add(h.mul(w_V)).add(h_tilde.mul(s_Vnum)), g_frak);
+		if (!lhs.isEqual(rhs)) {
+			LOG.debug("pairing verification failed!");
+			return null;
+		}
+		LOG.debug("passed pairing verification! The Central Verifier Tag is valid");
+		
+		int numOfVerifiers = (listData.getList().size() - 19) / 11;
+		LOG.debug("We should have "+numOfVerifiers+" verifiers");
 		TicketDetails ticketDetails = new TicketDetails(numOfVerifiers);
-		ticketDetails.populateTicketDetails(sharedMemory, listData, 0);
+		ticketDetails.populateTicketDetails(sharedMemory, listData, 14);
 
 		Element Y_U_1 = null;
 		Element Y_U_2 = null;
+		Element verifierPK=null;
 
-		Y_U_1 = ticketDetails.P_V[0].div(ticketDetails.Q_V[0].mul(policeData.x_P)).getImmutable();
-		for (int i = 1; i < numOfVerifiers; i = i + 2) {
-			Y_U_2 = ticketDetails.P_V[i].div(ticketDetails.Q_V[i].mul(policeData.x_P)).getImmutable();
+		boolean ZKPTagPresent=false;
+		
+		Y_U_1 = ticketDetails.P_V[0].div(ticketDetails.Q_V[0].mul(cenVerData.x_V)).getImmutable();
+		verifierPK=ticketDetails.K_V[0].div(ticketDetails.E_V[0].mul(cenVerData.x_V));
+		if ((P_V.equals(ticketDetails.P_V[0]) && (Q_V.equals(ticketDetails.Q_V[0])))){
+			ZKPTagPresent=true;
+		}
+		LOG.debug("Verifier[0] has public key: "+verifierPK);
+		for (int i = 1; i < numOfVerifiers; i++) {
+			Y_U_2 = ticketDetails.P_V[i].div(ticketDetails.Q_V[i].mul(cenVerData.x_V)).getImmutable();
+			verifierPK=ticketDetails.K_V[i].div(ticketDetails.E_V[i].mul(cenVerData.x_V));
+			if ((P_V.equals(ticketDetails.P_V[i]) && (Q_V.equals(ticketDetails.Q_V[i])))){
+				ZKPTagPresent=true;
+			}
+			LOG.debug("Verifier["+i+"] has public key: "+verifierPK);
 			if (!Y_U_1.equals(Y_U_2)) {
 				LOG.debug("ticket verification of Y_U failed");
 				return null;
@@ -377,13 +501,12 @@ public class TestPPLast {
 		}
 
 		LOG.debug("The user has public key: " + Y_U_1);
-
-		final Element Y_bar_S = sharedMemory.getPublicKey(Actor.SELLER).getImmutable();
-		final Element g_frak = sharedMemory.g_frak.getImmutable();
-		final Element g = sharedMemory.g.getImmutable();
-		final Element h = sharedMemory.h.getImmutable();
-		final Element h_tilde = sharedMemory.h_tilde.getImmutable();
-		final BigInteger p = sharedMemory.p;
+		
+		if (!ZKPTagPresent) {
+			LOG.debug("the tag used for the ZKP was not present - ticket is wrong!");
+			return null;
+		}
+		LOG.debug("the tag used for the ZKP was present - ticket is linked to user");
 
 		for (int i = 0; i < numOfVerifiers; i++) {
 			final byte[] verifys_V = crypto.getHash(
@@ -395,15 +518,16 @@ public class TestPPLast {
 				LOG.error("failed to verify s_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
 				return null;
 			}
-			final BigInteger s_Vnum = (new BigInteger(1, verifys_V)).mod(p);
-			final Element lhs = sharedMemory.pairing
-					.pairing(ticketDetails.sigma_V[i], Y_bar_S.add(g_frak.mul(ticketDetails.e_v[i]))).getImmutable();
-			final Element rhs = sharedMemory.pairing
+			s_Vnum = (new BigInteger(1, verifys_V)).mod(p);
+			lhs = sharedMemory.pairing
+					.pairing(ticketDetails.Z_V[i], Y_bar_I.add(g_frak.mul(ticketDetails.e_v[i]))).getImmutable();
+			rhs = sharedMemory.pairing
 					.pairing(g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum)), g_frak);
 			if (!lhs.isEqual(rhs)) {
 				LOG.debug("first pairing check failed for ID_V[" + i + "]: " + ticketDetails.VerifierList[i]);
 			}
-
+			LOG.debug("passed tag verification for verifier: " + ticketDetails.VerifierList[i]);
+			LOG.debug("PK of the verifier is: "+sharedMemory.getPublicKey(ticketDetails.VerifierList[i]));
 		}
 		LOG.debug("passed s_V hash and corresponding pairing checks!");
 
@@ -412,40 +536,31 @@ public class TestPPLast {
 			verifys_PData.add(ticketDetails.s_V[i]);
 		}
 
-		if (!Arrays.equals(ticketDetails.s_P,
+		if (!Arrays.equals(ticketDetails.s_CV,
 				crypto.getHash((new ListData(verifys_PData)).toBytes(), sharedMemory.Hash1))) {
-			LOG.error("failed to verify s_P hash");
+			LOG.error("failed to verify s_CV hash");
 			return null;
 		}
-		LOG.debug("passed s_P hash checks!");
+		LOG.debug("passed s_CV hash checks!");
 
-		final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_P)).mod(p);
+		final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_CV)).mod(p);
 
-		final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_P,
-				Y_bar_S.add(g_frak.mul(ticketDetails.e_P)))).getImmutable();
-		final Element rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_P)).add(h_tilde.mul(s_PNum)),
+		lhs = (sharedMemory.pairing.pairing(ticketDetails.Z_CV,
+				Y_bar_I.add(g_frak.mul(ticketDetails.e_CV)))).getImmutable();
+		rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_CV)).add(h_tilde.mul(s_PNum)),
 				g_frak)).getImmutable();
 
 		if (!lhs.isEqual(rhs)) {
-			LOG.error("failed to verify sigma_P pairing check");
+			LOG.error("failed to verify Z_CV pairing check");
 			return null;
 		}
 
-		LOG.debug("Passed sigma_P pairing verification!");
+		LOG.debug("Passed Z_CV pairing verification!");
 
 		return "Success".getBytes();
 	}
 
-	private byte[] sendTicketDetails() {
-		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-		// final Crypto crypto = Crypto.getInstance();
-
-		final List<byte[]> sendDataList = new ArrayList<>();
-		userData.ticketDetails.getTicketDetails(sendDataList);
-		return (new ListData(sendDataList)).toBytes();
-	}
-
-	private boolean verifyTicketProof(byte[] data, String verifierID) {
+	private boolean verifyTagProof(byte[] data, String verifierID) {
 		final VerifierData verifierData = (VerifierData) sharedMemory.getData(verifierID);
 		// final Crypto crypto = Crypto.getInstance();
 		// Decode the received data.
@@ -461,8 +576,8 @@ public class TestPPLast {
 		final Element h = sharedMemory.h.getImmutable();
 		final Element h_tilde = sharedMemory.h_tilde.getImmutable();
 		final Element g_frak = sharedMemory.g_frak.getImmutable();
-		final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE).getImmutable();
-		final Element Y_S = sharedMemory.getPublicKey(Actor.SELLER).getImmutable();
+		final Element Y_P = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER).getImmutable();
+		final Element Y_S = sharedMemory.getPublicKey(Actor.ISSUER).getImmutable();
 
 		// get the elements needed for the ZKP
 		int index = 0;
@@ -514,7 +629,7 @@ public class TestPPLast {
 		final Element sigma_V = sharedMemory.curveG1ElementFromBytes(listData.getList().get(index++));
 
 		final ListData s_Vdata = new ListData(Arrays.asList(P_V.toBytes(), Q_V.toBytes(), E_V.toBytes(), F_V.toBytes(),
-				K_V.toBytes(), SellerData.TICKET_TEXT.getBytes()));
+				K_V.toBytes(), IssuerData.TICKET_TEXT.getBytes()));
 		final byte[] s_Vrhs = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
 		if (!Arrays.equals(s_Vhash, s_Vrhs)) {
 			LOG.debug("s_V hash verification failed!");
@@ -539,9 +654,12 @@ public class TestPPLast {
 		return true;
 	}
 
-	private byte[] generateTicketProof(byte[] data) {
+	private byte[] generateTagProof(byte[] data) {
+		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// this.getSharedMemory();
+
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-		// final Crypto crypto = Crypto.getInstance();
+		final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
 		final ListData listData = ListData.fromBytes(data);
@@ -555,18 +673,18 @@ public class TestPPLast {
 		final byte[] D_Vhash = crypto.getHash(
 				(new ListData(Arrays.asList(userData.C_U.toBytes(), ID_V.getBytes()))).toBytes(), sharedMemory.Hash2);
 
-		LOG.debug("Search for D_Vhash= " + base64.encodeToString(D_Vhash));
 		TicketDetails userTicket = userData.ticketDetails;
 		int index = userTicket.getVerifierIndex(D_Vhash);
 		if (index == -1) {
 			LOG.debug("Aborting as verifier not found: " + ID_V);
+			return null;
 		}
 		// found the verifier - now proceed with ZKP PI^2_U.
 		// get some constants from shared memory...
-
+		LOG.debug("generating ZK_PI_2_U");
 		final BigInteger p = sharedMemory.p;
 		final Element xi = sharedMemory.xi.getImmutable();
-		final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
+		final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER);
 
 		final byte[] z_Vhash = crypto.getHash(
 				(new ListData(Arrays.asList(userData.z_u.toByteArray(), ID_V.getBytes()))).toBytes(),
@@ -576,7 +694,7 @@ public class TestPPLast {
 		final BigInteger x_dash_U = crypto.secureRandom(p);
 		final BigInteger z_dash_V = crypto.secureRandom(p);
 
-		final Element P_dash_V = ((xi.mul(x_dash_U)).add(Y_P.mul(z_dash_V))).getImmutable();
+		final Element P_dash_V = ((xi.mul(x_dash_U)).add(Y_CV.mul(z_dash_V))).getImmutable();
 		final Element Q_dash_V = (xi.mul(z_dash_V)).getImmutable();
 
 		final byte[] c_Vhash = crypto.getHash((new ListData(Arrays.asList(userTicket.P_V[index].toBytes(),
@@ -587,13 +705,25 @@ public class TestPPLast {
 
 		final BigInteger x_hat_U = (x_dash_U.subtract(c_Vnum.multiply(userData.x_U))).mod(p);
 		final BigInteger z_hat_V = (z_dash_V.subtract(c_Vnum.multiply(z_Vnum))).mod(p);
+		LOG.debug("finished generating ZK_PI_2_U");
 
-		final ListData sendData = new ListData(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
+		// collect everything that needs to be sent
+		final List<byte[]> sendDataList = new ArrayList<>();
+		sendDataList.addAll(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
 				userTicket.Q_V[index].toBytes(), Q_dash_V.toBytes(), c_Vhash, x_hat_U.toByteArray(),
 				z_hat_V.toByteArray(), userTicket.E_V[index].toBytes(), userTicket.F_V[index].toBytes(),
 				userTicket.K_V[index].toBytes(), userTicket.s_V[index], userTicket.w_v[index].toByteArray(),
-				userTicket.e_v[index].toByteArray(), userTicket.sigma_V[index].toBytes()));
+				userTicket.e_v[index].toByteArray(), userTicket.Z_V[index].toBytes()));
+
+		// if it was the central verifier who asked then we need to add the whole
+		// ticket, too
+		if (ID_V.equalsIgnoreCase(Actor.CENTRAL_VERIFIER)) {
+			LOG.debug("it's a trace so add the whole ticket, too!");
+			userData.ticketDetails.getTicketDetails(sendDataList);
+		}
+		final ListData sendData = new ListData(sendDataList);
 		return sendData.toBytes();
+
 	}
 
 	private byte[] generateVerifierID(String verifierID) {
@@ -604,8 +734,10 @@ public class TestPPLast {
 	}
 
 	private boolean verifyTicketDetails(byte[] data) {
+		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-		// final Crypto crypto = Crypto.getInstance();
+		final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
 		final ListData listData = ListData.fromBytes(data);
@@ -622,83 +754,91 @@ public class TestPPLast {
 		final TicketDetails ticketDetails = new TicketDetails(numOfVerifiers);
 		indx = ticketDetails.populateTicketDetails(sharedMemory, listData, indx);
 
-		// verify ticket details
-		for (int i = 0; i < numOfVerifiers; i++) {
-			// final Element Y_V = sharedMemory.getPublicKey(ticketDetails.VerifierList[i]);
-			final byte[] verifyD_V = crypto.getHash(
-					(new ListData(Arrays.asList(C_U.toBytes(), ticketDetails.VerifierList[i].getBytes()))).toBytes(),
-					sharedMemory.Hash2);
-			if (!Arrays.equals(ticketDetails.D_V[i], verifyD_V)) {
-				LOG.error("failed to verify D_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
+		// only check the verifiers if we really want to...
+		if (sharedMemory.validateVerifiers) {
+			for (int i = 0; i < numOfVerifiers; i++) {
+				// Element Y_V = sharedMemory.Y_V.get(ticketDetails.VerifierList[i]);
+				final byte[] verifyD_V = crypto
+						.getHash((new ListData(Arrays.asList(C_U.toBytes(), ticketDetails.VerifierList[i].getBytes())))
+								.toBytes(), sharedMemory.Hash2);
+				if (!Arrays.equals(ticketDetails.D_V[i], verifyD_V)) {
+					LOG.error("failed to verify D_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
+					return false;
+				}
+			}
+			LOG.debug("Passed D_V verification!");
+			for (int i = 0; i < numOfVerifiers; i++) {
+				final byte[] verifys_V = crypto.getHash(
+						(new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(), ticketDetails.Q_V[i].toBytes(),
+								ticketDetails.E_V[i].toBytes(), ticketDetails.F_V[i].toBytes(),
+								ticketDetails.K_V[i].toBytes(), ticketDetails.ticketText.getBytes()))).toBytes(),
+						sharedMemory.Hash1);
+				if (!Arrays.equals(ticketDetails.s_V[i], verifys_V)) {
+					LOG.error("failed to verify s_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
+					return false;
+				}
+
+			}
+			LOG.debug("Passed s_V verification!");
+
+			// some elements from sharedMemory
+			final Element Y_bar_I = sharedMemory.Y_bar_I;
+			final Element g = sharedMemory.g.getImmutable();
+			final Element g_frak = sharedMemory.g_frak.getImmutable();
+			final Element h = sharedMemory.h.getImmutable();
+			final Element h_tilde = sharedMemory.h_tilde.getImmutable();
+			final BigInteger p = sharedMemory.p;
+
+			for (int i = 0; i < numOfVerifiers; i++) {
+				LOG.debug("Verifier: " + i + " is being checked.");
+
+				final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.Z_V[i],
+						Y_bar_I.add(g_frak.mul(ticketDetails.e_v[i])))).getImmutable();
+
+				LOG.debug(System.currentTimeMillis() + " computed lhs: " + lhs);
+				final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
+
+				final Element rhs = (sharedMemory.pairing
+						.pairing((g.add(h.mul(ticketDetails.w_v[i]))).add(h_tilde.mul(s_Vnum)), g_frak)).getImmutable();
+				LOG.debug(System.currentTimeMillis() + " computed rhs: " + rhs);
+
+				if (!lhs.isEqual(rhs)) {
+					LOG.error("failed to verify pairing check [" + i + "] for verifier: "
+							+ ticketDetails.VerifierList[i]);
+					return false;
+				}
+			}
+			LOG.debug("Passed Z_V pairing verification!");
+
+			final List<byte[]> verifys_PData = new ArrayList<>();
+			for (int i = 0; i < numOfVerifiers; i++) {
+				verifys_PData.add(ticketDetails.s_V[i]);
+			}
+
+			if (!Arrays.equals(ticketDetails.s_CV,
+					crypto.getHash((new ListData(verifys_PData)).toBytes(), sharedMemory.Hash1))) {
+				LOG.error("failed to verify s_CV hash");
 				return false;
 			}
-		}
-		LOG.debug("Passed D_V verification!");
-		for (int i = 0; i < numOfVerifiers; i++) {
-			final byte[] verifys_V = crypto.getHash(
-					(new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(), ticketDetails.Q_V[i].toBytes(),
-							ticketDetails.E_V[i].toBytes(), ticketDetails.F_V[i].toBytes(),
-							ticketDetails.K_V[i].toBytes(), ticketDetails.ticketText.getBytes()))).toBytes(),
-					sharedMemory.Hash1);
-			if (!Arrays.equals(ticketDetails.s_V[i], verifys_V)) {
-				LOG.error("failed to verify s_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
-				return false;
-			}
 
-		}
-		LOG.debug("Passed s_V verification!");
+			LOG.debug("Passed s_CV verification!");
 
-		// some elements from sharedMemory
-		final Element Y_bar_S = sharedMemory.getPublicKey(Actor.SELLER).getImmutable();
-		final Element g = sharedMemory.g.getImmutable();
-		final Element g_frak = sharedMemory.g_frak.getImmutable();
-		final Element h = sharedMemory.h.getImmutable();
-		final Element h_tilde = sharedMemory.h_tilde.getImmutable();
-		final BigInteger p = sharedMemory.p;
+			final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_CV)).mod(p);
+			LOG.debug("Central Verifier is being checked.");
+			final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.Z_CV,
+					Y_bar_I.add(g_frak.mul(ticketDetails.e_CV)))).getImmutable();
+			LOG.debug("Central Verifier is still being checked. Computed lhs" + lhs);
+			final Element rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_CV)).add(h_tilde.mul(s_PNum)),
+					g_frak)).getImmutable();
+			LOG.debug("Central Verifier is still being checked. Computed rhs" + rhs);
 
-		for (int i = 0; i < numOfVerifiers; i++) {
-
-			final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_V[i],
-					Y_bar_S.add(g_frak.mul(ticketDetails.e_v[i])))).getImmutable();
-
-			final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-
-			final Element rhs = (sharedMemory.pairing
-					.pairing((g.add(h.mul(ticketDetails.w_v[i]))).add(h_tilde.mul(s_Vnum)), g_frak)).getImmutable();
 			if (!lhs.isEqual(rhs)) {
-				LOG.error("failed to verify pairing check [" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
+				LOG.error("failed to verify Z_CV pairing check");
 				return false;
 			}
+
+			LOG.debug("Passed Z_CV pairing verification!");
 		}
-		LOG.debug("Passed sigma_V pairing verification!");
-
-		final List<byte[]> verifys_PData = new ArrayList<>();
-		for (int i = 0; i < numOfVerifiers; i++) {
-			verifys_PData.add(ticketDetails.s_V[i]);
-		}
-
-		if (!Arrays.equals(ticketDetails.s_P,
-				crypto.getHash((new ListData(verifys_PData)).toBytes(), sharedMemory.Hash1))) {
-			LOG.error("failed to verify s_P hash");
-			return false;
-		}
-
-		LOG.debug("Passed s_P verification!");
-
-		final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_P)).mod(p);
-
-		final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_P,
-				Y_bar_S.add(g_frak.mul(ticketDetails.e_P)))).getImmutable();
-		final Element rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_P)).add(h_tilde.mul(s_PNum)),
-				g_frak)).getImmutable();
-
-		if (!lhs.isEqual(rhs)) {
-			LOG.error("failed to verify sigma_P pairing check");
-			return false;
-		}
-
-		LOG.debug("Passed sigma_P pairing verification!");
-
 		// store the ticket details
 		// note that z_U was stored during the ticket request generation
 		userData.C_U = C_U;
@@ -708,7 +848,7 @@ public class TestPPLast {
 	}
 
 	private byte[] generateTicketDetails(byte[] data) {
-		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
@@ -756,14 +896,7 @@ public class TestPPLast {
 		verifyc_hashData.add(W_2.toBytes());
 
 		final int numberOfVerifiers = new BigInteger(1, listData.getList().get(index++)).intValue();
-		/**
-		 * We don't do the dummy verifiers at them moment
-		 * 
-		 * // if numberOfVerifiers is odd then add one to make an even number. int
-		 * evenNumberOfVerifiers = numberOfVerifiers + (numberOfVerifiers % 2); final
-		 * TicketDetails ticketDetails = new TicketDetails(evenNumberOfVerifiers);
-		 * 
-		 **/
+
 		final TicketDetails ticketDetails = new TicketDetails(numberOfVerifiers);
 
 		for (int i = 0; i < numberOfVerifiers; i++) {
@@ -830,7 +963,7 @@ public class TestPPLast {
 
 		LOG.debug("passed W_2 verification!");
 
-		final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE);
+		final Element Y_P = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER);
 
 		for (int i = 0; i < numberOfVerifiers; i++) {
 			final Element P_dash_Vlhs = (xi.mul(x_hat_u)).add(Y_P.mul(z_hat_v[i]))
@@ -875,78 +1008,26 @@ public class TestPPLast {
 			ticketDetails.K_V[i] = Y_V.add(Y_P.mul(ticketDetails.d_v[i])).getImmutable();
 			final ListData s_Vdata = new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(),
 					ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V[i].toBytes(), ticketDetails.F_V[i].toBytes(),
-					ticketDetails.K_V[i].toBytes(), SellerData.TICKET_TEXT.getBytes()));
+					ticketDetails.K_V[i].toBytes(), IssuerData.TICKET_TEXT.getBytes()));
 			ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
 			final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-			gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_v[i]).mod(p), p);
+			gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
 			final BigInteger xs_plus_ev_inverse = gcd.x.mod(p);
-			ticketDetails.sigma_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum)))
-					.mul(xs_plus_ev_inverse).getImmutable();
-			ticketDetails.ticketText = SellerData.TICKET_TEXT;
+			ticketDetails.Z_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
+					.getImmutable();
+			ticketDetails.ticketText = IssuerData.TICKET_TEXT;
 
 		}
-		/**
-		 * remove dummy verifier for now
-		 * 
-		 * // Do we need to create a dummy verifier? if (numberOfVerifiers !=
-		 * evenNumberOfVerifiers) { // Yes - so give it a name and make up some stuff...
-		 * final String ID_du = Actor.VERIFIERS[Actor.dummyVerifierIndx];
-		 * ticketDetails.VerifierList[numberOfVerifiers] = ID_du; final BigInteger
-		 * d_dash = crypto.secureRandom(p); final BigInteger w_dash =
-		 * crypto.secureRandom(p); final BigInteger e_dash = crypto.secureRandom(p); //
-		 * final Element D_du =
-		 * sharedMemory.pairing.getG1().newRandomElement().getImmutable(); final
-		 * ListData D_duData = new ListData(Arrays.asList(C_U.toBytes(),
-		 * ID_du.getBytes())); final byte[] D_du = crypto.getHash(D_duData.toBytes(),
-		 * sharedMemory.Hash2); // TODO: Discuss with Jinguang final BigInteger z_Vdu =
-		 * crypto.secureRandom(p); // final Element P_du =
-		 * sharedMemory.pairing.getG1().newRandomElement().getImmutable(); final Element
-		 * P_du = sharedMemory.getPublicKey(Actor.USER).add(Y_P.mul(z_Vdu)); final
-		 * Element Q_du = xi.mul(z_Vdu).getImmutable(); final Element F_du =
-		 * sharedMemory.pairing.getG1().newRandomElement().getImmutable(); // compute
-		 * the equivalent values as above but for this dummy verifier
-		 * 
-		 * final Element E_du = xi.mul(d_dash).getImmutable(); final ListData
-		 * hashDataList = new
-		 * ListData(Arrays.asList(ticketDetails.VerifierList[numberOfVerifiers].getBytes()));
-		 * final byte[] hashData = crypto.getHash(hashDataList.toBytes(),
-		 * sharedMemory.Hash3); final BigInteger hashNum = (new BigInteger(1,
-		 * hashData)).mod(p); final Element K_du =
-		 * Y_P.mul(d_dash).add(sharedMemory.pairing.getG1().newOneElement().mul(hashNum)).getImmutable();
-		 * final ListData s_dashList = new ListData(Arrays.asList(P_du.toBytes(),
-		 * Q_du.toBytes(), E_du.toBytes(), F_du.toBytes(), K_du.toBytes(),
-		 * SellerData.TICKET_TEXT.getBytes())); final byte[] s_dash =
-		 * crypto.getHash(s_dashList.toBytes(), sharedMemory.Hash1); final BigInteger
-		 * s_dashNum = new BigInteger(1, s_dash).mod(p); gcd =
-		 * BigIntEuclidean.calculate(sellerData.x_S.add(e_dash).mod(p), p);
-		 * 
-		 * final Element sigma_du =
-		 * ((g.add(h.mul(w_dash))).add(h_tilde.mul(s_dashNum))).mul(gcd.x.mod(p));
-		 * 
-		 * ticketDetails.D_V[numberOfVerifiers] = D_du;
-		 * ticketDetails.E_V[numberOfVerifiers] = E_du;
-		 * ticketDetails.F_V[numberOfVerifiers] = F_du;
-		 * ticketDetails.P_V[numberOfVerifiers] = P_du;
-		 * ticketDetails.Q_V[numberOfVerifiers] = Q_du;
-		 * ticketDetails.K_V[numberOfVerifiers] = K_du;
-		 * ticketDetails.s_V[numberOfVerifiers] = s_dash;
-		 * ticketDetails.sigma_V[numberOfVerifiers] = sigma_du;
-		 * ticketDetails.w_V[numberOfVerifiers] = w_dash;
-		 * ticketDetails.e_V[numberOfVerifiers] = e_dash;
-		 * 
-		 * }
-		 **/
-
-		ticketDetails.w_P = crypto.secureRandom(p);
-		ticketDetails.e_P = crypto.secureRandom(p);
+		ticketDetails.w_CV = crypto.secureRandom(p);
+		ticketDetails.e_CV = crypto.secureRandom(p);
 		final List<byte[]> s_pDataList = new ArrayList<>();
 		for (int i = 0; i < numberOfVerifiers; i++) {
 			s_pDataList.add(ticketDetails.s_V[i]);
 		}
-		ticketDetails.s_P = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
-		final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_P).mod(p);
-		gcd = BigIntEuclidean.calculate(sellerData.x_S.add(ticketDetails.e_P).mod(p), p);
-		ticketDetails.sigma_P = ((g.add(h.mul(ticketDetails.w_P))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
+		ticketDetails.s_CV = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
+		final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_CV).mod(p);
+		gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_CV).mod(p), p);
+		ticketDetails.Z_CV = ((g.add(h.mul(ticketDetails.w_CV))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
 
 		final List<byte[]> sendDataList = new ArrayList<>();
 		sendDataList.add(C_U.toBytes());
@@ -959,29 +1040,32 @@ public class TestPPLast {
 	}
 
 	private byte[] generateTicketRequest() {
+		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-		// final Crypto crypto = Crypto.getInstance();
+		final Crypto crypto = Crypto.getInstance();
 
-		// get some element from sharedMemory
+		// get some elements from sharedMemory
+		LOG.debug("computing ZK_PI_1_U");
 		final BigInteger p = sharedMemory.p;
-		final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE).getImmutable();
+		final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER).getImmutable();
 		final Element xi = sharedMemory.xi.getImmutable();
 		final Element g = sharedMemory.g.getImmutable();
 		final Element h = sharedMemory.h.getImmutable();
 
-		final int numberOfVerifiers = userData.VerifierList.length;
+		// need to include Central Verifier
+		final int numberOfVerifiers = userData.VerifierList.length + 1;
 
 		// compute some stuff for the ZKP PI_1_U
 		final Element B_U = g.add(h.mul(userData.r_u)).add(userData.Y_U);
 		final BigInteger v_1 = crypto.secureRandom(p);
 		final BigInteger v_2 = crypto.secureRandom(p);
-		final BigInteger z_U = crypto.secureRandom(p);
+		final BigInteger z_u = crypto.secureRandom(p);
 		// store z_U for later use...
-		userData.z_u = z_U;
+		userData.z_u = z_u;
 
-		// final BigInteger r_dash_U = crypto.secureRandom(p);
-		final BigInteger x_dash_U = crypto.secureRandom(p);
-		final BigInteger e_dash_U = crypto.secureRandom(p);
+		final BigInteger x_dash_u = crypto.secureRandom(p);
+		final BigInteger e_dash_u = crypto.secureRandom(p);
 		final BigInteger v_dash_2 = crypto.secureRandom(p);
 		final BigInteger v_dash_3 = crypto.secureRandom(p);
 		final BigInteger v_dash = crypto.secureRandom(p);
@@ -995,27 +1079,42 @@ public class TestPPLast {
 		final Element sigma_bar_U = userData.sigma_U.mul(v_1).getImmutable();
 		final Element sigma_tilde_U = (sigma_bar_U.mul(userData.e_u.negate().mod(p))).add(B_U.mul(v_1)).getImmutable();
 		final Element B_bar_U = B_U.mul(v_1).add(sharedMemory.h.mul(v_2.negate().mod(p))).getImmutable();
-		final Element W_1 = ((sigma_bar_U.mul(e_dash_U.negate().mod(p))).add(h.mul(v_dash_2))).getImmutable();
-		final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_U))).add(h.mul(v_dash)))
+		final Element W_1 = ((sigma_bar_U.mul(e_dash_u.negate().mod(p))).add(h.mul(v_dash_2))).getImmutable();
+		final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_u))).add(h.mul(v_dash)))
 				.getImmutable();
 
-		final byte[][] z_V = new byte[numberOfVerifiers][];
+		final byte[][] z_v = new byte[numberOfVerifiers][];
 		final Element[] P_V = new Element[numberOfVerifiers];
 		final Element[] P_dash_V = new Element[numberOfVerifiers];
 		final Element[] Q_V = new Element[numberOfVerifiers];
 		final Element[] Q_dash_V = new Element[numberOfVerifiers];
 
 		for (int i = 0; i < numberOfVerifiers; i++) {
-			final ListData zvData = new ListData(Arrays.asList(z_U.toByteArray(), userData.VerifierList[i].getBytes()));
-			z_V[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
-			final BigInteger z_Vnum = (new BigInteger(1, z_V[i])).mod(sharedMemory.p);
-			P_V[i] = userData.Y_U.add(Y_P.mul(z_Vnum)).getImmutable();
-			P_dash_V[i] = ((xi.mul(x_dash_U)).add(Y_P.mul(z_dash[i]))).getImmutable();
-			Q_V[i] = xi.mul(z_Vnum).getImmutable();
-			Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+			if (i < numberOfVerifiers - 1) {
+				LOG.debug("adding verifier: " + i);
+				final ListData zvData = new ListData(
+						Arrays.asList(z_u.toByteArray(), userData.VerifierList[i].getBytes()));
+				z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
+				final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
+				P_V[i] = userData.Y_U.add(Y_CV.mul(z_Vnum)).getImmutable();
+				P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_CV.mul(z_dash[i]))).getImmutable();
+				Q_V[i] = xi.mul(z_Vnum).getImmutable();
+				Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+			} else {
+				LOG.debug("adding central verifier!");
+				final ListData zvData = new ListData(
+						Arrays.asList(z_u.toByteArray(), Actor.CENTRAL_VERIFIER.getBytes()));
+				z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
+				final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
+				P_V[i] = userData.Y_U.add(Y_CV.mul(z_Vnum)).getImmutable();
+				P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_CV.mul(z_dash[i]))).getImmutable();
+				Q_V[i] = xi.mul(z_Vnum).getImmutable();
+				Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+			}
 		}
-
+		LOG.debug("finished computing ZK_PI_1_U");
 		final List<byte[]> c_DataList = new ArrayList<>();
+
 		c_DataList.addAll(Arrays.asList(sigma_bar_U.toBytes(), sigma_tilde_U.toBytes(), B_bar_U.toBytes(),
 				W_1.toBytes(), W_2.toBytes()));
 		for (int i = 0; i < numberOfVerifiers; i++) {
@@ -1027,16 +1126,16 @@ public class TestPPLast {
 		final byte[] c_hash = crypto.getHash((new ListData(c_DataList)).toBytes(), sharedMemory.Hash1);
 		final BigInteger c_hashNum = (new BigInteger(1, c_hash)).mod(p);
 
-		final BigInteger e_hat_U = (e_dash_U.subtract(c_hashNum.multiply(userData.e_u))).mod(p);
+		final BigInteger e_hat_U = (e_dash_u.subtract(c_hashNum.multiply(userData.e_u))).mod(p);
 		final BigInteger v_hat_2 = (v_dash_2.subtract(c_hashNum.multiply(v_2))).mod(p);
 		final BigInteger v_hat_3 = (v_dash_3.subtract(c_hashNum.multiply(v_3))).mod(p);
 		final BigInteger v_hat = (v_dash.subtract(c_hashNum.multiply(v))).mod(p);
-		final BigInteger x_hat_U = (x_dash_U.subtract(c_hashNum.multiply(userData.x_U))).mod(p);
+		final BigInteger x_hat_u = (x_dash_u.subtract(c_hashNum.multiply(userData.x_U))).mod(p);
 
-		final BigInteger[] z_hat_V = new BigInteger[numberOfVerifiers];
+		final BigInteger[] z_hat_v = new BigInteger[numberOfVerifiers];
 		for (int i = 0; i < numberOfVerifiers; i++) {
-			final BigInteger z_VNum = (new BigInteger(1, z_V[i])).mod(p);
-			z_hat_V[i] = (z_dash[i].subtract(c_hashNum.multiply(z_VNum))).mod(p);
+			final BigInteger z_VNum = (new BigInteger(1, z_v[i])).mod(p);
+			z_hat_v[i] = (z_dash[i].subtract(c_hashNum.multiply(z_VNum))).mod(p);
 		}
 
 		final List<byte[]> sendDataList = new ArrayList<>();
@@ -1046,7 +1145,11 @@ public class TestPPLast {
 		// need to send all the verifier IDs
 		sendDataList.add(BigInteger.valueOf(numberOfVerifiers).toByteArray());
 		for (int i = 0; i < numberOfVerifiers; i++) {
-			sendDataList.add(userData.VerifierList[i].getBytes(StandardCharsets.UTF_8));
+			if (i < numberOfVerifiers - 1) {
+				sendDataList.add(userData.VerifierList[i].getBytes(StandardCharsets.UTF_8));
+			} else {
+				sendDataList.add(Actor.CENTRAL_VERIFIER.getBytes(StandardCharsets.UTF_8));
+			}
 		}
 
 		// send the Ps and Qs
@@ -1059,22 +1162,22 @@ public class TestPPLast {
 
 		// add the last few items...
 		sendDataList.addAll(Arrays.asList(c_hash, e_hat_U.toByteArray(), v_hat_2.toByteArray(), v_hat_3.toByteArray(),
-				v_hat.toByteArray(), x_hat_U.toByteArray()));
+				v_hat.toByteArray(), x_hat_u.toByteArray()));
 
 		for (int i = 0; i < numberOfVerifiers; i++) {
-			sendDataList.add(z_hat_V[i].toByteArray());
+			sendDataList.add(z_hat_v[i].toByteArray());
 		}
 
 		final ListData sendData = new ListData(sendDataList);
 		return sendData.toBytes();
 	}
 
-	private byte[] generateSellerIdentity() {
-		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+	private byte[] generateIssuerIdentity() {
+		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
-		// Send ID_S, Y_S, Y_S_bar
+		// Send ID_I, Y_bar_I, Y_S_bar
 		final ListData sendData = new ListData(
-				Arrays.asList(sellerData.ID_S.getBytes(), sellerData.Y_S.toBytes(), sellerData.Y_bar_S.toBytes()));
+				Arrays.asList(sellerData.ID_I.getBytes(), sellerData.Y_I.toBytes(), sellerData.Y_bar_I.toBytes()));
 		return sendData.toBytes();
 	}
 
@@ -1095,15 +1198,15 @@ public class TestPPLast {
 		return sendData.toBytes();
 	}
 
-	private byte[] generatePoliceIdentity() {
-		final PoliceData policeData = (PoliceData) sharedMemory.getData(Actor.POLICE);
+	private byte[] generateCenVerIdentity() {
+		final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
 		// Send ID_U, Y_U
-		final ListData sendData = new ListData(Arrays.asList(policeData.ID_P.getBytes(), policeData.Y_P.toBytes()));
+		final ListData sendData = new ListData(Arrays.asList(cenVerData.ID_V.getBytes(), cenVerData.Y_V.toBytes()));
 		return sendData.toBytes();
 	}
 
-	private byte[] generateSellerCredentials(byte[] data) {
+	private byte[] generateIssuerCredentials(byte[] data) {
 
 		final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 				.getData(Actor.CENTRAL_AUTHORITY);
@@ -1130,12 +1233,12 @@ public class TestPPLast {
 		final Element sigma_S = (sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(Y_S)).mul(gcd.x.mod(sharedMemory.p))
 				.getImmutable();
 
-		centralAuthorityData.ID_S = ID_S;
-		centralAuthorityData.Y_S = Y_S;
-		centralAuthorityData.Y_bar_S = Y_bar_S;
-		centralAuthorityData.r_S = r_S;
-		centralAuthorityData.e_S = e_S;
-		centralAuthorityData.sigma_S = sigma_S;
+		centralAuthorityData.ID_I = ID_S;
+		centralAuthorityData.Y_I = Y_S;
+		centralAuthorityData.Y_bar_I = Y_bar_S;
+		centralAuthorityData.r_I = r_S;
+		centralAuthorityData.e_I = e_S;
+		centralAuthorityData.sigma_I = sigma_S;
 
 		// Send sigma_s, e_s, r_s
 		final ListData sendData = new ListData(Arrays.asList(sigma_S.toBytes(), r_S.toByteArray(), e_S.toByteArray()));
@@ -1191,7 +1294,7 @@ public class TestPPLast {
 
 			centralAuthorityData.verifiers.put(ID_V, veriferDetails);
 		}
-		// Send sigma_V, e_V, r_V back
+		// Send Z_V, e_V, r_V back
 		final ListData sendData = new ListData(Arrays.asList(sigma_V.toBytes(), r_V.toByteArray(), e_V.toByteArray()));
 
 		return sendData.toBytes();
@@ -1237,7 +1340,7 @@ public class TestPPLast {
 		return sendData.toBytes();
 	}
 
-	private byte[] generatePoliceCredentials(byte[] data) {
+	private byte[] generateCenVerCredentials(byte[] data) {
 
 		final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 				.getData(Actor.CENTRAL_AUTHORITY);
@@ -1254,7 +1357,7 @@ public class TestPPLast {
 		final String ID_P = sharedMemory.stringFromBytes(listData.getList().get(0));
 		final Element Y_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(1));
 
-		// compute sigma_P
+		// compute Z_CV
 		final BigInteger e_P = crypto.secureRandom(sharedMemory.p);
 		final BigInteger r_P = crypto.secureRandom(sharedMemory.p);
 		final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x_a.add(e_P).mod(sharedMemory.p),
@@ -1263,11 +1366,11 @@ public class TestPPLast {
 		final Element sigma_P = (sharedMemory.g.add(sharedMemory.h.mul(r_P)).add(Y_P)).mul(gcd.x.mod(sharedMemory.p))
 				.getImmutable();
 
-		centralAuthorityData.ID_P = ID_P;
-		centralAuthorityData.Y_P = Y_P;
-		centralAuthorityData.r_P = r_P;
-		centralAuthorityData.e_P = e_P;
-		centralAuthorityData.sigma_P = sigma_P;
+		centralAuthorityData.ID_CV = ID_P;
+		centralAuthorityData.Y_CV = Y_P;
+		centralAuthorityData.r_CV = r_P;
+		centralAuthorityData.e_CV = e_P;
+		centralAuthorityData.sigma_CV = sigma_P;
 
 		// Send sigma_s, e_s, r_s
 		final ListData sendData = new ListData(Arrays.asList(sigma_P.toBytes(), r_P.toByteArray(), e_P.toByteArray()));
@@ -1275,9 +1378,9 @@ public class TestPPLast {
 		return sendData.toBytes();
 	}
 
-	private boolean verifySellerCredentials(byte[] data) {
+	private boolean verifyIssuerCredentials(byte[] data) {
 
-		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
+		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
@@ -1299,16 +1402,16 @@ public class TestPPLast {
 
 		final Element lhs = sharedMemory.pairing.pairing(sigma_S, Y_A.add(sharedMemory.g_frak.mul(e_S))).getImmutable();
 		final Element rhs = sharedMemory.pairing
-				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_S), sharedMemory.g_frak)
+				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_I), sharedMemory.g_frak)
 				.getImmutable();
 
 		if (!lhs.isEqual(rhs)) {
 			return false;
 		}
 
-		sellerData.e_S = e_S;
-		sellerData.r_S = r_S;
-		sellerData.sigma_S = sigma_S;
+		sellerData.e_I = e_S;
+		sellerData.r_I = r_S;
+		sellerData.sigma_I = sigma_S;
 		return true;
 	}
 
@@ -1352,7 +1455,7 @@ public class TestPPLast {
 	private boolean verifyUserCredentials(byte[] data) {
 
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-		final Crypto crypto = Crypto.getInstance();
+		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
 		final ListData listData = ListData.fromBytes(data);
@@ -1367,29 +1470,30 @@ public class TestPPLast {
 		final BigInteger e_u = new BigInteger(listData.getList().get(2));
 
 		// verify the credentials
-		// TODO: Need to send the CA public key across during set-up. Ignore check for
-		// now.
-
 		// get the public key of the CA
-		final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
+		final Element Y_A = sharedMemory.Y_A;
 
+		LOG.debug("About to verify user credentials - computing lhs");
 		final Element lhs = sharedMemory.pairing.pairing(sigma_U, Y_A.add(sharedMemory.g_frak.mul(e_u))).getImmutable();
+		LOG.debug("still verifying user credentials - computing rhs");
 		final Element rhs = sharedMemory.pairing
 				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_u)).add(userData.Y_U), sharedMemory.g_frak)
 				.getImmutable();
 
 		if (!lhs.isEqual(rhs)) {
+			LOG.error("Failed to verify user credentials");
 			return false;
 		}
+		LOG.debug("Successfully verified user credentials");
 		userData.e_u = e_u;
 		userData.r_u = r_u;
 		userData.sigma_U = sigma_U;
 		return true;
 	}
 
-	private boolean verifyPoliceCredentials(byte[] data) {
+	private boolean verifyCenVerCredentials(byte[] data) {
 
-		final PoliceData policeData = (PoliceData) sharedMemory.getData(Actor.POLICE);
+		final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
@@ -1400,27 +1504,28 @@ public class TestPPLast {
 			return false;
 		}
 
-		final Element sigma_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
-		final BigInteger r_P = new BigInteger(listData.getList().get(1));
-		final BigInteger e_P = new BigInteger(listData.getList().get(2));
+		final Element sigma_CV = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
+		final BigInteger r_CV = new BigInteger(listData.getList().get(1));
+		final BigInteger e_CV = new BigInteger(listData.getList().get(2));
 
 		// verify the credentials
 
 		// get the public key of the CA
 		final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
 
-		final Element lhs = sharedMemory.pairing.pairing(sigma_P, Y_A.add(sharedMemory.g_frak.mul(e_P))).getImmutable();
+		final Element lhs = sharedMemory.pairing.pairing(sigma_CV, Y_A.add(sharedMemory.g_frak.mul(e_CV)))
+				.getImmutable();
 		final Element rhs = sharedMemory.pairing
-				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_P)).add(policeData.Y_P), sharedMemory.g_frak)
+				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_CV)).add(cenVerData.Y_V), sharedMemory.g_frak)
 				.getImmutable();
 
 		if (!lhs.isEqual(rhs)) {
 			return false;
 		}
 
-		policeData.e_P = e_P;
-		policeData.r_P = r_P;
-		policeData.sigma_P = sigma_P;
+		cenVerData.e_V = e_CV;
+		cenVerData.r_V = r_CV;
+		cenVerData.sigma_V = sigma_CV;
 		return true;
 	}
 

@@ -52,12 +52,13 @@ public class PPLASTIssuingStates {
       // get some elements from sharedMemory
       LOG.debug("computing ZK_PI_1_U");
       final BigInteger p = sharedMemory.p;
-      final Element Y_P = sharedMemory.getPublicKey(Actor.POLICE).getImmutable();
+      final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER).getImmutable();
       final Element xi = sharedMemory.xi.getImmutable();
       final Element g = sharedMemory.g.getImmutable();
       final Element h = sharedMemory.h.getImmutable();
 
-      final int numberOfVerifiers = userData.VerifierList.length;
+      // need to include Central Verifier
+      final int numberOfVerifiers = userData.VerifierList.length + 1;
 
       // compute some stuff for the ZKP PI_1_U
       final Element B_U = g.add(h.mul(userData.r_u)).add(userData.Y_U);
@@ -80,13 +81,11 @@ public class PPLASTIssuingStates {
       final BigInteger v_3 = gcd.x.mod(p);
       final BigInteger v = (userData.r_u.subtract(v_2.multiply(v_3))).mod(p);
       final Element sigma_bar_U = userData.sigma_U.mul(v_1).getImmutable();
-      final Element sigma_tilde_U = (sigma_bar_U.mul(userData.e_u.negate().mod(p))).add(B_U.mul
-              (v_1)).getImmutable();
+      final Element sigma_tilde_U = (sigma_bar_U.mul(userData.e_u.negate().mod(p))).add(B_U.mul(v_1)).getImmutable();
       final Element B_bar_U = B_U.mul(v_1).add(sharedMemory.h.mul(v_2.negate().mod(p))).getImmutable();
-      final Element W_1 = ((sigma_bar_U.mul(e_dash_u.negate().mod(p))).add(h.mul(v_dash_2)))
+      final Element W_1 = ((sigma_bar_U.mul(e_dash_u.negate().mod(p))).add(h.mul(v_dash_2))).getImmutable();
+      final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_u))).add(h.mul(v_dash)))
               .getImmutable();
-      final Element W_2 = (((B_bar_U.mul(v_dash_3.negate().mod(p))).add(xi.mul(x_dash_u))).add(h
-              .mul(v_dash))).getImmutable();
 
       final byte[][] z_v = new byte[numberOfVerifiers][];
       final Element[] P_V = new Element[numberOfVerifiers];
@@ -95,22 +94,33 @@ public class PPLASTIssuingStates {
       final Element[] Q_dash_V = new Element[numberOfVerifiers];
 
       for (int i = 0; i < numberOfVerifiers; i++) {
-        LOG.debug("adding verifier: "+i);
-        final ListData zvData = new ListData(Arrays.asList(z_u.toByteArray(), userData
-                .VerifierList[i].getBytes()));
-        z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
-        final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
-        P_V[i] = userData.Y_U.add(Y_P.mul(z_Vnum)).getImmutable();
-        P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_P.mul(z_dash[i]))).getImmutable();
-        Q_V[i] = xi.mul(z_Vnum).getImmutable();
-        Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+        if (i < numberOfVerifiers - 1) {
+          LOG.debug("adding verifier: " + i);
+          final ListData zvData = new ListData(
+                  Arrays.asList(z_u.toByteArray(), userData.VerifierList[i].getBytes()));
+          z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
+          final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
+          P_V[i] = userData.Y_U.add(Y_CV.mul(z_Vnum)).getImmutable();
+          P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_CV.mul(z_dash[i]))).getImmutable();
+          Q_V[i] = xi.mul(z_Vnum).getImmutable();
+          Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+        } else {
+          LOG.debug("adding central verifier!");
+          final ListData zvData = new ListData(
+                  Arrays.asList(z_u.toByteArray(), Actor.CENTRAL_VERIFIER.getBytes()));
+          z_v[i] = crypto.getHash(zvData.toBytes(), sharedMemory.Hash1);
+          final BigInteger z_Vnum = (new BigInteger(1, z_v[i])).mod(sharedMemory.p);
+          P_V[i] = userData.Y_U.add(Y_CV.mul(z_Vnum)).getImmutable();
+          P_dash_V[i] = ((xi.mul(x_dash_u)).add(Y_CV.mul(z_dash[i]))).getImmutable();
+          Q_V[i] = xi.mul(z_Vnum).getImmutable();
+          Q_dash_V[i] = xi.mul(z_dash[i]).getImmutable();
+        }
       }
       LOG.debug("finished computing ZK_PI_1_U");
       final List<byte[]> c_DataList = new ArrayList<>();
 
-
-      c_DataList
-              .addAll(Arrays.asList(sigma_bar_U.toBytes(), sigma_tilde_U.toBytes(), B_bar_U.toBytes(), W_1.toBytes(), W_2.toBytes()));
+      c_DataList.addAll(Arrays.asList(sigma_bar_U.toBytes(), sigma_tilde_U.toBytes(), B_bar_U.toBytes(),
+              W_1.toBytes(), W_2.toBytes()));
       for (int i = 0; i < numberOfVerifiers; i++) {
         c_DataList.add(P_V[i].toBytes());
         c_DataList.add(P_dash_V[i].toBytes());
@@ -133,13 +143,17 @@ public class PPLASTIssuingStates {
       }
 
       final List<byte[]> sendDataList = new ArrayList<>();
-      sendDataList
-              .addAll(Arrays.asList(sigma_bar_U.toBytes(), sigma_tilde_U.toBytes(), B_bar_U.toBytes(), W_1.toBytes(), W_2.toBytes()));
+      sendDataList.addAll(Arrays.asList(sigma_bar_U.toBytes(), sigma_tilde_U.toBytes(), B_bar_U.toBytes(),
+              W_1.toBytes(), W_2.toBytes()));
 
       // need to send all the verifier IDs
       sendDataList.add(BigInteger.valueOf(numberOfVerifiers).toByteArray());
       for (int i = 0; i < numberOfVerifiers; i++) {
-        sendDataList.add(userData.VerifierList[i].getBytes(StandardCharsets.UTF_8));
+        if (i < numberOfVerifiers - 1) {
+          sendDataList.add(userData.VerifierList[i].getBytes(StandardCharsets.UTF_8));
+        } else {
+          sendDataList.add(Actor.CENTRAL_VERIFIER.getBytes(StandardCharsets.UTF_8));
+        }
       }
 
       // send the Ps and Qs
@@ -247,7 +261,7 @@ public class PPLASTIssuingStates {
         LOG.debug("Passed s_V verification!");
 
         // some elements from sharedMemory
-        final Element Y_bar_S = sharedMemory.Y_S;
+        final Element Y_bar_I = sharedMemory.Y_bar_I;
         final Element g = sharedMemory.g.getImmutable();
         final Element g_frak = sharedMemory.g_frak.getImmutable();
         final Element h = sharedMemory.h.getImmutable();
@@ -257,7 +271,7 @@ public class PPLASTIssuingStates {
         for (int i = 0; i < numOfVerifiers; i++) {
           LOG.debug("Verifier: " + i + " is being checked.");
 
-          final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_V[i], Y_bar_S.add
+          final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.Z_V[i], Y_bar_I.add
                   (g_frak.mul(ticketDetails.e_v[i]))))
                   .getImmutable();
 
@@ -274,33 +288,38 @@ public class PPLASTIssuingStates {
             return false;
           }
         }
-        LOG.debug("Passed sigma_V pairing verification!");
+        LOG.debug("Passed Z_V pairing verification!");
 
         final List<byte[]> verifys_PData = new ArrayList<>();
         for (int i = 0; i < numOfVerifiers; i++) {
           verifys_PData.add(ticketDetails.s_V[i]);
         }
 
-        if (!Arrays.equals(ticketDetails.s_P, crypto.getHash((new ListData(verifys_PData)).toBytes(), sharedMemory.Hash1))) {
-          LOG.error("failed to verify s_P hash");
+        if (!Arrays.equals(ticketDetails.s_CV, crypto.getHash((new ListData(verifys_PData))
+                .toBytes(), sharedMemory.Hash1))) {
+          LOG.error("failed to verify s_CV hash");
           return false;
         }
 
-        LOG.debug("Passed s_P verification!");
+        LOG.debug("Passed s_CV verification!");
 
-        final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_P)).mod(p);
-
-        final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.sigma_P, Y_bar_S.add(g_frak.mul(ticketDetails.e_P))))
+        final BigInteger s_PNum = (new BigInteger(1, ticketDetails.s_CV)).mod(p);
+        LOG.debug("Central Verifier is being checked.");
+        final Element lhs = (sharedMemory.pairing.pairing(ticketDetails.Z_CV, Y_bar_I.add
+                (g_frak.mul(ticketDetails.e_CV))))
                 .getImmutable();
-        final Element rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_P)).add(h_tilde.mul(s_PNum)), g_frak))
+        LOG.debug("Central Verifier is still being checked. Computed lhs" + lhs);
+        final Element rhs = (sharedMemory.pairing.pairing(g.add(h.mul(ticketDetails.w_CV)).add
+                (h_tilde.mul(s_PNum)), g_frak))
                 .getImmutable();
+        LOG.debug("Central Verifier is still being checked. Computed rhs" + rhs);
 
         if (!lhs.isEqual(rhs)) {
-          LOG.error("failed to verify sigma_P pairing check");
+          LOG.error("failed to verify Z_CV pairing check");
           return false;
         }
 
-        LOG.debug("Passed sigma_P pairing verification!");
+        LOG.debug("Passed Z_CV pairing verification!");
       }
       // store the ticket details
       // note that z_U was stored during the ticket request generation

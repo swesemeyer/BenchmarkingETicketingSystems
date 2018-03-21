@@ -37,7 +37,7 @@ public class UserData implements PPLASTSharedMemory.ActorData {
   /** the private key of the user */
   public BigInteger     x_U           = null;
 
-  /** User pseudonym. */
+  /** User pseudonym */
   public Element        Y_U           = null;
 
   /** secret ticket number */

@@ -35,8 +35,8 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.NFCSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.PoliceData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
 import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 
@@ -50,9 +50,9 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 	 */
 	public static class Actor {
 		public static final String CENTRAL_AUTHORITY = "CA";
-		public static final String SELLER = "Seller1";
+		public static final String ISSUER = "Issuer1";
 		public static final String USER = "User1";
-		public static final String POLICE = "Police1";
+		public static final String CENTRAL_VERIFIER = "CentralVerifier1";
 		public static final String[] VERIFIERS = { "Verifier0", "Verifier1", "Verifier2", "Verifier3", "Verifier4",
 				"Verifier5", "Verifier_Dummy" };
 		public static int dummyVerifierIndx = 6;
@@ -120,17 +120,17 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 
 	public CurveElement<?, ?> Y_A = null;
 
-	/** The public key of the Police */
+	/** The public key of the Central Verifier */
 
-	public CurveElement<?, ?> Y_P = null;
+	public CurveElement<?, ?> Y_CV = null;
 
 	/** The public key of the User */
 
 	public CurveElement<?, ?> Y_U = null;
 
-	/** The public key of the Seller */
+	/** The public key of the Issuer */
 
-	public CurveElement<?, ?> Y_S = null;
+	public CurveElement<?, ?> Y_bar_I = null;
 
 	/** The public keys of the Verifiers **/
 	
@@ -204,17 +204,17 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		// police.
 		this.actorData.put(Actor.CENTRAL_AUTHORITY,
 				new CentralAuthorityData(Actor.CENTRAL_AUTHORITY, this.p, this.g_frak));
-		this.actorData.put(Actor.SELLER, new SellerData(Actor.SELLER, this.p, this.xi, this.g_frak));
+		this.actorData.put(Actor.ISSUER, new IssuerData(Actor.ISSUER, this.p, this.xi, this.g_frak));
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
 			//save the public key in a hashmap
 			this.Y_V.put(Actor.VERIFIERS[i],(CurveElement<?,?>) this.getPublicKey(Actor.VERIFIERS[i]));
 		}
-		this.actorData.put(Actor.POLICE, new PoliceData(Actor.POLICE, this.p, this.xi));
+		this.actorData.put(Actor.CENTRAL_VERIFIER, new CentralVerifierData(Actor.CENTRAL_VERIFIER, this.p, this.xi));
 
 		this.Y_A = (CurveElement<?, ?>) this.getPublicKey(Actor.CENTRAL_AUTHORITY);
-		this.Y_P = (CurveElement<?, ?>) this.getPublicKey(Actor.POLICE);
-		this.Y_S = (CurveElement<?, ?>) this.getPublicKey(Actor.SELLER);
+		this.Y_CV = (CurveElement<?, ?>) this.getPublicKey(Actor.CENTRAL_VERIFIER);
+		this.Y_bar_I = (CurveElement<?, ?>) this.getPublicKey(Actor.ISSUER);
 
 	}
 
@@ -259,18 +259,18 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		// During testing we act as everything...
 		this.actorData.put(Actor.CENTRAL_AUTHORITY,
 				new CentralAuthorityData(Actor.CENTRAL_AUTHORITY, this.p, this.g_frak));
-		this.actorData.put(Actor.SELLER, new SellerData(Actor.SELLER, this.p, this.xi, this.g_frak));
+		this.actorData.put(Actor.ISSUER, new IssuerData(Actor.ISSUER, this.p, this.xi, this.g_frak));
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
 		}
 		this.actorData.put(Actor.USER, new UserData(Actor.USER, this.p, this.xi));
-		this.actorData.put(Actor.POLICE, new PoliceData(Actor.POLICE, this.p, this.xi));
+		this.actorData.put(Actor.CENTRAL_VERIFIER, new CentralVerifierData(Actor.CENTRAL_VERIFIER, this.p, this.xi));
 
 		this.Y_A = (CurveElement<?, ?>) this.getPublicKey(Actor.CENTRAL_AUTHORITY);
-		this.Y_P = (CurveElement<?, ?>) this.getPublicKey(Actor.POLICE);
-		this.Y_S = (CurveElement<?, ?>) this.getPublicKey(Actor.SELLER);
+		this.Y_CV = (CurveElement<?, ?>) this.getPublicKey(Actor.CENTRAL_VERIFIER);
+		this.Y_bar_I = (CurveElement<?, ?>) this.getPublicKey(Actor.ISSUER);
 		this.Y_U = (CurveElement<?, ?>) this.getPublicKey(Actor.USER);
-
+		this.validateVerifiers=true;
 	}
 
 	/**

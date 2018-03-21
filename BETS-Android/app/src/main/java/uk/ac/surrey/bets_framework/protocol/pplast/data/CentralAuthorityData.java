@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- * <p>
+ *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018
  */
 package uk.ac.surrey.bets_framework.protocol.pplast.data;
@@ -30,7 +30,7 @@ public class CentralAuthorityData implements PPLASTSharedMemory.ActorData {
     public Element sigma_V = null;
 
     public VerifierCredentials() {
-      /* default constructor */
+			/* default constructor */
     }
 
   }
@@ -43,13 +43,13 @@ public class CentralAuthorityData implements PPLASTSharedMemory.ActorData {
   /** the public key of the CA */
   public Element Y_A = null;
 
-  /** the seller's credentials */
-  public String ID_S = null;
-  public Element Y_S = null;
-  public Element Y_bar_S = null;
-  public BigInteger r_S = null;
-  public BigInteger e_S = null;
-  public Element sigma_S = null;
+  /** the issuer's credentials */
+  public String ID_I = null;
+  public Element Y_I = null;
+  public Element Y_bar_I = null;
+  public BigInteger r_I = null;
+  public BigInteger e_I = null;
+  public Element sigma_I = null;
 
   /** the verifier's credentials */
   public Map<String, VerifierCredentials> verifiers = new HashMap<String, VerifierCredentials>();
@@ -61,12 +61,12 @@ public class CentralAuthorityData implements PPLASTSharedMemory.ActorData {
   public BigInteger e_u = null;
   public Element sigma_U = null;
 
-  /** the Police's credentials */
-  public String ID_P = null;
-  public Element Y_P = null;
-  public BigInteger r_P = null;
-  public BigInteger e_P = null;
-  public Element sigma_P = null;
+  /** the central verifier's credentials */
+  public String ID_CV = null;
+  public Element Y_CV = null;
+  public BigInteger r_CV = null;
+  public BigInteger e_CV = null;
+  public Element sigma_CV = null;
 
   /**
    * Constructor.

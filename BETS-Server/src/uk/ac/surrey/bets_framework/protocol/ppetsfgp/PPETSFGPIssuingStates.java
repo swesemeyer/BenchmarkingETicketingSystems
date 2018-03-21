@@ -5,22 +5,6 @@
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 
-import it.unisa.dia.gas.jpbc.Element;
-import uk.ac.surrey.bets_framework.Crypto;
-import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
-import uk.ac.surrey.bets_framework.nfc.NFC;
-import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
-import uk.ac.surrey.bets_framework.protocol.data.Data;
-import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
-import uk.ac.surrey.bets_framework.state.Action;
-import uk.ac.surrey.bets_framework.state.Message;
-import uk.ac.surrey.bets_framework.state.State;
-import uk.ac.surrey.bets_framework.state.Action.Status;
-import uk.ac.surrey.bets_framework.state.Message.Type;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +12,21 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.unisa.dia.gas.jpbc.Element;
+import uk.ac.surrey.bets_framework.Crypto;
+import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
+import uk.ac.surrey.bets_framework.nfc.NFC;
+import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
+import uk.ac.surrey.bets_framework.protocol.data.ListData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
+import uk.ac.surrey.bets_framework.state.Action;
+import uk.ac.surrey.bets_framework.state.Action.Status;
+import uk.ac.surrey.bets_framework.state.Message;
+import uk.ac.surrey.bets_framework.state.Message.Type;
+import uk.ac.surrey.bets_framework.state.State;
 
 /**
  * Ticket issuing states of the PPETS-FGP state machine protocol.
