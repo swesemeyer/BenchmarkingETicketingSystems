@@ -40,17 +40,17 @@ public class AnonSSORegistrationStates {
 	private static final Logger LOG = LoggerFactory.getLogger(AnonSSORegistrationStates.class);
 
 	/**
-	 * State 04: As Seller: generate the seller identity
+	 * State 04: As Issuer: generate the issuer identity
 	 */
 	public static class RState04 extends State<NFCReaderCommand> {
 
-		private byte[] generateSellerIdentity() {
+		private byte[] generateIssuerIdentity() {
 			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
-			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+			final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 			// Send ID_I, Y_bar_I, Y_S_bar
 			final ListData sendData = new ListData(
-					Arrays.asList(sellerData.ID_I.getBytes(), sellerData.Y_I.toBytes(), sellerData.Y_bar_I.toBytes()));
+					Arrays.asList(issuerData.ID_I.getBytes(), issuerData.Y_I.toBytes(), issuerData.Y_bar_I.toBytes()));
 			return sendData.toBytes();
 		}
 
@@ -67,7 +67,7 @@ public class AnonSSORegistrationStates {
 			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
-				final byte[] data = this.generateSellerIdentity();
+				final byte[] data = this.generateIssuerIdentity();
 
 				if (data != null) {
 					return new Action<>(Status.CONTINUE, 5, NFCReaderCommand.PUT_INTERNAL, data, 0);
@@ -80,7 +80,7 @@ public class AnonSSORegistrationStates {
 	}
 
 	/**
-	 * State 05: As Central Authority: get the data from the seller
+	 * State 05: As Central Authority: get the data from the issuer
 	 */
 	public static class RState05 extends State<NFCReaderCommand> {
 
@@ -96,18 +96,18 @@ public class AnonSSORegistrationStates {
 			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 
-			// Get the seller identity data.
+			// Get the issuer identity data.
 			return new Action<>(Status.CONTINUE, 6, NFCReaderCommand.GET_INTERNAL, null, NFC.USE_MAXIMUM_LENGTH);
 		}
 	}
 
 	/**
-	 * State 06: As Central Authority: generate the seller credentials and send them
-	 * to the seller
+	 * State 06: As Central Authority: generate the issuer credentials and send them
+	 * to the issuer
 	 */
 	public static class RState06 extends State<NFCReaderCommand> {
 
-		private byte[] generateSellerCredentials(byte[] data) {
+		private byte[] generateIssuerCredentials(byte[] data) {
 			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
@@ -157,7 +157,7 @@ public class AnonSSORegistrationStates {
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
-				final byte[] data = this.generateSellerCredentials(message.getData());
+				final byte[] data = this.generateIssuerCredentials(message.getData());
 				if (data != null) {
 					return new Action<>(Status.CONTINUE, 7, NFCReaderCommand.PUT_INTERNAL, data, 0);
 				}
@@ -167,7 +167,7 @@ public class AnonSSORegistrationStates {
 	}
 
 	/**
-	 * State 07 As seller: Get the data from the Central Authority
+	 * State 07 As issuer: Get the data from the Central Authority
 	 */
 	public static class RState07 extends State<NFCReaderCommand> {
 
@@ -181,20 +181,20 @@ public class AnonSSORegistrationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 
-			// Get the seller credentials data.
+			// Get the issuer credentials data.
 			return new Action<>(Status.CONTINUE, 8, NFCReaderCommand.GET_INTERNAL, null, NFC.USE_MAXIMUM_LENGTH);
 		}
 	}
 
 	/**
-	 * State 08 As seller: verify the Central Authority's data and store the
-	 * seller's credentials
+	 * State 08 As issuer: verify the Central Authority's data and store the
+	 * issuer credentials
 	 */
 	public static class RState08 extends State<NFCReaderCommand> {
 
-		private boolean verifySellerCredentials(byte[] data) {
+		private boolean verifyIssuerCredentials(byte[] data) {
 			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
-			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+			final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
@@ -212,16 +212,16 @@ public class AnonSSORegistrationStates {
 			final Element lhs = sharedMemory.pairing.pairing(sigma_S, Y_A.add(sharedMemory.g_frak.mul(e_S)))
 					.getImmutable();
 			final Element rhs = sharedMemory.pairing
-					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_I), sharedMemory.g_frak)
+					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(issuerData.Y_I), sharedMemory.g_frak)
 					.getImmutable();
 
 			if (!lhs.isEqual(rhs)) {
 				return false;
 			}
 
-			sellerData.e_I = e_S;
-			sellerData.r_I = r_S;
-			sellerData.sigma_I = sigma_S;
+			issuerData.e_I = e_S;
+			issuerData.r_I = r_S;
+			issuerData.sigma_I = sigma_S;
 			return true;
 		}
 
@@ -238,9 +238,9 @@ public class AnonSSORegistrationStates {
 			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
-				final boolean success = this.verifySellerCredentials(message.getData());
+				final boolean success = this.verifyIssuerCredentials(message.getData());
 				if (success) {
-					LOG.debug("Successfully registered seller!");
+					LOG.debug("Successfully registered issuer!");
 					return new Action<>(9);
 				}
 			}

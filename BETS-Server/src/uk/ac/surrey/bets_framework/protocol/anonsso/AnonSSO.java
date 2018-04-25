@@ -16,9 +16,11 @@ import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
 
 /**
- * Implements the AnonSSO(Han et al) NFC protocol as a state machine.
+ * Implements the AnonSSO(Han et al) protocol as a state machine.
  *
- * Han, J. et al "Privacy-preserving Location-aware smart ticketing" (AnonSSO)
+ * Han, J. et al "Anonymous Single-Sign-On for n designated services with traceability" (AnonSSO)
+ * 
+ * available at https://arxiv.org/abs/1804.07201
  *
  * @author Steve Wesemeyer
  */

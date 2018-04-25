@@ -59,13 +59,13 @@ public class AnonSSOIssuingStates {
 
   /**
    * State 23
-   * As seller: verify user proof and issue ticket
+   * As issuer: verify user proof and issue ticket
    */
   public static class IState23 extends State<NFCReaderCommand> {
 
     private byte[] generateTicketDetails(byte[] data) {
       final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
-      final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+      final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
       final Crypto crypto = Crypto.getInstance();
 
       // Decode the received data.
@@ -236,7 +236,7 @@ public class AnonSSOIssuingStates {
                 ticketDetails.F_V[i].toBytes(), ticketDetails.K_V[i].toBytes(), IssuerData.TICKET_TEXT.getBytes()));
         ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
         final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-        gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
+        gcd = BigIntEuclidean.calculate(issuerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
         final BigInteger xs_plus_ev_inverse = gcd.x.mod(p);
         ticketDetails.Z_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
             .getImmutable();
@@ -278,7 +278,7 @@ public class AnonSSOIssuingStates {
             K_du.toBytes(), IssuerData.TICKET_TEXT.getBytes()));
         final byte[] s_dash = crypto.getHash(s_dashList.toBytes(), sharedMemory.Hash1);
         final BigInteger s_dashNum = new BigInteger(1, s_dash).mod(p);
-        gcd = BigIntEuclidean.calculate(sellerData.x_S.add(e_dash).mod(p), p);
+        gcd = BigIntEuclidean.calculate(issuerData.x_S.add(e_dash).mod(p), p);
 
         final Element sigma_du = ((g.add(h.mul(w_dash))).add(h_tilde.mul(s_dashNum))).mul(gcd.x.mod(p));
 
@@ -304,7 +304,7 @@ public class AnonSSOIssuingStates {
       }
       ticketDetails.s_CV = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
       final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_CV).mod(p);
-      gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_CV).mod(p), p);
+      gcd = BigIntEuclidean.calculate(issuerData.x_I.add(ticketDetails.e_CV).mod(p), p);
       ticketDetails.Z_CV = ((g.add(h.mul(ticketDetails.w_CV))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
 
       final List<byte[]> sendDataList = new ArrayList<>();

@@ -35,6 +35,9 @@ import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 
 /**
+ * This test provides a complete server-side run of the AnonSSO protocol
+ * together with the timings for each step of the protocol
+ * 
  * @author swesemeyer
  *
  */
@@ -904,7 +907,7 @@ public class TestAnonSSO {
 	}
 
 	private byte[] generateTicketDetails(byte[] data) {
-		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+		final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
@@ -1067,7 +1070,7 @@ public class TestAnonSSO {
 					ticketDetails.K_V[i].toBytes(), IssuerData.TICKET_TEXT.getBytes()));
 			ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
 			final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-			gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
+			gcd = BigIntEuclidean.calculate(issuerData.x_I.add(ticketDetails.e_v[i]).mod(p), p);
 			final BigInteger xs_plus_ev_inverse = gcd.x.mod(p);
 			ticketDetails.Z_V[i] = (g.add(h.mul(ticketDetails.w_v[i])).add(h_tilde.mul(s_Vnum))).mul(xs_plus_ev_inverse)
 					.getImmutable();
@@ -1082,7 +1085,7 @@ public class TestAnonSSO {
 		}
 		ticketDetails.s_CV = crypto.getHash((new ListData(s_pDataList)).toBytes(), sharedMemory.Hash1);
 		final BigInteger s_pDataNum = new BigInteger(1, ticketDetails.s_CV).mod(p);
-		gcd = BigIntEuclidean.calculate(sellerData.x_I.add(ticketDetails.e_CV).mod(p), p);
+		gcd = BigIntEuclidean.calculate(issuerData.x_I.add(ticketDetails.e_CV).mod(p), p);
 		ticketDetails.Z_CV = ((g.add(h.mul(ticketDetails.w_CV))).add(h_tilde.mul(s_pDataNum))).mul(gcd.x.mod(p));
 
 		final List<byte[]> sendDataList = new ArrayList<>();
@@ -1229,11 +1232,11 @@ public class TestAnonSSO {
 	}
 
 	private byte[] generateIssuerIdentity() {
-		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+		final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 		// Send ID_I, Y_bar_I, Y_S_bar
 		final ListData sendData = new ListData(
-				Arrays.asList(sellerData.ID_I.getBytes(), sellerData.Y_I.toBytes(), sellerData.Y_bar_I.toBytes()));
+				Arrays.asList(issuerData.ID_I.getBytes(), issuerData.Y_I.toBytes(), issuerData.Y_bar_I.toBytes()));
 		return sendData.toBytes();
 	}
 
@@ -1436,7 +1439,7 @@ public class TestAnonSSO {
 
 	private boolean verifyIssuerCredentials(byte[] data) {
 
-		final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
+		final IssuerData issuerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
@@ -1458,16 +1461,16 @@ public class TestAnonSSO {
 
 		final Element lhs = sharedMemory.pairing.pairing(sigma_S, Y_A.add(sharedMemory.g_frak.mul(e_S))).getImmutable();
 		final Element rhs = sharedMemory.pairing
-				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(sellerData.Y_I), sharedMemory.g_frak)
+				.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_S)).add(issuerData.Y_I), sharedMemory.g_frak)
 				.getImmutable();
 
 		if (!lhs.isEqual(rhs)) {
 			return false;
 		}
 
-		sellerData.e_I = e_S;
-		sellerData.r_I = r_S;
-		sellerData.sigma_I = sigma_S;
+		issuerData.e_I = e_S;
+		issuerData.r_I = r_S;
+		issuerData.sigma_I = sigma_S;
 		return true;
 	}
 
