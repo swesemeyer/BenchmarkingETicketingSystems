@@ -141,4 +141,4 @@ Guasch, A.V. (2013). "Contributions to the Security and Privacy of Electronic Ti
 
 Han, J., Chen, L., Schneider, S., Treharne, H., Casey, M & Wesemeyer, S. (draft). "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
 
-Han, J., Chen, L., Schneider, S., Treharne, H., Casey, M & Wesemeyer, S. (draft). "Privacy-Preserving Multi-Use E-Coupon With Traceability".
+Han, J., Chen, L., Schneider, S., Treharne, H., Wesemeyer, S. (draft). "Anonymous Single-Sign-On for n designated services with traceability" (http://arxiv.org/abs/1804.07201).
