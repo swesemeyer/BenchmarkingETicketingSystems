@@ -12,9 +12,13 @@ import uk.ac.surrey.bets_framework.state.SharedMemory;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * This implements the state machine for the AnonSSO protocol
- * <p>
- * (c) Steve Wesemeyer 2017
+ * Implements the AnonSSO(Han et al) protocol as a state machine.
+ *
+ * Han, J. et al "Anonymous Single-Sign-On for n designated services with traceability" (AnonSSO)
+ *
+ * available at https://arxiv.org/abs/1804.07201
+ *
+ * @author Steve Wesemeyer
  */
 
 public class AnonSSO extends NFCAndroidStateMachine {

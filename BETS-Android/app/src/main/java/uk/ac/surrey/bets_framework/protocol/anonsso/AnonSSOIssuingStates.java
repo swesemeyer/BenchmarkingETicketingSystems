@@ -210,7 +210,7 @@ public class AnonSSOIssuingStates {
 
   /**
    * State 05.
-   * As User: verify the ticket details send by the seller
+   * As User: verify the ticket details send by the issuer
    */
   public static class IState05 extends NFCAndroidState {
 

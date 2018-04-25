@@ -207,7 +207,7 @@ public class AnonSSOSharedMemory extends NFCAndroidSharedMemory {
     // Set up the public parameters, which need the bilinear group
     this.setPublicParameters();
 
-    // On the server, we only act as the central authority, seller, verifier and the
+    // On the server, we only act as the central authority, issuer, verifier and the
     // police.
     this.actorData.put(Actor.CENTRAL_AUTHORITY,
             new CentralAuthorityData(Actor.CENTRAL_AUTHORITY, this.p, this.g_frak));
