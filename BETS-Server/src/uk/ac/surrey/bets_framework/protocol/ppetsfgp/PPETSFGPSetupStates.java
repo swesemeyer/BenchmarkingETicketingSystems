@@ -5,7 +5,6 @@
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 
 import org.slf4j.Logger;
@@ -17,10 +16,10 @@ import uk.ac.surrey.bets_framework.protocol.data.Data;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
 import uk.ac.surrey.bets_framework.state.Action;
-import uk.ac.surrey.bets_framework.state.Message;
-import uk.ac.surrey.bets_framework.state.State;
 import uk.ac.surrey.bets_framework.state.Action.Status;
+import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.Message.Type;
+import uk.ac.surrey.bets_framework.state.State;
 
 /**
  * Setup states of the PPETS-FGP state machine protocol.

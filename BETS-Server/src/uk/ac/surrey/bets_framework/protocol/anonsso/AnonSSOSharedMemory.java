@@ -3,10 +3,9 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,16 +33,16 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.NFCSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 
-public class PPLASTSharedMemory extends NFCSharedMemory {
+public class AnonSSOSharedMemory extends NFCSharedMemory {
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPLASTSharedMemory.class);
-
+	private static final Logger LOG = LoggerFactory.getLogger(AnonSSOSharedMemory.class);
+	
 	/**
 	 * static class enumerating the names of the different types of actor in the
 	 * protocol.
@@ -54,10 +53,14 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		public static final String USER = "User1";
 		public static final String CENTRAL_VERIFIER = "CentralVerifier1";
 		public static final String[] VERIFIERS = { "Verifier0", "Verifier1", "Verifier2", "Verifier3", "Verifier4",
-				"Verifier5", "Verifier_Dummy" };
-		public static int dummyVerifierIndx = 6;
+				"Verifier5" };
 	}
 
+	  /**
+	   * The list of services the user wants to access
+	   */
+	  public static final String [] J_U={ Actor.VERIFIERS[1], Actor.VERIFIERS[2]};
+	
 	/**
 	 * Interface defining actor data.
 	 */
@@ -69,7 +72,7 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 	 * Arbitrary bytes to act as random seed for pairing secure random so that we
 	 * can re-create the pairing.
 	 */
-	public static final byte[] PAIRING_RANDOM_SEED = PPLASTSharedMemory.class.getSimpleName().getBytes();
+	public static final byte[] PAIRING_RANDOM_SEED = AnonSSOSharedMemory.class.getSimpleName().getBytes();
 
 	/** The current actor so that access to shared memory can be checked. */
 	private transient String actor = Actor.CENTRAL_AUTHORITY;
@@ -147,7 +150,7 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 	 *            The JSON to deserialize from.
 	 * @return The shared memory.
 	 */
-	public static PPLASTSharedMemory fromJson(String json) {
+	public static AnonSSOSharedMemory fromJson(String json) {
 		// First we need to extract the pairing information from the JSON before
 		// we deserialize.
 		final JsonParser jsonParser = new JsonParser();
@@ -171,7 +174,7 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		gson = gsonBuilder.create();
 
 		// Deserialize and set the pairing.
-		final PPLASTSharedMemory sharedMemory = gson.fromJson(json, PPLASTSharedMemory.class);
+		final AnonSSOSharedMemory sharedMemory = gson.fromJson(json, AnonSSOSharedMemory.class);
 		sharedMemory.pairing = pairing;
 
 		return sharedMemory;
@@ -346,6 +349,8 @@ public class PPLASTSharedMemory extends NFCSharedMemory {
 		// pairing.
 		final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
 		final PairingParametersGenerator<?> generator = new TypeFCurveGenerator(prng, this.rBits);
+		//final PairingParametersGenerator<?> generator = new PBCTypeFCurveGenerator(this.rBits);
+		//PairingFactory.getInstance().setUsePBCWhenPossible(true);
 		this.pairingParameters = (PropertiesParameters) generator.generate();
 		this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
 		this.p = this.pairingParameters.getBigInteger("r");

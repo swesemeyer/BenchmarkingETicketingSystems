@@ -5,7 +5,6 @@ package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 
 import static org.junit.Assert.fail;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;

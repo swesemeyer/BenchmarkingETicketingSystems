@@ -5,7 +5,6 @@
  */
 package uk.ac.surrey.bets_framework.protocol.control.setup;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;

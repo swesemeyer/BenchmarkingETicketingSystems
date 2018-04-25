@@ -1,7 +1,7 @@
 /**
  *
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import static org.junit.Assert.fail;
 
@@ -24,26 +24,31 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.TicketDetails;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 
 /**
  * @author swesemeyer
  *
  */
-public class TestPPLast {
+public class TestAnonSSO {
 
 	/** Logback logger. */
-	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("TestPPLast");
+	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("TestAnonSSO");
 	Encoder base64 = Base64.getEncoder();
 	Crypto crypto;
-	PPLASTSharedMemory sharedMemory = null;
+	AnonSSOSharedMemory sharedMemory = null;
+	long overall_start;
+	long time_start;
+	long time_end;
+	long durationInMS;
 
 	@Before
 	public void setUp() throws Exception {
@@ -52,17 +57,19 @@ public class TestPPLast {
 		LOG.info("=============================================================");
 		LOG.info("                     Starting Setup");
 		LOG.info("=============================================================");
+		time_start = Instant.now().toEpochMilli();
+		overall_start = time_start;
 		crypto = Crypto.getInstance();
-		sharedMemory = new PPLASTSharedMemory();
-		sharedMemory.rBits = 80;
+		sharedMemory = new AnonSSOSharedMemory();
+		sharedMemory.rBits = 320;
 		sharedMemory.clearTest();
-		LOG.debug("Y_A=" + sharedMemory.Y_A);
+		/*LOG.debug("Y_A=" + sharedMemory.Y_A);
 		LOG.debug("g_frak=" + sharedMemory.g_frak);
 		LOG.debug("g=" + sharedMemory.g);
 		LOG.debug("h=" + sharedMemory.h);
 		String json = sharedMemory.toJson();
 		LOG.debug("JSON version of sharedMemory: " + json);
-		PPLASTSharedMemory deserialSharedMemory = PPLASTSharedMemory.fromJson(json);
+		AnonSSOSharedMemory deserialSharedMemory = AnonSSOSharedMemory.fromJson(json);
 		LOG.debug("Y_A_deserial=" + deserialSharedMemory.Y_A);
 		LOG.debug("g_frak_deserial=" + deserialSharedMemory.g_frak);
 		LOG.debug("g_deserial=" + deserialSharedMemory.g);
@@ -90,7 +97,12 @@ public class TestPPLast {
 		Element e3 = e1.setFromHash(myHash, 0, 32);
 		LOG.debug("e3=" + e3);
 		Assert.assertTrue(e2.isEqual(e3));
-
+*/
+		time_end = Instant.now().toEpochMilli();
+		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
+		LOG.info("System setup took (ms): " + durationInMS);
+		LOG.info("*************************************************************");
 		LOG.info("Setup complete:");
 
 	}
@@ -100,10 +112,6 @@ public class TestPPLast {
 	public void testProtocol() {
 		byte[] data;
 		boolean success;
-		long overall_start;
-		long time_start;
-		long time_end;
-		long durationInMS;
 
 		// Registration States:
 		LOG.info("=============================================================");
@@ -112,7 +120,6 @@ public class TestPPLast {
 
 		// Generate Issuer Identify: RState04 (Server)
 		time_start = Instant.now().toEpochMilli();
-		overall_start = time_start;
 		sharedMemory.actAs(Actor.ISSUER);
 		data = this.generateIssuerIdentity();
 		time_end = Instant.now().toEpochMilli();
@@ -126,11 +133,13 @@ public class TestPPLast {
 		data = this.generateIssuerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generates the issuer's credentials: RState06 (Server) took (ms): " + durationInMS);
+		LOG.info("*************************************************************");
+		LOG.info("Generated the issuer's credentials: RState06 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("Issuer credential creation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
 		// Verify Issuer credentials: RState08 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -138,10 +147,12 @@ public class TestPPLast {
 		success = this.verifyIssuerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Verify Issuer credentials: RState08 (Server) took (ms): " + durationInMS);
 		if (!success) {
 			fail("Issuer credentials did not validate");
 		}
+		LOG.info("*************************************************************");
 
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			// Generate Verifier Identify: RState17 (Server)
@@ -151,7 +162,9 @@ public class TestPPLast {
 			data = this.generateVerifierIdentity(Actor.VERIFIERS[i]);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
+			LOG.info("*************************************************************");
 			LOG.info("Generate Verifier Identify: RState17 (Server) took (ms): " + durationInMS);
+			LOG.info("*************************************************************");
 
 			// Generates the verifier's credentials: RState19 (Server)
 			time_start = Instant.now().toEpochMilli();
@@ -159,10 +172,12 @@ public class TestPPLast {
 			data = this.generateVerifierCredentials(data);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
+			LOG.info("*************************************************************");
 			LOG.info("Generate the verifier's credentials: RState19 (Server) took (ms): " + durationInMS);
 			if (data == null) {
 				fail("Verifier credential creation failed");
 			}
+			LOG.info("*************************************************************");
 
 			// Verify Verifier's credentials: RState21 (Server)
 			time_start = Instant.now().toEpochMilli();
@@ -170,10 +185,12 @@ public class TestPPLast {
 			success = this.verifyVerifierCredentials(Actor.VERIFIERS[i], data);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
+			LOG.info("*************************************************************");
 			LOG.info("Verify Verifier's credentials: RState21 (Server) took (ms): " + durationInMS);
 			if (!success) {
 				fail("Verifier credentials did not validate");
 			}
+			LOG.info("*************************************************************");
 
 		}
 		// Generate User's Identify: RState02 (Android)
@@ -183,8 +200,10 @@ public class TestPPLast {
 		data = this.generateUserIdentity();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Retrieve User Identify: RState02 (Android) took (ms): " + durationInMS);
 		LOG.info("Data sent to server (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
 		// Generate the user's credentials: RState10 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -192,11 +211,13 @@ public class TestPPLast {
 		data = this.generateUserCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Generated the user's credentials: RState10 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("User credential creation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
 		// Verify user's credentials: RState03 (Android)
 		time_start = Instant.now().toEpochMilli();
@@ -204,10 +225,12 @@ public class TestPPLast {
 		success = this.verifyUserCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Verify User credentials: RState03 (Android) took (ms): " + durationInMS);
 		if (!success) {
 			fail("User credentials did not validate");
 		}
+		LOG.info("*************************************************************");
 
 		// Generate Central Verifier Identify: RState12 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -216,7 +239,9 @@ public class TestPPLast {
 		data = this.generateCenVerIdentity();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Generate Central Verifier Identify: RState12 (Server) took (ms): " + durationInMS);
+		LOG.info("*************************************************************");
 
 		// Generates the CV's credentials: RState14 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -224,10 +249,12 @@ public class TestPPLast {
 		data = this.generateCenVerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Generated the CV's credentials: RState14 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("CV credential creation failed");
 		}
+		LOG.info("*************************************************************");
 
 		// Verify CV credentials: RState16 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -235,10 +262,13 @@ public class TestPPLast {
 		success = this.verifyCenVerCredentials(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Verify CV credentials: RState16 (Server) took (ms): " + durationInMS);
 		if (!success) {
 			fail("CV credentials did not validate");
 		}
+		LOG.info("*************************************************************");
+
 		LOG.info("=============================================================");
 		LOG.info("                Finished Registration states");
 		LOG.info("=============================================================");
@@ -251,8 +281,10 @@ public class TestPPLast {
 		data = this.generateTicketRequest();
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Generate the user's ticket request: IState04 (Android) took (ms): " + durationInMS);
 		LOG.info("Data sent to server: " + data.length);
+		LOG.info("*************************************************************");
 
 		// Generate ticket serial number: IState23 (Server)
 		time_start = Instant.now().toEpochMilli();
@@ -260,11 +292,13 @@ public class TestPPLast {
 		data = this.generateTicketDetails(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Generate ticket details: IState23 (Server) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("ticket details verification failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
 		// Verify the returned ticket data: IState05 (Android)
 		time_start = Instant.now().toEpochMilli();
@@ -272,10 +306,13 @@ public class TestPPLast {
 		success = this.verifyTicketDetails(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
+		LOG.info("*************************************************************");
 		LOG.info("Verify the returned ticket details: IState05 (Android) took (ms): " + durationInMS);
 		if (!success) {
 			fail("ticket details verification failed");
 		}
+		LOG.info("*************************************************************");
+
 		LOG.info("=============================================================");
 		LOG.info("                 Finished Issuing states");
 		LOG.info("=============================================================");
@@ -293,11 +330,13 @@ public class TestPPLast {
 			data = this.generateVerifierID(verifierID);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
+			LOG.info("*************************************************************");
 			LOG.info("Generating the verifier ID finished: vState25(Server) " + durationInMS);
 			if (data == null) {
 				fail("Verifier ID generation failed");
 			}
 			LOG.info("Data sent to client (in bytes): " + data.length);
+			LOG.info("*************************************************************");
 
 			// Generate ticket proof: VState06 (Android)
 			time_start = Instant.now().toEpochMilli();
@@ -305,23 +344,29 @@ public class TestPPLast {
 			data = this.generateTagProof(data);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
-			LOG.info("Generate ticket proof: VState06 (Android) took (ms): " + durationInMS);
+			LOG.info("*************************************************************");
+			LOG.info("Generate tag proof: VState06 (Android) took (ms): " + durationInMS);
 			if (data == null) {
-				fail("ticket proof generation failed");
+				fail("tag proof generation failed");
 			}
 			LOG.info("Data sent to server (in bytes): " + data.length);
+			LOG.info("*************************************************************");
 
-			// check the user's proof of his ticket vStateXX(Server)
+			// check the user's proof of his ticket vState27(Server)
 			time_start = Instant.now().toEpochMilli();
 			sharedMemory.actAs(verifierID);
 			success = this.verifyTagProof(data, verifierID);
 			time_end = Instant.now().toEpochMilli();
 			durationInMS = time_end - time_start;
-			LOG.info("Checking the user's proof took (ms): " + durationInMS);
+			LOG.info("*************************************************************");
+			LOG.info("Checking the user's tag & proof: VState27 took (ms): " + durationInMS);
 			if (!success) {
 				fail("Checking the user's proof failed");
 			}
+			LOG.info("*************************************************************");
+			
 		}
+
 		LOG.info("=============================================================");
 		LOG.info("              Finished Verfication states");
 		LOG.info("=============================================================");
@@ -334,23 +379,27 @@ public class TestPPLast {
 		data = this.generateVerifierID(verifierID);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generating the verifier ID finished: vState25(Server) " + durationInMS);
+		LOG.info("*************************************************************");
+		LOG.info("Generating the central verifier ID finished: vState25(Server) " + durationInMS);
 		if (data == null) {
 			fail("Verifier ID generation failed");
 		}
 		LOG.info("Data sent to client (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
-		// Generate ticket proof: VState06 (Android)
+		// Generate tag proof+ticket details: VState06 (Android)
 		time_start = Instant.now().toEpochMilli();
 		sharedMemory.actAs(Actor.USER);
 		data = this.generateTagProof(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("Generate ticket proof: VState06 (Android) took (ms): " + durationInMS);
+		LOG.info("*************************************************************");
+		LOG.info("Generate tag proof + ticket details: VState06 (Android) took (ms): " + durationInMS);
 		if (data == null) {
 			fail("ticket proof generation failed");
 		}
 		LOG.info("Data sent to server (in bytes): " + data.length);
+		LOG.info("*************************************************************");
 
 
 		// retrieve the verifier IDs from the ticket: vState29(Server)
@@ -359,14 +408,21 @@ public class TestPPLast {
 		data = this.traceTicket(data);
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
-		LOG.info("extraction of the verifier IDs finished: vState29(Server)" + durationInMS);
+		LOG.info("*************************************************************");
+		LOG.info("ticket trace finished: vState30(Server) took (ms):" + durationInMS);
 		if (data == null) {
-			fail("Verifier ID extraction failed");
+			fail("Ticket trace failed");
 		}
+		LOG.info("*************************************************************");
+
 		LOG.info("=============================================================");
 		LOG.info("            Finished tracing states states");
 		LOG.info("=============================================================");
+
+		LOG.info("*************************************************************");
 		LOG.info("Total run of the protocol with no comms overhead took (ms):" + (time_end - overall_start));
+		LOG.info("*************************************************************");
+
 	}
 
 	private byte[] traceTicket(byte[] data) {
@@ -655,7 +711,7 @@ public class TestPPLast {
 	}
 
 	private byte[] generateTagProof(byte[] data) {
-		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory)
 		// this.getSharedMemory();
 
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
@@ -734,7 +790,7 @@ public class TestPPLast {
 	}
 
 	private boolean verifyTicketDetails(byte[] data) {
-		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();
@@ -1040,7 +1096,7 @@ public class TestPPLast {
 	}
 
 	private byte[] generateTicketRequest() {
-		// final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory)
+		// final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();

@@ -3,9 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
-
-import java.io.UnsupportedEncodingException;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,17 +12,17 @@ import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
 import uk.ac.surrey.bets_framework.state.Action;
-import uk.ac.surrey.bets_framework.state.Message;
-import uk.ac.surrey.bets_framework.state.State;
 import uk.ac.surrey.bets_framework.state.Action.Status;
+import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.Message.Type;
+import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * Setup states for the PPLAST state machine protocol.
+ * Setup states for the AnonSSO state machine protocol.
  *
  * @author Steve Wesemeyer
  */
-public class PPLASTSetupStates {
+public class AnonSSOSetupStates {
 
 	/**
 	 * State 0.
@@ -41,7 +39,7 @@ public class PPLASTSetupStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			// Clear out shared memory as we are starting again.
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.clear();
 
 			if (message.getType() == Type.START) {
@@ -64,7 +62,7 @@ public class PPLASTSetupStates {
 		 * @return The setup bytes to send.
 		 */
 		private byte[] getSetup() {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			byte[] result = null;
 
 			result = sharedMemory.toJson().getBytes(Data.UTF8);
@@ -143,5 +141,5 @@ public class PPLASTSetupStates {
 	}
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPLASTSetupStates.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AnonSSOSetupStates.class);
 }

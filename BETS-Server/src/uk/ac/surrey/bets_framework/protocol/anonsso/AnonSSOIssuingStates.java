@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -14,10 +14,10 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.TicketDetails;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.State;
@@ -25,15 +25,15 @@ import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message.Type;
 
 /**
- * Ticket issuing states of the PPLAST state machine protocol.
+ * Ticket issuing states of the AnonSSO state machine protocol.
  *
  * @author Steve Wesemeyer
  */
 
-public class PPLASTIssuingStates {
+public class AnonSSOIssuingStates {
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTIssuingStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSOIssuingStates.class);
 
   /**
    * State 22
@@ -64,7 +64,7 @@ public class PPLASTIssuingStates {
   public static class IState23 extends State<NFCReaderCommand> {
 
     private byte[] generateTicketDetails(byte[] data) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -325,7 +325,7 @@ public class PPLASTIssuingStates {
      */
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(Actor.ISSUER);
       if (message.getType() == Type.DATA) {
         // Send the setup data.

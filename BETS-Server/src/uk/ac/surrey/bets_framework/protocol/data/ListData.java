@@ -5,7 +5,6 @@
  */
 package uk.ac.surrey.bets_framework.protocol.data;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Base64;

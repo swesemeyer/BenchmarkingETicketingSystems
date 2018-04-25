@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -17,12 +17,12 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.State;
@@ -30,14 +30,14 @@ import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message.Type;
 
 /**
- * Registration states of the PPLAST state machine protocol.
+ * Registration states of the AnonSSO state machine protocol.
  *
  * @author Steve Wesemeyer
  */
-public class PPLASTRegistrationStates {
+public class AnonSSORegistrationStates {
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPLASTRegistrationStates.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AnonSSORegistrationStates.class);
 
 	/**
 	 * State 04: As Seller: generate the seller identity
@@ -45,7 +45,7 @@ public class PPLASTRegistrationStates {
 	public static class RState04 extends State<NFCReaderCommand> {
 
 		private byte[] generateSellerIdentity() {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 			// Send ID_I, Y_bar_I, Y_S_bar
@@ -63,7 +63,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
@@ -93,7 +93,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 
 			// Get the seller identity data.
@@ -108,7 +108,7 @@ public class PPLASTRegistrationStates {
 	public static class RState06 extends State<NFCReaderCommand> {
 
 		private byte[] generateSellerCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
 			final Crypto crypto = Crypto.getInstance();
@@ -153,7 +153,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -193,7 +193,7 @@ public class PPLASTRegistrationStates {
 	public static class RState08 extends State<NFCReaderCommand> {
 
 		private boolean verifySellerCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final IssuerData sellerData = (IssuerData) sharedMemory.getData(Actor.ISSUER);
 
 			// Decode the received data.
@@ -234,7 +234,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.ISSUER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -277,7 +277,7 @@ public class PPLASTRegistrationStates {
 	public static class RState10 extends State<NFCReaderCommand> {
 
 		private byte[] generateUserCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
 			final Crypto crypto = Crypto.getInstance();
@@ -326,7 +326,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				if (message.getData() != null) {
@@ -371,7 +371,7 @@ public class PPLASTRegistrationStates {
 	public static class RState12 extends State<NFCReaderCommand> {
 
 		private byte[] generatePoliceIdentity() {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
 			// Send ID_U, Y_U
@@ -388,7 +388,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
@@ -431,7 +431,7 @@ public class PPLASTRegistrationStates {
 	public static class RState14 extends State<NFCReaderCommand> {
 
 		private byte[] generatePoliceCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
@@ -479,7 +479,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -522,7 +522,7 @@ public class PPLASTRegistrationStates {
 	public static class RState16 extends State<NFCReaderCommand> {
 
 		private boolean verifyPoliceCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
 			// Decode the received data.
@@ -567,7 +567,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -597,7 +597,7 @@ public class PPLASTRegistrationStates {
 		}
 
 		private byte[] generateVerifierIdentity() {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final VerifierData verifierData = (VerifierData) sharedMemory.getData(this.verifiers[this.index]);
 			// Send ID_V, Y_V
 			final ListData sendData = new ListData(
@@ -614,7 +614,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.VERIFIERS[this.index]);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
@@ -658,7 +658,7 @@ public class PPLASTRegistrationStates {
 	public static class RState19 extends State<NFCReaderCommand> {
 
 		private byte[] generateVerifierCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
@@ -723,7 +723,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -774,7 +774,7 @@ public class PPLASTRegistrationStates {
 		}
 
 		private boolean verifyVerifierCredentials(byte[] data) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			final VerifierData verifierData = (VerifierData) sharedMemory.getData(this.verifiers[index]);
 
 			// Decode the received data.
@@ -819,7 +819,7 @@ public class PPLASTRegistrationStates {
 		 */
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
-			final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(this.verifiers[index]);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.

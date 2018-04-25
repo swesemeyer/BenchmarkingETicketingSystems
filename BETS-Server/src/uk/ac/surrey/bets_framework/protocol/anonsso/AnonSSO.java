@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,50 +12,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.surrey.bets_framework.protocol.NFCReaderStateMachine;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
 
 /**
- * Implements the PPLAST(Han et al) NFC protocol as a state machine.
+ * Implements the AnonSSO(Han et al) NFC protocol as a state machine.
  *
- * Han, J. et al "Privacy-preserving Location-aware smart ticketing" (PPLAST)
+ * Han, J. et al "Privacy-preserving Location-aware smart ticketing" (AnonSSO)
  *
  * @author Steve Wesemeyer
  */
-public class PPLAST extends NFCReaderStateMachine {
+public class AnonSSO extends NFCReaderStateMachine {
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPLAST.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AnonSSO.class);
 
 	/** The shared memory. */
-	private PPLASTSharedMemory sharedMemory = new PPLASTSharedMemory();
+	private AnonSSOSharedMemory sharedMemory = new AnonSSOSharedMemory();
 
 	/**
 	 * Default constructor.
 	 */
-	public PPLAST() {
-		super(Arrays.asList(new PPLASTSetupStates.SState00(), new PPLASTSetupStates.SState01(),
-				new PPLASTSetupStates.SState02(), new PPLASTSetupStates.SState03(),
-				new PPLASTRegistrationStates.RState04(), new PPLASTRegistrationStates.RState05(),
-				new PPLASTRegistrationStates.RState06(), new PPLASTRegistrationStates.RState07(),
-				new PPLASTRegistrationStates.RState08(), new PPLASTRegistrationStates.RState09(),
-				new PPLASTRegistrationStates.RState10(), new PPLASTRegistrationStates.RState11(),
-				new PPLASTRegistrationStates.RState12(), new PPLASTRegistrationStates.RState13(),
-				new PPLASTRegistrationStates.RState14(), new PPLASTRegistrationStates.RState15(),
-				new PPLASTRegistrationStates.RState16(), new PPLASTRegistrationStates.RState17(Actor.VERIFIERS),
-				new PPLASTRegistrationStates.RState18(), new PPLASTRegistrationStates.RState19(),
-				new PPLASTRegistrationStates.RState20(), new PPLASTRegistrationStates.RState21(Actor.VERIFIERS),
-				new PPLASTIssuingStates.IState22(), new PPLASTIssuingStates.IState23(),
-				new PPLASTIssuingStates.IState24(),
-				new PPLASTVerifyingStates.VState25(new String[] { Actor.VERIFIERS[1], Actor.VERIFIERS[2] }), // ,
-																												// Actor.VERIFIERS[5]
-																												// }),
-				new PPLASTVerifyingStates.VState26(),
-				new PPLASTVerifyingStates.VState27(new String[] { Actor.VERIFIERS[1], Actor.VERIFIERS[2] }), // ,
-																												// Actor.VERIFIERS[5]
-																												// }),
-				new PPLASTVerifyingStates.VState28(), new PPLASTVerifyingStates.VState29(),
-				new PPLASTVerifyingStates.VState30()));
+	public AnonSSO() {
+		super(Arrays.asList(new AnonSSOSetupStates.SState00(), new AnonSSOSetupStates.SState01(),
+				new AnonSSOSetupStates.SState02(), new AnonSSOSetupStates.SState03(),
+				new AnonSSORegistrationStates.RState04(), new AnonSSORegistrationStates.RState05(),
+				new AnonSSORegistrationStates.RState06(), new AnonSSORegistrationStates.RState07(),
+				new AnonSSORegistrationStates.RState08(), new AnonSSORegistrationStates.RState09(),
+				new AnonSSORegistrationStates.RState10(), new AnonSSORegistrationStates.RState11(),
+				new AnonSSORegistrationStates.RState12(), new AnonSSORegistrationStates.RState13(),
+				new AnonSSORegistrationStates.RState14(), new AnonSSORegistrationStates.RState15(),
+				new AnonSSORegistrationStates.RState16(), new AnonSSORegistrationStates.RState17(Actor.VERIFIERS),
+				new AnonSSORegistrationStates.RState18(), new AnonSSORegistrationStates.RState19(),
+				new AnonSSORegistrationStates.RState20(), new AnonSSORegistrationStates.RState21(Actor.VERIFIERS),
+				new AnonSSOIssuingStates.IState22(), new AnonSSOIssuingStates.IState23(),
+				new AnonSSOIssuingStates.IState24(), new AnonSSOVerifyingStates.VState25(AnonSSOSharedMemory.J_U),
+				new AnonSSOVerifyingStates.VState26(), new AnonSSOVerifyingStates.VState27(AnonSSOSharedMemory.J_U),
+				new AnonSSOVerifyingStates.VState28(), new AnonSSOVerifyingStates.VState29(),
+				new AnonSSOVerifyingStates.VState30()));
 	}
 
 	/**
@@ -105,6 +99,6 @@ public class PPLAST extends NFCReaderStateMachine {
 	 */
 	@Override
 	public void setSharedMemory(SharedMemory sharedMemory) {
-		this.sharedMemory = (PPLASTSharedMemory) sharedMemory;
+		this.sharedMemory = (AnonSSOSharedMemory) sharedMemory;
 	}
 }

@@ -34,7 +34,7 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
  * @author swesemeyer
  *
  */
-public class TestPPETSFGP_Standard {
+public class TestPPETSFGP_SetVsRange {
 
 	/** Logback logger. */
 	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory

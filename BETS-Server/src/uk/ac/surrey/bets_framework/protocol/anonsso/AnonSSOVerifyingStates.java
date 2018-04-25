@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -13,23 +13,23 @@ import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.TicketDetails;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.State;
 import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message.Type;
 
-public class PPLASTVerifyingStates {
+public class AnonSSOVerifyingStates {
 
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTVerifyingStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSOVerifyingStates.class);
 
   /**
    * State 25:
@@ -48,7 +48,7 @@ public class PPLASTVerifyingStates {
 
     private byte[] generateVerifierID(String verifierName) {
       LOG.debug("Acting as verifier: " + verifierName);
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(verifierName);
       final VerifierData verifierData = (VerifierData) sharedMemory.getData(verifierName);
       LOG.debug("Verifier Name, ID = " + verifierName + ", " + verifierData.ID_V);
@@ -120,7 +120,7 @@ public class PPLASTVerifyingStates {
     }
 
     private boolean verifyTagProof(byte[] data, String verifierID) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final VerifierData verifierData = (VerifierData) sharedMemory.getData(verifierID);
       final Crypto crypto = Crypto.getInstance();
       // Decode the received data.
@@ -221,7 +221,7 @@ public class PPLASTVerifyingStates {
      */
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       String currentVerifier = this.verifiers[this.index];
       sharedMemory.actAs(currentVerifier);
       LOG.debug("Acting as verifier: " + currentVerifier);
@@ -248,14 +248,9 @@ public class PPLASTVerifyingStates {
   
   public static class VState28 extends State<NFCReaderCommand> {
 
-
-	    public VState28() {
-	      LOG.debug("Entering trace mode as : " + Actor.CENTRAL_VERIFIER);
-	    }
-
 	    private byte[] generateCVID() {
 	      LOG.debug("Acting as central verifier");
-	      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+	      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 	      sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 	      final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 	      final ListData sendData = new ListData(Arrays.asList(cenVerData.ID_V.getBytes(StandardCharsets.UTF_8)));
@@ -320,7 +315,7 @@ public class PPLASTVerifyingStates {
   public static class VState30 extends State<NFCReaderCommand> {
 
     private byte[] traceTicket(byte[] data) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
       final Crypto crypto = Crypto.getInstance();
       // Decode the received data.
@@ -519,7 +514,7 @@ public class PPLASTVerifyingStates {
      */
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
       LOG.debug("Acting as the central verifier!");
 

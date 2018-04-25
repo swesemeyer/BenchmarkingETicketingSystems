@@ -3,27 +3,26 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast.data;
+package uk.ac.surrey.bets_framework.protocol.anonsso.data;
 
 import java.math.BigInteger;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 
 /**
- * Implements user data for the PPLAST NFC protocol as a state machine.
+ * Implements user data for the AnonSSO NFC protocol as a state machine.
  * 
  * @author Steve Wesemeyer
  */
-public class UserData implements PPLASTSharedMemory.ActorData {
+public class UserData implements AnonSSOSharedMemory.ActorData {
 
   /** The identity of U */
   public String         ID_U          = null;
 
-  // TODO make this a longer list...Note that the names need to match the IDs of the verifiers
-  public final String[] VerifierList  = { Actor.VERIFIERS[1],Actor.VERIFIERS[2],Actor.VERIFIERS[5] };
+
+  public final String[] VerifierList  = AnonSSOSharedMemory.J_U;
 
   /** User credentials: e_u */
   public BigInteger     e_u           = null;
@@ -48,8 +47,6 @@ public class UserData implements PPLASTSharedMemory.ActorData {
   /** ticket details */
   public TicketDetails  ticketDetails = null;
   
-  /** current Time in MilliSecs */
-  public BigInteger currentTimeInMilliSec = null;
 
   public UserData() {
     super();
@@ -67,8 +64,6 @@ public class UserData implements PPLASTSharedMemory.ActorData {
     // compute the public key
     this.Y_U = xi.mul(this.x_U).getImmutable();
     
-    this.currentTimeInMilliSec=BigInteger.valueOf(System.currentTimeMillis());
-
   }
 
   @Override

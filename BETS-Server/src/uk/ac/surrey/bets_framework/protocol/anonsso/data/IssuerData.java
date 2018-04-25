@@ -3,20 +3,20 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast.data;
+package uk.ac.surrey.bets_framework.protocol.anonsso.data;
 
 import java.math.BigInteger;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 
 /**
- * Implements seller data for the PPLAST NFC protocol as a state machine.
+ * Implements seller data for the AnonSSO NFC protocol as a state machine.
  *
  * @author Steve Wesemeyer
  */
-public class IssuerData implements PPLASTSharedMemory.ActorData {
+public class IssuerData implements AnonSSOSharedMemory.ActorData {
 
   /** The identity of ISSUER */
   public String              ID_I                = null;
@@ -36,22 +36,22 @@ public class IssuerData implements PPLASTSharedMemory.ActorData {
   /** The fixed ticket validity period as an arbitrary array of bytes. */
   public static final byte[] TICKET_VALID_PERIOD = new byte[] { 0x13 };
 
-  /** Seller credentials: e_I */
+  /** Issuer credentials: e_I */
   public BigInteger          e_I                 = null;
 
-  /** Seller credentials: r_I */
+  /** Issuer credentials: r_I */
   public BigInteger          r_I                 = null;
 
-  /** Seller credentials: sigma_I. */
+  /** Issuer credentials: sigma_I. */
   public Element             sigma_I             = null;
 
   /** Random x_s. */
   public BigInteger          x_I                 = null;
 
-  /** Seller secret key. */
+  /** Issuer public key1. */
   public Element             Y_I                 = null;
 
-  /** Seller public key. */
+  /** Issuer public key2. */
   public Element             Y_bar_I            = null;
 
   public IssuerData() {
