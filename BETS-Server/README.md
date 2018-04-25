@@ -1,6 +1,9 @@
-# NFC Reader #
+# Benchmarking E-ticketing systems #
 
-This repository contains the Java code which can be run on a PC to operate the ACR122 NFC reader for the evaluation experiments on cryptographic protocols used during e-ticket purchasing and usage.
+This repository contains the Java code which can be run on a PC to operate the ACR122 NFC reader for the evaluation experiments on cryptographic protocols used during e-ticket issuing and usage.
+The performance of these e-tickets protocols are evaluate with at least one party using an Android app which will communicate with an NFC reader to exchange tickets. This usually happens during the issuing stage or verification stage but other stages might involve NFC communication, too.
+
+Currently, the code only works with a cheap (~£40) ACR122 NFC reader which is readily available from various online shops. The application has been mainly developed on Linux but as it is JAVA should work on other platforms with no or little change. 
 
 ## Setup ##
 
@@ -115,19 +118,21 @@ will run the PPETSFGPLite protocol once, failing whenever a verification test fa
 
 The pass verification option determines whether all the protocol verification steps continue event if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
-## PPLast Protocol ##
+## AnonSSO Protocol ##
 
-Han et al have proposed a Privacy Preserving Location Aware Smart Ticketing/Coupon (PPLAST) protocol which has been implemented in the state machine class "PPLAST".
+Han et al have proposed an "Anonymous Single-Sign-On for n designated services with traceability" (AnonSSO) protocol which has been implemented in the state machine class "AnonSSO".
 
-The parameters available for the PPLAST protocol are:
-* (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
+The parameters available for the AnonSSO protocol are:
+* (int) number of r bits to use in Type A elliptic curve, e.g. 160 (default).
+* 0/1 validateVerifiers flag to indicate whether the Android client should validate the ticket details (0=yes, 1=no) setting this to 1 (ie do not validate the ticket details) will speed up the protocol run but defeats the purpose of the protocol and should only be done for testing purposes.
+
 
 
 For example:
 
--r PPLAST:1:320 -s log/serverPPLAST_1.csv -c log/clientPPLAST_1.csv -l 4
+-r AnonSSO:1:320:0 -s log/serverAnonSSO_1.csv -c log/clientAnonSSO_1.csv -l 4
 
-will run the PPLAST protocol once with an elliptic curve whose elements are r=320 bit long, with log level 4 (debug), and only saving the server and client protocol timings to file.
+will run the AnonSSO protocol once with an elliptic curve whose elements are r=320 bit long, with log level 4 (debug), and only saving the server and client protocol timings to file.
 
 
 ## References ##
