@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,24 +15,24 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.TicketDetails;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * The verifying states for PPLAST.
+ * The verifying states for AnonSSO.
  * <p>
  * (c) Steve Wesemeyer 2017
  */
 
-public class PPLASTVerifyingStates {
+public class AnonSSOVerifyingStates {
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTVerifyingStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSOVerifyingStates.class);
 
   /**
    * State 06
@@ -41,7 +41,7 @@ public class PPLASTVerifyingStates {
   public static class VState06 extends NFCAndroidState {
 
     private byte[] generateTagProof(byte[] data) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
 
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
@@ -121,7 +121,7 @@ public class PPLASTVerifyingStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPLASTSharedMemory) this.getSharedMemory()).actAs(PPLASTSharedMemory.Actor.USER);
+      ((AnonSSOSharedMemory) this.getSharedMemory()).actAs(AnonSSOSharedMemory.Actor.USER);
       LOG.debug("Ticket Proof or Ticket Details");
       if (message.getType() == Message.Type.DATA) {
         if (message.getData() != null) {
@@ -131,7 +131,7 @@ public class PPLASTVerifyingStates {
 
           if (data != null) {
             LOG.debug("generate user tag proof complete");
-            ((PPLASTSharedMemory) this.getSharedMemory()).delayedResponse = data;
+            ((AnonSSOSharedMemory) this.getSharedMemory()).delayedResponse = data;
 
             //send the proof back to the verifiers
             return new Action<>(Action.Status.END_SUCCESS, 7, NFCAndroidCommand.RESPONSE, NFCAndroidSharedMemory.RESPONSE_OK, 0);

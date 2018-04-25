@@ -14,9 +14,9 @@ apply plugin: 'com.android.application'
 
 android {
   compileSdkVersion 25
-  buildToolsVersion '26.0.2'
-  def verCode=20093
-  def verName="2.00.93"
+  buildToolsVersion '27.0.3'
+  def verCode=20095
+  def verName="2.00.95"
   defaultConfig {
     applicationId "uk.ac.surrey.bets_framework.dice"
     minSdkVersion 19
@@ -39,21 +39,21 @@ android {
 }
 
 dependencies {
-  compile fileTree(include: ['*.jar'], dir: 'libs')
-  compile 'com.android.support:appcompat-v7:' + rootProject.supportLibVersion
-  compile 'com.google.code.gson:gson:' + rootProject.gsonVersion
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.bouncycastle:bcprov-jdk15on:'+bcVersion
-  compile 'com.github.tony19:logback-android-core:' + logbackVersion
-  compile('com.github.tony19:logback-android-classic:' + logbackVersion) {
+  implementation fileTree(include: ['*.jar'], dir: 'libs')
+  implementation 'com.android.support:appcompat-v7:' + rootProject.supportLibVersion
+  implementation 'com.google.code.gson:gson:' + rootProject.gsonVersion
+  implementation 'org.slf4j:slf4j-api:' + slf4jVersion
+  implementation 'org.bouncycastle:bcprov-jdk15on:'+bcVersion
+  implementation 'com.github.tony19:logback-android-core:' + logbackVersion
+  implementation('com.github.tony19:logback-android-classic:' + logbackVersion) {
     exclude group: 'com.google.android', module: 'android'
   }
 
-  compile files('libs/jpbc-api-2.0.0.jar')
-  compile files('libs/jpbc-plaf-2.0.0.jar')
+  implementation files('libs/jpbc-api-2.0.0.jar')
+  implementation files('libs/jpbc-plaf-2.0.0.jar')
 
-  androidTestCompile('com.android.support.test.espresso:espresso-core:' + rootProject.espressoVersion, {
+  androidTestImplementation('com.android.support.test.espresso:espresso-core:' + rootProject.espressoVersion, {
     exclude group: 'com.android.support', module: 'support-annotations'
   })
-  testCompile 'junit:junit:' + rootProject.junitVersion
+  testImplementation 'junit:junit:' + rootProject.junitVersion
 }

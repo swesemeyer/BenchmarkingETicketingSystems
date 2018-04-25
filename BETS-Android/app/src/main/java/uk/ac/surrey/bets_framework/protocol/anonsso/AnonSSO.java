@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,31 +12,31 @@ import uk.ac.surrey.bets_framework.state.SharedMemory;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * This implements the state machine for the PPLAST protocol
+ * This implements the state machine for the AnonSSO protocol
  * <p>
  * (c) Steve Wesemeyer 2017
  */
 
-public class PPLAST extends NFCAndroidStateMachine {
+public class AnonSSO extends NFCAndroidStateMachine {
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLAST.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSO.class);
 
   /**
    * The shared memory.
    */
-  private PPLASTSharedMemory sharedMemory = new PPLASTSharedMemory();
+  private AnonSSOSharedMemory sharedMemory = new AnonSSOSharedMemory();
 
   /**
    * Default constructor.
    */
-  public PPLAST() {
-    super(Arrays.<State<NFCAndroidCommand>>asList(new PPLASTSetupStates.SState00(), new PPLASTSetupStates.SState01(),
-            new PPLASTRegistrationStates.RState02(), new PPLASTRegistrationStates.RState03(),
-            new PPLASTIssuingStates.IState04(), new PPLASTIssuingStates.IState05(),
-            new PPLASTVerifyingStates.VState06(), new PPLASTVerifyingStates.VState07()));
+  public AnonSSO() {
+    super(Arrays.<State<NFCAndroidCommand>>asList(new AnonSSOSetupStates.SState00(), new AnonSSOSetupStates.SState01(),
+            new AnonSSORegistrationStates.RState02(), new AnonSSORegistrationStates.RState03(),
+            new AnonSSOIssuingStates.IState04(), new AnonSSOIssuingStates.IState05(),
+            new AnonSSOVerifyingStates.VState06(), new AnonSSOVerifyingStates.VState07()));
   }
 
   /**
@@ -84,6 +84,6 @@ public class PPLAST extends NFCAndroidStateMachine {
    */
   @Override
   public void setSharedMemory(SharedMemory sharedMemory) {
-    this.sharedMemory = (PPLASTSharedMemory) sharedMemory;
+    this.sharedMemory = (AnonSSOSharedMemory) sharedMemory;
   }
 }

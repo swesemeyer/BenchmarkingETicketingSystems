@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast.data;
+package uk.ac.surrey.bets_framework.protocol.anonsso.data;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -12,10 +12,10 @@ import java.util.List;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 
 /**
- * store the ticket information for the PPLAST NFC protocol implementation
+ * store the ticket information for the AnonSSO NFC protocol implementation
  *
  * @author Steve Wesemeyer
  *
@@ -81,7 +81,7 @@ public class TicketDetails {
     sendDataList.add(this.ticketText.getBytes(StandardCharsets.UTF_8));
   }
 
-  public int populateTicketDetails(PPLASTSharedMemory sharedMemory, ListData listData, int indx) {
+  public int populateTicketDetails(AnonSSOSharedMemory sharedMemory, ListData listData, int indx) {
 
     for (int i = 0; i < numOfVerifiers; i++) {
       this.VerifierList[i] = new String(listData.getList().get(indx++), StandardCharsets.UTF_8);

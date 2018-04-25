@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,24 +12,24 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * The registration states for PPLAST.
+ * The registration states for AnonSSO.
  * We only need to register the user. Everything else is done server-side.
  * (c) Steve Wesemeyer 2017
  */
 
-public class PPLASTRegistrationStates {
+public class AnonSSORegistrationStates {
 
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTRegistrationStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSORegistrationStates.class);
 
   /**
    * State 02:
@@ -40,7 +40,7 @@ public class PPLASTRegistrationStates {
 
 
     private byte[] generateUserIdentity() {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 
       // Send ID_U, Y_U
@@ -58,7 +58,7 @@ public class PPLASTRegistrationStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPLASTSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
+      ((AnonSSOSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Send back the user identity data.
@@ -86,7 +86,7 @@ public class PPLASTRegistrationStates {
   public static class RState03 extends NFCAndroidState {
 
     private boolean verifyUserCredentials(byte[] data) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -135,7 +135,7 @@ public class PPLASTRegistrationStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPLASTSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
+      ((AnonSSOSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Verify the user's credentials.

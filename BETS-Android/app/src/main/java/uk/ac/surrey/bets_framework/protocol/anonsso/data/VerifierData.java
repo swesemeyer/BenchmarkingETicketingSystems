@@ -3,20 +3,20 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast.data;
+package uk.ac.surrey.bets_framework.protocol.anonsso.data;
 
 import java.math.BigInteger;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 
 /**
- * Implements verifier data for the PPLAST NFC protocol as a state machine.
+ * Implements verifier data for the AnonSSO NFC protocol as a state machine.
  *
  * @author Steve Wesemeyer
  */
-public class VerifierData implements PPLASTSharedMemory.ActorData {
+public class VerifierData implements AnonSSOSharedMemory.ActorData {
 
   /** The identity of S as an arbitrary array of bytes. */
   public String     ID_V    = null;

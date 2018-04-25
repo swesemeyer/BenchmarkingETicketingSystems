@@ -1,4 +1,4 @@
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,24 +18,24 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.pplast.PPLASTSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.TicketDetails;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.TicketDetails;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * The issuing states for PPLAST.
+ * The issuing states for AnonSSO.
  * <p>
  * (c) Steve Wesemeyer 2017
  */
 
-public class PPLASTIssuingStates {
+public class AnonSSOIssuingStates {
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTIssuingStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSOIssuingStates.class);
 
   /**
    * State 04.
@@ -45,7 +45,7 @@ public class PPLASTIssuingStates {
 
 
     private byte[] generateTicketRequest() {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -186,7 +186,7 @@ public class PPLASTIssuingStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPLASTSharedMemory) this.getSharedMemory()).actAs(PPLASTSharedMemory.Actor.USER);
+      ((AnonSSOSharedMemory) this.getSharedMemory()).actAs(AnonSSOSharedMemory.Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Send back the user identity data.
@@ -216,7 +216,7 @@ public class PPLASTIssuingStates {
 
 
     private boolean verifyTicketDetails(byte[] data) {
-      final PPLASTSharedMemory sharedMemory = (PPLASTSharedMemory) this.getSharedMemory();
+      final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -339,7 +339,7 @@ public class PPLASTIssuingStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPLASTSharedMemory) this.getSharedMemory()).actAs(PPLASTSharedMemory.Actor.USER);
+      ((AnonSSOSharedMemory) this.getSharedMemory()).actAs(AnonSSOSharedMemory.Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Send back the user identity data.

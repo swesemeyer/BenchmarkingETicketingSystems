@@ -3,7 +3,7 @@
  * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.pplast;
+package uk.ac.surrey.bets_framework.protocol.anonsso;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -33,15 +33,17 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.CentralVerifierData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.IssuerData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.UserData;
-import uk.ac.surrey.bets_framework.protocol.pplast.data.VerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 
-public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
+public class AnonSSOSharedMemory extends NFCAndroidSharedMemory {
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPLASTSharedMemory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnonSSOSharedMemory.class);
+
+
 
   /**
    * static class enumerating the names of the different types of actor in the
@@ -58,6 +60,12 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
   }
 
   /**
+   * The list of services the user wants to access
+   */
+  public static final String [] J_U={ Actor.VERIFIERS[1], Actor.VERIFIERS[2]};
+  //, Actor.VERIFIERS[5]};
+
+  /**
    * Interface defining actor data.
    */
   public interface ActorData {
@@ -68,7 +76,7 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
    * Arbitrary bytes to act as random seed for pairing secure random so that we
    * can re-create the pairing.
    */
-  public static final byte[] PAIRING_RANDOM_SEED = PPLASTSharedMemory.class.getSimpleName().getBytes();
+  public static final byte[] PAIRING_RANDOM_SEED = AnonSSOSharedMemory.class.getSimpleName().getBytes();
 
   /** The current actor so that access to shared memory can be checked. */
   private transient String actor = Actor.CENTRAL_AUTHORITY;
@@ -146,7 +154,7 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
    *            The JSON to deserialize from.
    * @return The shared memory.
    */
-  public static PPLASTSharedMemory fromJson(String json) {
+  public static AnonSSOSharedMemory fromJson(String json) {
     // First we need to extract the pairing information from the JSON before
     // we deserialize.
     final JsonParser jsonParser = new JsonParser();
@@ -170,7 +178,7 @@ public class PPLASTSharedMemory extends NFCAndroidSharedMemory {
     gson = gsonBuilder.create();
 
     // Deserialize and set the pairing.
-    final PPLASTSharedMemory sharedMemory = gson.fromJson(json, PPLASTSharedMemory.class);
+    final AnonSSOSharedMemory sharedMemory = gson.fromJson(json, AnonSSOSharedMemory.class);
     sharedMemory.pairing = pairing;
 
     return sharedMemory;
