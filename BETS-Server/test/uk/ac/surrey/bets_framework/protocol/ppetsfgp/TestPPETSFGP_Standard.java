@@ -49,12 +49,15 @@ public class TestPPETSFGP_Standard {
 		LOG.setLevel(Level.DEBUG);
 
 		LOG.debug("Starting Setup");
+		long setup_time= Instant.now().toEpochMilli();
 		crypto = Crypto.getInstance();
 		sharedMemory = new PPETSFGPSharedMemory();
 		sharedMemory.passVerification = false;
-		sharedMemory.rBits = 256;
+		sharedMemory.rBits = 160;
 		sharedMemory.qBits = 512;
 		sharedMemory.clearTest();
+		setup_time = Instant.now().toEpochMilli()-setup_time;
+		LOG.info("Initialising system (Server) took (ms): " + setup_time);
 		LOG.debug("p: " + sharedMemory.pairingParameters.getBigInteger("r"));
 		LOG.debug("q: " + sharedMemory.pairingParameters.getBigInteger("q"));
 		LOG.debug("Size of G1=G2=GT:" + sharedMemory.pairing.getG1().getOrder() + "="

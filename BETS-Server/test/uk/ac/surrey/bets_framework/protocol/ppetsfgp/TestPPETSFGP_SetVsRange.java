@@ -52,7 +52,7 @@ public class TestPPETSFGP_SetVsRange {
 		crypto = Crypto.getInstance();
 		sharedMemory = new PPETSFGPSharedMemory();
 		sharedMemory.passVerification = false;
-		sharedMemory.rBits = 256;
+		sharedMemory.rBits = 160;
 		sharedMemory.qBits = 512;
 		sharedMemory.clearTest();
 		LOG.debug("p: " + sharedMemory.pairingParameters.getBigInteger("r"));
@@ -888,7 +888,7 @@ public class TestPPETSFGP_SetVsRange {
 		return sendData.toBytes();
 	}
 
-	private byte[] generateUserProof() { // was generateUserPseudonym
+	private byte[] generateUserProof() { 
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();
 
@@ -921,7 +921,9 @@ public class TestPPETSFGP_SetVsRange {
 		final BigInteger[][] t_bar_dash_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
 		final BigInteger[][] w_bar_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
 		final BigInteger[][] w_bar_dash_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-
+		
+		//part 1 of range proof
+		long rangeProofTiming=Instant.now().toEpochMilli();
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			gamma_n[i] = crypto.secureRandom(sharedMemory.p);
 			gamma_bar_n[i] = crypto.secureRandom(sharedMemory.p);
@@ -936,7 +938,11 @@ public class TestPPETSFGP_SetVsRange {
 				w_bar_dash_n_m[i][j] = crypto.secureRandom(sharedMemory.p);
 			}
 		}
-
+		//end of part 1
+		rangeProofTiming=Instant.now().toEpochMilli() - rangeProofTiming;
+		
+		//part 1 of set proof
+		long setProofTiming=Instant.now().toEpochMilli();
 		// Select random e_1-N2, e_bar_1-N2, e_hat_1-N2
 		final BigInteger[] e_n = new BigInteger[sharedMemory.N2()];
 		final BigInteger[] e_bar_n = new BigInteger[sharedMemory.N2()];
@@ -946,7 +952,9 @@ public class TestPPETSFGP_SetVsRange {
 			e_bar_n[i] = crypto.secureRandom(sharedMemory.p);
 			e_hat_n[i] = crypto.secureRandom(sharedMemory.p);
 		}
-
+		//end of part 1
+		setProofTiming=Instant.now().toEpochMilli() - setProofTiming;
+		
 		// Select random M_2_U
 		final Element M_2_U = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
 
@@ -980,6 +988,8 @@ public class TestPPETSFGP_SetVsRange {
 		final Element[] Z_bar_n = new Element[sharedMemory.N1()];
 		final Element[] Z_bar_dash_n = new Element[sharedMemory.N1()];
 
+		//part 2 of range proof
+		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(userData.A_U_range[i])).getImmutable();
 			Z_dash_n[i] = sharedMemory.g.mul(gamma_bar_n[i]).add(sharedMemory.h.mul(a_bar_n[i]).getImmutable());
@@ -1076,6 +1086,8 @@ public class TestPPETSFGP_SetVsRange {
 						.getImmutable();
 			}
 		}
+		//end of part 2 of range proof
+		rangeProofTiming=Instant.now().toEpochMilli() + rangeProofTiming;
 
 		// Compute D_bar = g^alpha_bar * theta^beta_bar
 		final Element D_bar = sharedMemory.g.mul(alpha_bar).add(sharedMemory.theta.mul(beta_bar)).getImmutable();
@@ -1101,6 +1113,8 @@ public class TestPPETSFGP_SetVsRange {
 				.getImmutable();
 		final Element R = R_1.div(R_2.mul(R_3)).getImmutable();
 
+		// part 3 of range proof
+		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
 		final Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_bar_u)
 				.getImmutable();
 		final Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_bar_u)
@@ -1111,14 +1125,20 @@ public class TestPPETSFGP_SetVsRange {
 			final Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(a_bar_n[i]);
 			product1 = product1.mul(value);
 		}
-
+		//end of part 3 of range proof
+		rangeProofTiming=Instant.now().toEpochMilli() + rangeProofTiming;
+		
+		//part 3 of set proof
+		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
 		Element product2 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
 
 		for (int i = 0; i < sharedMemory.N2(); i++) {
 			final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_hat_n[i]);
 			product2 = product2.mul(value);
 		}
-
+		//end of part 3 of set proof
+		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		
 		final Element R_dash3 = sharedMemory.pairing.pairing(C, sharedMemory.g)
 				.pow(c_bar_u.negate().mod(sharedMemory.p));
 		final Element R_dash4 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(alpha_bar_dash);
@@ -1126,6 +1146,7 @@ public class TestPPETSFGP_SetVsRange {
 
 		final Element R_dash = R_dash1.mul(R_dash2).mul(product1).mul(product2).mul(R_dash3).mul(R_dash4).mul(R_dash5);
 
+		
 		// Compute:
 		// B_1-N2_j = eta_1-N2_j^e_1-N2
 		// W_1-N2_j = e(B_1-N2_j,eta_bar_1-N2)
@@ -1136,6 +1157,9 @@ public class TestPPETSFGP_SetVsRange {
 		// but for completeness, and to ensure that we measure
 		// the maximum possible timing for the protocol, we have selected a
 		// value for all possible set values zeta.
+		
+		//part 4 of set proof
+		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
 		final Element[][] B_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
 		final Element[][] W_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
 		final Element[][] W_bar_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
@@ -1159,7 +1183,9 @@ public class TestPPETSFGP_SetVsRange {
 				}
 			}
 		}
-
+		//end of part 4 of set proof
+		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		
 		// Calculate hash c_BAR
 		final List<byte[]> c_BARList = new ArrayList<>();
 		c_BARList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes(), Y_bar.toBytes(), D.toBytes(), D_bar.toBytes(),
@@ -1207,11 +1233,19 @@ public class TestPPETSFGP_SetVsRange {
 		final BigInteger[] gammac_BAR_n = new BigInteger[sharedMemory.N1()];
 		final BigInteger[] ac_BAR_n = new BigInteger[sharedMemory.N1()];
 
+		//part 4 of the range proof
+		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			gammac_BAR_n[i] = gamma_bar_n[i].subtract(c_BARNum.multiply(gamma_n[i])).mod(sharedMemory.p);
 			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(userData.A_U_range[i])).mod(sharedMemory.p);
 		}
-
+		//end of part 4 of the range proof
+		rangeProofTiming=rangeProofTiming + Instant.now().toEpochMilli();
+		
+		
+		//part 5 of set proof
+		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
+		
 		// Compute:
 		// e_BAR_1-N2 = e_bar_1-N2 - c_BAR * e_1-N2
 		// e_BAR_dash_1-N2 = e_hat_1-N2 - c_BAR * H(I_1-N2_j)
@@ -1231,7 +1265,9 @@ public class TestPPETSFGP_SetVsRange {
 																									// W_bar_n_m
 																									// verification
 		}
-
+		//end of part 5 of set proof
+		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		
 		// Compute:
 		// c_BAR_u = c_bar_u - c_BAR * c_u
 		// alpha_BAR = alpha_bar - c_BAR * alpha
@@ -1244,6 +1280,9 @@ public class TestPPETSFGP_SetVsRange {
 		final BigInteger alpha_BAR_dash = alpha_bar_dash.subtract(c_BARNum.multiply(alpha_dash)).mod(sharedMemory.p);
 		final BigInteger beta_BAR_dash = beta_bar_dash.subtract(c_BARNum.multiply(beta_dash)).mod(sharedMemory.p);
 
+		
+		//part 5 of the range proof
+		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
 		// Compute hashes e_BAR_1-N1
 		final byte[][] e_BAR_m = new byte[sharedMemory.N1()][];
 		final BigInteger[] e_BAR_mNum = new BigInteger[sharedMemory.N1()];
@@ -1336,6 +1375,19 @@ public class TestPPETSFGP_SetVsRange {
 			}
 		}
 
+		//end of part 5 of the range proof
+		rangeProofTiming=rangeProofTiming + Instant.now().toEpochMilli();
+		LOG.debug("***************************************************************************************");
+		LOG.debug("Total timing for the range proof (ms): "+rangeProofTiming);
+		LOG.debug("which involved N1 ranges where N1= "+sharedMemory.N1());		
+		LOG.debug("***************************************************************************************");
+		
+
+		LOG.debug("***************************************************************************************");
+		LOG.debug("Total timing for the set proof (ms): "+setProofTiming);
+		LOG.debug("which involved N2 sets where N2= "+sharedMemory.N2());		
+		LOG.debug("***************************************************************************************");
+		
 		// Save d, Y for later.
 		userData.d = d;
 		userData.Y = Y; // the user pseudonym
@@ -1919,6 +1971,7 @@ public class TestPPETSFGP_SetVsRange {
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
+		long timing=Instant.now().toEpochMilli();
 		final ListData listData = ListData.fromBytes(data);
 
 		if (listData.getList().size() <= 0) { // Way too many to go and count.
@@ -2046,6 +2099,12 @@ public class TestPPETSFGP_SetVsRange {
 		// get the user's validity period
 		final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
 
+		timing=Instant.now().toEpochMilli()-timing;
+		LOG.debug("Decoding data took (ms)= "+timing);
+		
+		
+		//timing of checking R
+		timing=Instant.now().toEpochMilli();
 		// first check that the VP_U was used correctly in the computation of R
 		final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
 		final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
@@ -2061,6 +2120,12 @@ public class TestPPETSFGP_SetVsRange {
 				return false;
 			}
 		}
+		timing=Instant.now().toEpochMilli()-timing;
+		LOG.debug("checking R took (ms): "+timing);
+
+		//timing of checking c_BAR
+		timing=Instant.now().toEpochMilli();
+
 		// Verify c_BAR.
 		final List<byte[]> c_BARVerifyList = new ArrayList<>();
 		c_BARVerifyList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes()));
@@ -2091,17 +2156,33 @@ public class TestPPETSFGP_SetVsRange {
 		Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_BAR_u).getImmutable();
 		Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_BAR_u).getImmutable();
 		Element R_dash3 = sharedMemory.pairing.getGT().newOneElement();
+		
+		//part 1 of range verification
+		long rangeVerificationTiming=Instant.now().toEpochMilli(); 
+		LOG.debug("rangeVerification (part 1 start) so far: "+ rangeVerificationTiming);
+		
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(ac_BAR_n[i])
 					.getImmutable();
 			R_dash3 = R_dash3.mul(value);
 		}
+		//end of part 1 of range verification
+		rangeVerificationTiming=Instant.now().toEpochMilli()-rangeVerificationTiming; 
+		LOG.debug("rangeVerification (part 1 end) so far: "+ rangeVerificationTiming);
+		
+		//part 1 of set verification
+		long setVerificationTiming=Instant.now().toEpochMilli(); 
+		LOG.debug("setVerification (part 1 start) so far: "+ setVerificationTiming);
 		Element R_dash4 = sharedMemory.pairing.getGT().newOneElement();
 		for (int i = 0; i < sharedMemory.N2(); i++) {
 			Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_BAR_dash_n[i])
 					.getImmutable();
 			R_dash4 = R_dash4.mul(value);
 		}
+		//end of part 1 of set verification
+		setVerificationTiming=Instant.now().toEpochMilli()-setVerificationTiming; 
+		LOG.debug("setVerification (part 1 end) so far: "+ setVerificationTiming);
+
 		Element R_dash5 = sharedMemory.pairing.pairing(C, sharedMemory.g).pow(c_BAR_u.negate().mod(sharedMemory.p))
 				.getImmutable();
 		Element R_dash6 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(alpha_BAR_dash)
@@ -2114,6 +2195,10 @@ public class TestPPETSFGP_SetVsRange {
 
 		c_BARVerifyList.add(R_dash.toBytes());
 
+		//part 2 of range verification
+		rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
+		LOG.debug("rangeVerification (part 2 start) so far: "+ rangeVerificationTiming);
+		
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			c_BARVerifyList.add(Z_n[i].toBytes());
 		}
@@ -2123,7 +2208,13 @@ public class TestPPETSFGP_SetVsRange {
 					.add(Z_n[i].mul(c_BARNum));
 			c_BARVerifyList.add(c_BARCheck4.toBytes());
 		}
+		//end of part 2 of range verification
+		rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification (part 2 end) so far: "+ rangeVerificationTiming);
 
+		//part 2 of set verification
+		setVerificationTiming=setVerificationTiming-Instant.now().toEpochMilli(); 
+		LOG.debug("setVerification (part 2 start) so far: "+ setVerificationTiming);
 		for (int i = 0; i < sharedMemory.N2(); i++) {
 			for (int j = 0; j < sharedMemory.zeta(); j++) {
 				c_BARVerifyList.add(B_n_m[i][j].toBytes());
@@ -2151,7 +2242,10 @@ public class TestPPETSFGP_SetVsRange {
 				}
 			}
 		}
-
+		//end of part 2 of set verification
+		setVerificationTiming=setVerificationTiming+Instant.now().toEpochMilli();
+		LOG.debug("setVerification (part 2 end) so far: "+ setVerificationTiming);
+		
 		final ListData c_BARVerifyData = new ListData(c_BARVerifyList);
 		final byte[] c_BARVerify = crypto.getHash(c_BARVerifyData.toBytes());
 
@@ -2163,7 +2257,15 @@ public class TestPPETSFGP_SetVsRange {
 		}
 
 		LOG.debug("SUCCESS: verified user proof: PI_2_U: c_BAR");
+		timing=Instant.now().toEpochMilli()-timing;
+		LOG.debug("checking c_bar took (ms): "+timing);
+		
+		//part 3 of range verification
+		rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
+		LOG.debug("rangeVerification (part 3 start) so far: "+ rangeVerificationTiming);
 
+		//timing e_BAR_m
+		timing=Instant.now().toEpochMilli();
 		// Verify e_BAR_m.
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
@@ -2211,14 +2313,17 @@ public class TestPPETSFGP_SetVsRange {
 			final byte[] e_BAR_mVerify = crypto.getHash(e_BAR_mVerifyData.toBytes());
 
 			if (!Arrays.equals(e_BAR_m[i], e_BAR_mVerify)) {
-				LOG.error("failed to verify PI_2_U: e_BAR_n: " + i);
+				LOG.error("failed to verify PI_2_U: e_BAR_m: " + i);
 				if (!sharedMemory.passVerification) {
 					return false;
 				}
 			}
 		}
-		LOG.debug("SUCCESS: verified PI_2_U: e_BAR_n");
-
+		LOG.debug("SUCCESS: verified PI_2_U: e_BAR_m");
+		timing=Instant.now().toEpochMilli()-timing;
+		LOG.debug("checking e_BAR_m took (ms): "+timing);
+		
+		timing=Instant.now().toEpochMilli();
 		// Verify d_BAR_n_m
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			for (int j = 0; j < sharedMemory.k; j++) {
@@ -2256,8 +2361,28 @@ public class TestPPETSFGP_SetVsRange {
 				}
 			}
 		}
+		//end of part 3 of range verification
+		rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli(); 
+		LOG.debug("rangeVerification so far: "+ rangeVerificationTiming);
+		
 		LOG.debug("SUCCESS: verified PI_2_U: d_BAR_n_m");
+		timing=Instant.now().toEpochMilli()-timing;
+		LOG.debug("checking d_BAR_n_m took (ms): "+timing);
 
+
+		
+		LOG.debug("***************************************************************************************");
+		LOG.debug("Total timing for the range verification (ms): "+rangeVerificationTiming);
+		LOG.debug("which involved N1 ranges where N1= "+sharedMemory.N1());		
+		LOG.debug("***************************************************************************************");
+		
+
+		LOG.debug("***************************************************************************************");
+		LOG.debug("Total timing for the set verification (ms): "+setVerificationTiming);
+		LOG.debug("which involved N2 sets where N2= "+sharedMemory.N2());		
+		LOG.debug("***************************************************************************************");
+		
+		
 		return true;
 	}
 
