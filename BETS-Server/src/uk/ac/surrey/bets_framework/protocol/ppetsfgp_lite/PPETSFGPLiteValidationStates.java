@@ -173,7 +173,7 @@ public class PPETSFGPLiteValidationStates {
 		
 		if (!psi_uNum.equals(check_psi_uNum)) {
 			LOG.error("failed to verify psi_uNum");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -190,7 +190,7 @@ public class PPETSFGPLiteValidationStates {
 
 		if (!LHS.equals(RHS)) {
 			LOG.error("failed to verify pairing check");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -210,7 +210,7 @@ public class PPETSFGPLiteValidationStates {
 
 		if (!Arrays.equals(c, cVerify)) {
 			LOG.error("failed to verify PI_3_U: c");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}

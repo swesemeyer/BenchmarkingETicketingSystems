@@ -14,7 +14,6 @@ import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,7 +23,6 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
-import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
 import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;

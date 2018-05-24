@@ -8,7 +8,6 @@ package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -157,7 +156,7 @@ public class PPETSFGPRegistrationStates {
       final Element RHS = right1.mul(right2).mul(right3).mul(right4).getImmutable();
       if (!left.equals(RHS)) {
         LOG.error("invalid seller credentials");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }
@@ -310,7 +309,7 @@ public class PPETSFGPRegistrationStates {
 
       if (listData.getList().size() != 4) {
         LOG.error("wrong number of data elements: " + listData.getList().size());
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }
@@ -355,7 +354,7 @@ public class PPETSFGPRegistrationStates {
       final Element RHS = right1.mul(right2).mul(right3).mul(right4).mul(product1).mul(product2);
       if (!left.isEqual(RHS)) {
         LOG.error("invalid user credentials");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }

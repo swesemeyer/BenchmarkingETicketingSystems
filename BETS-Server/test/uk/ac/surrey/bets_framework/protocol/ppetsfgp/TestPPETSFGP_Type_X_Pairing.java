@@ -25,6 +25,7 @@ import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.PairingType;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.CentralAuthorityData;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
@@ -34,11 +35,11 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
  * @author swesemeyer
  *
  */
-public class TestPPETSFGP_Standard {
+public class TestPPETSFGP_Type_X_Pairing {
 
 	/** Logback logger. */
 	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
-			.getLogger("Test_PPETS_FGP");
+			.getLogger("Test_PPETS_FGP_TYPE_X");
 	Encoder base64 = Base64.getEncoder();
 	Crypto crypto;
 	PPETSFGPSharedMemory sharedMemory = null;
@@ -51,29 +52,27 @@ public class TestPPETSFGP_Standard {
 		LOG.debug("Starting Setup");
 		long setup_time= Instant.now().toEpochMilli();
 		crypto = Crypto.getInstance();
+		
 		sharedMemory = new PPETSFGPSharedMemory();
-		sharedMemory.passVerification = false;
+		//change the Pairing Type to the curve you want
+		sharedMemory.setPairingType(PairingType.TYPE_A1);
+		sharedMemory.skipVerification = false;
 		sharedMemory.rBits = 160;
 		sharedMemory.qBits = 512;
 		sharedMemory.clearTest();
 		setup_time = Instant.now().toEpochMilli()-setup_time;
 		LOG.info("Initialising system (Server) took (ms): " + setup_time);
-		BigInteger p=sharedMemory.pairingParameters.getBigInteger("r");
-		LOG.debug("p = size of E(F_q): " + p);
-		BigInteger q=sharedMemory.pairingParameters.getBigInteger("q");
-		LOG.debug("q = size of F_q: " + q);
-		BigInteger h=sharedMemory.pairingParameters.getBigInteger("h");
-		LOG.debug("h=factor relating p and q: "+h+ " via:");
-		LOG.debug("h*p=q+1 :"+(p.multiply(h))+" = "+(q.add(BigInteger.ONE)));
+//		BigInteger p=sharedMemory.pairingParameters.getBigInteger("r");
+		LOG.debug("p = size of E(F_q): " + sharedMemory.p);
+		LOG.debug("is p prime? "+sharedMemory.p.isProbablePrime(10));
+//		BigInteger q=sharedMemory.pairingParameters.getBigInteger("q");
+//		LOG.debug("q = size of F_q: " + q);
 		LOG.debug("Type: "+sharedMemory.pairingParameters.getType());
-		LOG.debug("Length in bytes of underlying field of G1: "+sharedMemory.pairing.getFieldAt(1).getOrder());
-		LOG.debug("Length in bytes of underlying field of G2: "+sharedMemory.pairing.getFieldAt(2).getOrder());
-		LOG.debug("Length in bytes of underlying field of GT: "+sharedMemory.pairing.getFieldAt(3).getOrder());
 		LOG.debug("Size of G1=G2=GT:" + sharedMemory.pairing.getG1().getOrder() + "="
 				+ sharedMemory.pairing.getG2().getOrder() + "=" + sharedMemory.pairing.getGT().getOrder());
 		LOG.debug("G1=?G2:" + sharedMemory.pairing.getG1().equals(sharedMemory.pairing.getG2()));
-		LOG.debug("length of elements in G:"+sharedMemory.pairing.getG1().newRandomElement());
-		LOG.debug("length of elements in GT:"+sharedMemory.pairing.getGT().newRandomElement());
+		LOG.debug("length of elements in G:"+sharedMemory.pairing.getG1().getLengthInBytes()*8);
+		LOG.debug("length of elements in GT:"+sharedMemory.pairing.getGT().getLengthInBytes()*8);
 
 		LOG.debug("Setting up Seller:");
 		sharedMemory.actAs(Actor.SELLER);
@@ -280,12 +279,16 @@ public class TestPPETSFGP_Standard {
 		// Compute proof PI_1_S = (c, s, M_1_S, Y_I):
 		final BigInteger t_s = crypto.secureRandom(sharedMemory.p);
 		final Element M_1_S = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
+		//LOG.debug("M_1_S: "+M_1_S);
 
+		//LOG.debug("Y_S: "+sellerData.Y_S);
 		final CurveElement<?, ?> T_s = rho.mul(t_s);
 		final ListData cData = new ListData(Arrays.asList(M_1_S.toBytes(), sellerData.Y_S.toBytes(), T_s.toBytes()));
 		final byte[] c = crypto.getHash(cData.toBytes());
 		final BigInteger cNum = (new BigInteger(1, c)).mod(sharedMemory.p);
-
+		//LOG.debug("cNum(no mod p): "+new BigInteger(1, c));
+		//LOG.debug("cNum(mod p): "+cNum);
+		
 		final BigInteger s = (t_s.subtract(cNum.multiply(sellerData.x_s))).mod(sharedMemory.p);
 
 		// Send ID_I, PI_1_S (which includes Y_I) and VP_S
@@ -337,9 +340,12 @@ public class TestPPETSFGP_Standard {
 
 		// ID_I not used.
 		final Element M_1_S = sharedMemory.curveElementFromBytes(listData.getList().get(1));
+		//LOG.debug("M_1_S: "+M_1_S);
 		final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(2));
+		//LOG.debug("Y_S: "+Y_S);
 		final byte[] c = listData.getList().get(3);
 		final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
+		//LOG.debug("cNum: "+cNum);
 		final BigInteger s = new BigInteger(listData.getList().get(4));
 		// How long does the seller want to request credentials for
 		final String VP_S = sharedMemory.stringFromBytes(listData.getList().get(5));
@@ -348,11 +354,12 @@ public class TestPPETSFGP_Standard {
 
 		// Verify PI_1_S via c.
 		final Element check = sharedMemory.rho.mul(s).add(Y_S.mul(cNum));
+		LOG.debug("check= "+check);
 		final ListData cVerifyData = new ListData(Arrays.asList(M_1_S.toBytes(), Y_S.toBytes(), check.toBytes()));
 		final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
 		if (!Arrays.equals(c, cVerify)) {
 			LOG.error("failed to verify PI_1_S");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return null;
 			}
 		}
@@ -1020,8 +1027,9 @@ public class TestPPETSFGP_Standard {
 		//part 2 of range proof
 		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();		
 		for (int i = 0; i < numOfUserRanges; i++) {
-			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(userData.A_U_range[i])).getImmutable();
+			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(UserData.A_U_range[i])).getImmutable();
 			Z_dash_n[i] = sharedMemory.g.mul(gamma_bar_n[i]).add(sharedMemory.h.mul(a_bar_n[i]).getImmutable());
+			//LOG.debug("Z_dash_n["+i+"]= "+ Z_dash_n[i]);
 
 			Element sum1 = sharedMemory.g.mul(gamma_bar_n[i]).getImmutable();
 			for (int j = 0; j < sharedMemory.k; j++) {
@@ -1046,7 +1054,7 @@ public class TestPPETSFGP_Standard {
 			// Calculate w_l_i member of [0, q-1], and since q = 2, w_l_i is
 			// binary. Here w_l_i represents which bits are set in the
 			// number A_U_range[i] - lower bound of range policy[i]
-			final BigInteger lowerDiff = userData.A_U_range[i]
+			final BigInteger lowerDiff = UserData.A_U_range[i]
 					.subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][0]));
 			final String reverseLowerDiff = new StringBuilder(lowerDiff.toString(sharedMemory.q)).reverse().toString();
 
@@ -1054,7 +1062,7 @@ public class TestPPETSFGP_Standard {
 			// w_dash_l_i is binary. Here w_dash_l_i represents which bits
 			// are set in the number A_U_range[i] - upper bound of range
 			// policy[i] + q^k
-			final BigInteger upperDiff = userData.A_U_range[i]
+			final BigInteger upperDiff = UserData.A_U_range[i]
 					.subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][1]))
 					.add(BigInteger.valueOf(sharedMemory.q).pow(sharedMemory.k));
 			final String reverseUpperDiff = new StringBuilder(upperDiff.toString(sharedMemory.q)).reverse().toString();
@@ -1120,12 +1128,15 @@ public class TestPPETSFGP_Standard {
 
 		// Compute D_bar = g^alpha_bar * theta^beta_bar
 		final Element D_bar = sharedMemory.g.mul(alpha_bar).add(sharedMemory.theta.mul(beta_bar)).getImmutable();
+		//LOG.debug("D_bar="+D_bar);
 
 		// Compute phi_bar = D^c_bar
 		final Element phi_bar = D.mul(c_bar).getImmutable();
+		//LOG.debug("phi_bar="+phi_bar);
 
 		// Compute Y_bar = xi^x_bar_u * g_1^d_bar
 		final Element Y_bar = sharedMemory.xi.mul(x_bar_u).add(sharedMemory.g_n[1].mul(d_bar)).getImmutable();
+		//LOG.debug("Y_bar="+Y_bar);
 
 		// Compute:
 		// R = e(C,g_bar) / (e(g_0,g) e(g_1,g)^H(VP_U)
@@ -1190,6 +1201,7 @@ public class TestPPETSFGP_Standard {
 		
 		//part 4 of set proof
 		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
+		
 		final Element[][] B_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 		final Element[][] W_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 		final Element[][] W_bar_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
@@ -1208,8 +1220,8 @@ public class TestPPETSFGP_Standard {
 				} else {
 					// just stick some fixed element here... as they won't be used...
 					B_n_m[i][j] = sharedMemory.g;
-					W_n_m[i][j] = sharedMemory.g;
-					W_bar_n_m[i][j] = sharedMemory.g;
+					W_n_m[i][j] = sharedMemory.gt;
+					W_bar_n_m[i][j] = sharedMemory.gt;
 
 				}
 			}
@@ -1222,31 +1234,45 @@ public class TestPPETSFGP_Standard {
 		c_BARList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes(), Y_bar.toBytes(), D.toBytes(), D_bar.toBytes(),
 				phi.toBytes(), phi_bar.toBytes(), C.toBytes(), R.toBytes(), R_dash.toBytes()));
 
+		//LOG.debug("Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARList.add(Z_n[i].toBytes());
 		}
+		
+		//LOG.debug("Z_n: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARList.add(Z_dash_n[i].toBytes());
 		}
-
+		
+		//LOG.debug("Z_dash_n : Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 				c_BARList.add(B_n_m[i][j].toBytes());
 			}
 		}
+		//LOG.debug("B_n_m: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
+				//LOG.debug("Original W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
 				c_BARList.add(W_n_m[i][j].toBytes());
 			}
 		}
 
+		//LOG.debug("W_n_m: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
+				//LOG.debug("W_bar_n_m["+i+"]["+j+"] = "+W_bar_n_m[i][j]);
 				c_BARList.add(W_bar_n_m[i][j].toBytes());
 			}
 		}
+		//LOG.debug("W_bar_n_m: Final Original Hash is: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
 		final ListData c_BARData = new ListData(c_BARList);
 		final byte[] c_BAR = crypto.getHash(c_BARData.toBytes());
+		//LOG.debug("c_BAR= "+base64.encodeToString(c_BAR));
+		
 		final BigInteger c_BARNum = new BigInteger(1, c_BAR).mod(sharedMemory.p);
 		//LOG.debug("c_BARNum after mod p="+c_BARNum);
 
@@ -1269,7 +1295,7 @@ public class TestPPETSFGP_Standard {
 		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
 		for (int i = 0; i < numOfUserRanges; i++) {
 			gammac_BAR_n[i] = gamma_bar_n[i].subtract(c_BARNum.multiply(gamma_n[i])).mod(sharedMemory.p);
-			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(userData.A_U_range[i])).mod(sharedMemory.p);
+			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(UserData.A_U_range[i])).mod(sharedMemory.p);
 		}
 		//end of part 4 of the range proof
 		rangeProofTiming=rangeProofTiming + Instant.now().toEpochMilli();
@@ -1288,7 +1314,7 @@ public class TestPPETSFGP_Standard {
 		for (int i = 0; i < numOfUserSets; i++) {
 			e_BAR_n[i] = e_bar_n[i].subtract(c_BARNum.multiply(e_n[i])).mod(sharedMemory.p);
 
-			final byte[] hash = crypto.getHash(userData.A_U_set[i].getBytes(Data.UTF8));
+			final byte[] hash = crypto.getHash(UserData.A_U_set[i].getBytes(Data.UTF8));
 			final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
 
 			e_BAR_dash_n[i] = e_hat_n[i].subtract(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for R'
@@ -1311,7 +1337,10 @@ public class TestPPETSFGP_Standard {
 		final BigInteger alpha_BAR = alpha_bar.subtract(c_BARNum.multiply(alpha)).mod(sharedMemory.p);
 		final BigInteger beta_BAR = beta_bar.subtract(c_BARNum.multiply(beta)).mod(sharedMemory.p);
 		final BigInteger alpha_BAR_dash = alpha_bar_dash.subtract(c_BARNum.multiply(alpha_dash)).mod(sharedMemory.p);
+		//LOG.debug("alpha_BAR_dash= "+alpha_BAR_dash);
 		final BigInteger beta_BAR_dash = beta_bar_dash.subtract(c_BARNum.multiply(beta_dash)).mod(sharedMemory.p);
+		//LOG.debug("beta_BAR_dash= "+beta_BAR_dash);
+		//LOG.debug("phi_bar= "+phi_bar);
 
 		
 		//part 5 of the range proof
@@ -1340,12 +1369,12 @@ public class TestPPETSFGP_Standard {
 			gammae_BAR_n[i] = (gamma_bar_n[i].subtract(e_BAR_mNum[i].multiply(gamma_n[i]))).mod(sharedMemory.p);
 
 			final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
-			ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i].subtract(lower))))
+			ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(lower))))
 					.mod(sharedMemory.p);
 
 			final BigInteger upper = BigInteger.valueOf(sharedMemory.rangePolicies[i][1]);
 			ae_BAR_dash_n[i] = a_bar_n[i]
-					.subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i].subtract(upper).add(limit)));
+					.subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(upper).add(limit)));
 
 		}
 
@@ -1529,7 +1558,7 @@ public class TestPPETSFGP_Standard {
 		validatorData.r = r;
 
 		// Send r
-		final ListData sendData = new ListData(Arrays.asList(validatorData.ID_V, r.toByteArray()));
+		final ListData sendData = new ListData(Arrays.asList(ValidatorData.ID_V, r.toByteArray()));
 		return sendData.toBytes();
 	}
 
@@ -1574,7 +1603,7 @@ public class TestPPETSFGP_Standard {
 		final Element RHS = right1.mul(right2).mul(right3).mul(right4).getImmutable();
 		if (!left.equals(RHS)) {
 			LOG.error("invalid seller credentials");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1642,7 +1671,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!Arrays.equals(c_bar_1, c_bar_1Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_1");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1658,7 +1687,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!Arrays.equals(c_bar_2, c_bar_2Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_2");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1687,7 +1716,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!Arrays.equals(c_bar_3, c_bar_3Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_3");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1754,7 +1783,7 @@ public class TestPPETSFGP_Standard {
 		
 		if (!psi_uNum.equals(check_psi_uNum)){
 			LOG.error("failed to verify psi_uNum");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1780,7 +1809,7 @@ public class TestPPETSFGP_Standard {
 		
 		if (!R.equals(checkR)){
 			LOG.error("failed to verify R");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1802,7 +1831,7 @@ public class TestPPETSFGP_Standard {
 		cVerifyList.add(cCheck2.toBytes());
 		
 		// Verify E_bar
-		final byte[] hashID_V = crypto.getHash(validatorData.ID_V);
+		final byte[] hashID_V = crypto.getHash(ValidatorData.ID_V);
 		final Element elementFromHashID_V = sharedMemory.pairing.getG1().newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
 		
 		final Element cCheck3 = sharedMemory.xi.mul(x_BAR_u).add(elementFromHashID_V.mul(s_hat_u)).add(E.mul(cNum));
@@ -1832,7 +1861,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!Arrays.equals(c, cVerify)) {
 			LOG.error("failed to verify PI_3_U: c");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1895,7 +1924,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4).mul(right5))) {
 			LOG.error("failed to verify e(T_U, Y_I * rho^omega_u)");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1937,7 +1966,7 @@ public class TestPPETSFGP_Standard {
 
 		if (listData.getList().size() != 4) {
 			LOG.error("wrong number of data elements: " + listData.getList().size());
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1982,7 +2011,7 @@ public class TestPPETSFGP_Standard {
 		final Element RHS = right1.mul(right2).mul(right3).mul(right4).mul(product1).mul(product2);
 		if (!left.isEqual(RHS)) {
 			LOG.error("invalid user credentials");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -2030,6 +2059,8 @@ public class TestPPETSFGP_Standard {
 		
 		final int numOfUserRanges=(new BigInteger(listData.getList().get(index++))).intValue();
 		final int numOfUserSets=(new BigInteger(listData.getList().get(index++))).intValue();		
+		//LOG.debug("numOfUserRanges= "+numOfUserRanges);
+		//LOG.debug("numOfUserSets= "+numOfUserSets);
 
 		final Element[] Z_n = new Element[numOfUserRanges];
 		final Element[] Z_dash_n = new Element[numOfUserRanges];
@@ -2159,7 +2190,7 @@ public class TestPPETSFGP_Standard {
 
 		if (!R.isEqual(checkR)) {
 			LOG.error("failed to verify VP_U usage in computing R");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -2243,6 +2274,8 @@ public class TestPPETSFGP_Standard {
 
 		c_BARVerifyList.add(R_dash.toBytes());
 		
+		//LOG.debug("Initial: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
+		
 		//part 2 of range verification
 		rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
 		LOG.debug("rangeVerification (part 2 start) so far: "+ rangeVerificationTiming);		
@@ -2250,13 +2283,17 @@ public class TestPPETSFGP_Standard {
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARVerifyList.add(Z_n[i].toBytes());
 		}
-
+		//LOG.debug("Z_n: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserRanges; i++) {
 			final Element c_BARCheck4 = sharedMemory.g.mul(gammac_BAR_n[i]).add(sharedMemory.h.mul(ac_BAR_n[i]))
 					.add(Z_n[i].mul(c_BARNum));
 			//LOG.debug("verify Z_dash_n["+i+"]= "+ c_BARCheck4);
 			c_BARVerifyList.add(c_BARCheck4.toBytes());
 		}
+		
+		//LOG.debug("Z_dash_n: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
+		
 		//end of part 2 of range verification
 		rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli();
 		LOG.debug("rangeVerification (part 2 end) so far: "+ rangeVerificationTiming);
@@ -2270,12 +2307,17 @@ public class TestPPETSFGP_Standard {
 				c_BARVerifyList.add(B_n_m[i][j].toBytes());
 			}
 		}
-
+		//LOG.debug("B_n_m: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
+				//LOG.debug("W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
 				c_BARVerifyList.add(W_n_m[i][j].toBytes());
 			}
 		}
+		
+		//LOG.debug("W_n_m: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
+		
 		for (int i = 0; i < numOfUserSets; i++) {
 			final int currentSetSize=sharedMemory.zeta(i);
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
@@ -2286,10 +2328,11 @@ public class TestPPETSFGP_Standard {
 							sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_n[i]).pow(e_BAR_dash_dash_n[i]))
 							.getImmutable();
 					product2 = product2.mul(W_n_m[i][j].pow(c_BARNum)).getImmutable();
+					//LOG.debug("W_bar_check["+i+"]["+j+"] = "+product2);
 					c_BARVerifyList.add(product2.toBytes());
 				} else {
 					// just stick some random but fixed element here as it is not used...
-					c_BARVerifyList.add(sharedMemory.g.toBytes());
+					c_BARVerifyList.add(sharedMemory.gt.toBytes());
 				}
 			}
 		}
@@ -2299,10 +2342,12 @@ public class TestPPETSFGP_Standard {
 
 		final ListData c_BARVerifyData = new ListData(c_BARVerifyList);
 		final byte[] c_BARVerify = crypto.getHash(c_BARVerifyData.toBytes());
-
+		//LOG.debug("c_BAR="+base64.encodeToString(c_BAR));
+		//LOG.debug("c_BARVerify="+base64.encodeToString(c_BARVerify));
+		
 		if (!Arrays.equals(c_BAR, c_BARVerify)) {
 			LOG.error("failed to verify PI_2_U: c_BAR");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -2365,7 +2410,7 @@ public class TestPPETSFGP_Standard {
 
 			if (!Arrays.equals(e_BAR_m[i], e_BAR_mVerify)) {
 				LOG.error("failed to verify PI_2_U: e_BAR_n: " + i);
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -2406,7 +2451,7 @@ public class TestPPETSFGP_Standard {
 
 				if (!Arrays.equals(d_BAR_n_m[i][j], d_BAR_n_mVerify)) {
 					LOG.error("failed to verify PI_2_U: d_BAR_n_m: " + i + ", " + j);
-					if (!sharedMemory.passVerification) {
+					if (!sharedMemory.skipVerification) {
 						return false;
 					}
 				}

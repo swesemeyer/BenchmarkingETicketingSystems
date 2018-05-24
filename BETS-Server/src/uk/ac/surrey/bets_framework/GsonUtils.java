@@ -33,7 +33,7 @@ import uk.ac.surrey.bets_framework.protocol.data.Data;
 public class GsonUtils {
 
 	/**
-	 * Deserializes an CurveElement.
+	 * Deserializes a CurveElement.
 	 */
 	public static class CurveElementDeserializer implements JsonDeserializer<CurveElement<?, ?>> {
 

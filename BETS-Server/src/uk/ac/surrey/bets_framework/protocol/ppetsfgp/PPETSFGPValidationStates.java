@@ -234,7 +234,7 @@ public class PPETSFGPValidationStates {
 
 			if (!psi_uNum.equals(check_psi_uNum)) {
 				LOG.error("failed to verify psi_uNum");
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -258,7 +258,7 @@ public class PPETSFGPValidationStates {
 
 			if (!R.equals(checkR)) {
 				LOG.error("failed to verify R");
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -313,7 +313,7 @@ public class PPETSFGPValidationStates {
 
 			if (!Arrays.equals(c, cVerify)) {
 				LOG.error("failed to verify PI_3_U: c");
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}

@@ -51,7 +51,7 @@ public class TestPPETSFGP_Lite {
 		LOG.debug("Starting Setup");
 		crypto = Crypto.getInstance();
 		sharedMemory = new PPETSFGPSharedMemory();
-		sharedMemory.passVerification = false;
+		sharedMemory.skipVerification = false;
 		sharedMemory.rBits = 256;
 		sharedMemory.qBits = 512;
 		sharedMemory.clearTest();
@@ -282,7 +282,7 @@ public class TestPPETSFGP_Lite {
 		final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
 		if (!Arrays.equals(c, cVerify)) {
 			LOG.error("failed to verify PI_1_S");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return null;
 			}
 		}
@@ -767,7 +767,7 @@ public class TestPPETSFGP_Lite {
 		
 	
 		for (int i = 0; i < numOfUserRanges; i++) {
-			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(userData.A_U_range[i])).getImmutable();
+			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(UserData.A_U_range[i])).getImmutable();
 			Z_dash_n[i] = sharedMemory.g.mul(gamma_bar_n[i]).add(sharedMemory.h.mul(a_bar_n[i]).getImmutable());
 
 			Element sum1 = sharedMemory.g.mul(gamma_bar_n[i]).getImmutable();
@@ -793,7 +793,7 @@ public class TestPPETSFGP_Lite {
 			// Calculate w_l_i member of [0, q-1], and since q = 2, w_l_i is
 			// binary. Here w_l_i represents which bits are set in the
 			// number A_U_range[i] - lower bound of range policy[i]
-			final BigInteger lowerDiff = userData.A_U_range[i]
+			final BigInteger lowerDiff = UserData.A_U_range[i]
 					.subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][0]));
 			final String reverseLowerDiff = new StringBuilder(lowerDiff.toString(sharedMemory.q)).reverse().toString();
 
@@ -801,7 +801,7 @@ public class TestPPETSFGP_Lite {
 			// w_dash_l_i is binary. Here w_dash_l_i represents which bits
 			// are set in the number A_U_range[i] - upper bound of range
 			// policy[i] + q^k
-			final BigInteger upperDiff = userData.A_U_range[i]
+			final BigInteger upperDiff = UserData.A_U_range[i]
 					.subtract(BigInteger.valueOf(sharedMemory.rangePolicies[i][1]))
 					.add(BigInteger.valueOf(sharedMemory.q).pow(sharedMemory.k));
 			final String reverseUpperDiff = new StringBuilder(upperDiff.toString(sharedMemory.q)).reverse().toString();
@@ -997,7 +997,7 @@ public class TestPPETSFGP_Lite {
 
 		for (int i = 0; i < sharedMemory.N1(); i++) {
 			gammac_BAR_n[i] = gamma_bar_n[i].subtract(c_BARNum.multiply(gamma_n[i])).mod(sharedMemory.p);
-			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(userData.A_U_range[i])).mod(sharedMemory.p);
+			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(UserData.A_U_range[i])).mod(sharedMemory.p);
 		}
 
 		// Compute:
@@ -1010,7 +1010,7 @@ public class TestPPETSFGP_Lite {
 		for (int i = 0; i < sharedMemory.N2(); i++) {
 			e_BAR_n[i] = e_bar_n[i].subtract(c_BARNum.multiply(e_n[i])).mod(sharedMemory.p);
 
-			final byte[] hash = crypto.getHash(userData.A_U_set[i].getBytes(Data.UTF8));
+			final byte[] hash = crypto.getHash(UserData.A_U_set[i].getBytes(Data.UTF8));
 			final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
 
 			e_BAR_dash_n[i] = e_hat_n[i].subtract(c_BARNum.multiply(hashNum)).mod(sharedMemory.p); // needed for R'
@@ -1056,12 +1056,12 @@ public class TestPPETSFGP_Lite {
 			gammae_BAR_n[i] = (gamma_bar_n[i].subtract(e_BAR_mNum[i].multiply(gamma_n[i]))).mod(sharedMemory.p);
 
 			final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
-			ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i].subtract(lower))))
+			ae_BAR_n[i] = (a_bar_n[i].subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(lower))))
 					.mod(sharedMemory.p);
 
 			final BigInteger upper = BigInteger.valueOf(sharedMemory.rangePolicies[i][1]);
 			ae_BAR_dash_n[i] = a_bar_n[i]
-					.subtract(e_BAR_mNum[i].multiply(userData.A_U_range[i].subtract(upper).add(limit)));
+					.subtract(e_BAR_mNum[i].multiply(UserData.A_U_range[i].subtract(upper).add(limit)));
 
 		}
 
@@ -1277,7 +1277,7 @@ public class TestPPETSFGP_Lite {
 		final Element RHS = right1.mul(right2).mul(right3).mul(right4).getImmutable();
 		if (!left.equals(RHS)) {
 			LOG.error("invalid seller credentials");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1345,7 +1345,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!Arrays.equals(c_bar_1, c_bar_1Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_1");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1361,7 +1361,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!Arrays.equals(c_bar_2, c_bar_2Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_2");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1390,7 +1390,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!Arrays.equals(c_bar_3, c_bar_3Verify)) {
 			LOG.error("failed to verify PI_2_S: c_bar_3");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1452,7 +1452,7 @@ public class TestPPETSFGP_Lite {
 		
 		if (!psi_uNum.equals(check_psi_uNum)) {
 			LOG.error("failed to verify psi_uNum");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1469,7 +1469,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!LHS.equals(RHS)) {
 			LOG.error("failed to verify pairing check");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1489,7 +1489,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!Arrays.equals(c, cVerify)) {
 			LOG.error("failed to verify PI_3_U: c");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1545,7 +1545,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4).mul(right5))) {
 			LOG.error("failed to verify e(T_U, Y_I * rho^omega_u)");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1591,7 +1591,7 @@ public class TestPPETSFGP_Lite {
 
 		if (listData.getList().size() != 4) {
 			LOG.error("wrong number of data elements: " + listData.getList().size());
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1636,7 +1636,7 @@ public class TestPPETSFGP_Lite {
 		final Element RHS = right1.mul(right2).mul(right3).mul(right4).mul(product1).mul(product2);
 		if (!left.isEqual(RHS)) {
 			LOG.error("invalid user credentials");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1807,7 +1807,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!R.isEqual(checkR)) {
 			LOG.error("failed to verify VP_U usage in computing R");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1909,7 +1909,7 @@ public class TestPPETSFGP_Lite {
 
 		if (!Arrays.equals(c_BAR, c_BARVerify)) {
 			LOG.error("failed to verify PI_2_U: c_BAR");
-			if (!sharedMemory.passVerification) {
+			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
@@ -1964,7 +1964,7 @@ public class TestPPETSFGP_Lite {
 
 			if (!Arrays.equals(e_BAR_m[i], e_BAR_mVerify)) {
 				LOG.error("failed to verify PI_2_U: e_BAR_n: " + i);
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -2002,7 +2002,7 @@ public class TestPPETSFGP_Lite {
 
 				if (!Arrays.equals(d_BAR_n_m[i][j], d_BAR_n_mVerify)) {
 					LOG.error("failed to verify PI_2_U: d_BAR_n_m: " + i + ", " + j);
-					if (!sharedMemory.passVerification) {
+					if (!sharedMemory.skipVerification) {
 						return false;
 					}
 				}

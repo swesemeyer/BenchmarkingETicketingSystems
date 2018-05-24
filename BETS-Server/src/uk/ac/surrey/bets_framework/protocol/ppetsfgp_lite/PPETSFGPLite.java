@@ -16,6 +16,7 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPIssuingStates;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPRegistrationStates;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSetupStates;
 import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.PairingType;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
 
 /**
@@ -72,21 +73,45 @@ public class PPETSFGPLite extends NFCReaderStateMachine {
     // Pull out the relevant parameters into the shared memory.
     try {
       if (parameters.size() > 0) {
-        this.sharedMemory.passVerification = Boolean.parseBoolean(parameters.get(0));
+        this.sharedMemory.skipVerification = Boolean.parseBoolean(parameters.get(0));
       }
 
       if (parameters.size() > 1) {
         this.sharedMemory.numValidations = Integer.parseInt(parameters.get(1));
       }
 
-      if (parameters.size() > 2) {
-        this.sharedMemory.rBits = Integer.parseInt(parameters.get(2));
+      if (parameters.size()>2) {
+    	  String pairingType=parameters.get(2);
+    	  switch (pairingType) {
+		case "A":
+			this.sharedMemory.setPairingType(PairingType.TYPE_A);
+			break;
+		case "A1":
+			this.sharedMemory.setPairingType(PairingType.TYPE_A1);
+			//this pairing uses slightly different parameters
+			//the number of primes to use
+			this.sharedMemory.rBits=3;
+			//the size of these primes
+			this.sharedMemory.qBits=160;
+			break;
+		case "E":
+			this.sharedMemory.setPairingType(PairingType.TYPE_E);
+			break;
+		default:
+			throw new UnsupportedOperationException("This pairing type is not supported: "+pairingType);
+		}
       }
 
       if (parameters.size() > 3) {
-        this.sharedMemory.qBits = Integer.parseInt(parameters.get(3));
+    	  //note for type A1 pairing this represents the number of primes to use
+        this.sharedMemory.rBits = Integer.parseInt(parameters.get(3));
       }
-      LOG.debug("ignore verfication failures:" + (this.sharedMemory.passVerification));
+
+      if (parameters.size() > 4) {
+    	  //for type A1 pairings this represents the size of the primes
+        this.sharedMemory.qBits = Integer.parseInt(parameters.get(4));
+      }
+      LOG.debug("ignore verfication failures:" + (this.sharedMemory.skipVerification));
       LOG.debug("bilinear group parameters (" + this.sharedMemory.rBits + ", " + this.sharedMemory.qBits + ")");
     }
     catch (final Exception e) {

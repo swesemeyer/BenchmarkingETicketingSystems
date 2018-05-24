@@ -101,7 +101,7 @@ public class PPETSFGPRegistrationStates {
       final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
       if (!Arrays.equals(c, cVerify)) {
         LOG.error("failed to verify PI_1_S");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return null;
         }
       }

@@ -344,8 +344,9 @@ public class PPETSFGPIssuingStates {
           } else {
             // just stick some fixed element here... as they won't be used...
             B_n_m[i][j] = sharedMemory.g;
-            W_n_m[i][j] = sharedMemory.g;
-            W_bar_n_m[i][j] = sharedMemory.g;
+            //the next two are from G_T
+            W_n_m[i][j] = sharedMemory.gt;
+            W_bar_n_m[i][j] = sharedMemory.gt;
 
           }
         }
@@ -733,7 +734,7 @@ public class PPETSFGPIssuingStates {
 
       if (!Arrays.equals(c_bar_1, c_bar_1Verify)) {
         LOG.error("failed to verify PI_2_S: c_bar_1");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }
@@ -749,7 +750,7 @@ public class PPETSFGPIssuingStates {
 
       if (!Arrays.equals(c_bar_2, c_bar_2Verify)) {
         LOG.error("failed to verify PI_2_S: c_bar_2");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }
@@ -778,7 +779,7 @@ public class PPETSFGPIssuingStates {
 
       if (!Arrays.equals(c_bar_3, c_bar_3Verify)) {
         LOG.error("failed to verify PI_2_S: c_bar_3");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }
@@ -866,7 +867,7 @@ public class PPETSFGPIssuingStates {
 
       if (!left.isEqual(right1.mul(right2).mul(right3).mul(right4).mul(right5))) {
         LOG.error("failed to verify e(T_U, Y_S * rho^omega_u)");
-        if (!sharedMemory.passVerification) {
+        if (!sharedMemory.skipVerification) {
           return false;
         }
       }

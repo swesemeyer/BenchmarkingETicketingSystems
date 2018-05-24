@@ -439,7 +439,7 @@ public class PPETSFGPIssuingStates {
 
 			if (!R.isEqual(checkR)) {
 				LOG.error("failed to verify VP_U usage in computing R");
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -568,8 +568,8 @@ public class PPETSFGPIssuingStates {
 						product2 = product2.mul(W_n_m[i][j].pow(c_BARNum)).getImmutable();
 						c_BARVerifyList.add(product2.toBytes());
 					} else {
-						// just stick some random but fixed element here as it is not used...
-						c_BARVerifyList.add(sharedMemory.g.toBytes());
+						// just stick some random but fixed element from G_T here as it is not used...
+						c_BARVerifyList.add(sharedMemory.gt.toBytes());
 					}
 				}
 			}
@@ -582,7 +582,7 @@ public class PPETSFGPIssuingStates {
 
 			if (!Arrays.equals(c_BAR, c_BARVerify)) {
 				LOG.error("failed to verify PI_2_U: c_BAR");
-				if (!sharedMemory.passVerification) {
+				if (!sharedMemory.skipVerification) {
 					return false;
 				}
 			}
@@ -645,7 +645,7 @@ public class PPETSFGPIssuingStates {
 
 				if (!Arrays.equals(e_BAR_m[i], e_BAR_mVerify)) {
 					LOG.error("failed to verify PI_2_U: e_BAR_n: " + i);
-					if (!sharedMemory.passVerification) {
+					if (!sharedMemory.skipVerification) {
 						return false;
 					}
 				}
@@ -686,7 +686,7 @@ public class PPETSFGPIssuingStates {
 
 					if (!Arrays.equals(d_BAR_n_m[i][j], d_BAR_n_mVerify)) {
 						LOG.error("failed to verify PI_2_U: d_BAR_n_m: " + i + ", " + j);
-						if (!sharedMemory.passVerification) {
+						if (!sharedMemory.skipVerification) {
 							return false;
 						}
 					}

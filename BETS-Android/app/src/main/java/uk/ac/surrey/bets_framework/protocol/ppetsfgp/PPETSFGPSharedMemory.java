@@ -1,6 +1,6 @@
 /**
  * DICE NFC evaluation.
- *
+ * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
@@ -29,6 +29,10 @@ import it.unisa.dia.gas.plaf.jpbc.field.gt.GTFiniteField;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeACurveGenerator;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeAPairing;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1Pairing;
+import it.unisa.dia.gas.plaf.jpbc.pairing.e.TypeECurveGenerator;
+import it.unisa.dia.gas.plaf.jpbc.pairing.e.TypeEPairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
@@ -61,6 +65,11 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
    */
   public enum Actor {
     CENTRAL_AUTHORITY, SELLER, USER, VALIDATOR
+  }
+
+
+  public static enum PairingType {
+    TYPE_A, TYPE_A1, TYPE_E
   }
 
   /**
@@ -164,6 +173,12 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
    */
   public CurveElement<?, ?>[] g_n = null;
 
+
+  /** Random element gt from the Group G_t */
+
+  public Element gt = null;
+
+
   /**
    * Random element h as a generator of the group G.
    */
@@ -209,9 +224,10 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
   public PropertiesParameters pairingParameters = null;
 
   /**
-   * Always pass verification steps?
+   * Skip verification steps?
+   * default(false) is to verify everything
    */
-  public boolean passVerification = false;
+  public boolean skipVerification = false;
 
   /**
    * Value of q such that the longest interval in the range policies is [0, q^k), q member of Z_p.
@@ -226,7 +242,7 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
   /**
    * Number of r bits in type a elliptic curve - optionally set as a parameter.
    */
-  public int rBits = 256;
+  public int rBits = 160;
 
   /**
    * Random element rho as a generator of the group G.
@@ -247,6 +263,20 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
    * The current actor so that access to shared memory can be checked.
    */
   private transient Actor actor = Actor.CENTRAL_AUTHORITY;
+
+
+  public PairingType pairingType = PairingType.TYPE_A;
+
+
+  /**
+   * setting the pairing type to be used
+   */
+
+  public void setPairingType(PairingType type) {
+    // by default we construct a Type A pairing
+    this.pairingType = type;
+    LOG.debug("Set the pairing type to :" + type.name());
+  }
 
 
   /**
@@ -330,6 +360,9 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
     // On Android, we only act as the seller and the user, so do not initialise anything else as it will be populated as we go.
     this.actorData.put(Actor.SELLER, new SellerData());
     this.actorData.put(Actor.USER, new UserData());
+
+    //this element is not serialised and just needs to be set to something consistent
+    this.gt = this.pairing.getGT().newElementFromBytes("RandomElement".getBytes()).getImmutable();
   }
 
   /**
@@ -389,8 +422,25 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
    * @return The new GT finite element.
    */
   public Element gtFiniteElementFromBytes(byte[] bytes) {
-    final Element element = new GTFiniteElement(((TypeAPairing) this.pairing).getPairingMap(), (GTFiniteField<?>) this.pairing
-            .getGT());
+    Element element;
+    switch (this.pairingType) {
+      case TYPE_E:
+        element = new GTFiniteElement(((TypeEPairing) this.pairing).getPairingMap(),
+                (GTFiniteField<?>) this.pairing.getGT());
+        break;
+
+      case TYPE_A1:
+        element = new GTFiniteElement(((TypeA1Pairing) this.pairing).getPairingMap(),
+                (GTFiniteField<?>) this.pairing.getGT());
+        break;
+
+
+      default:
+        // Type A
+        element = new GTFiniteElement(((TypeAPairing) this.pairing).getPairingMap(),
+                (GTFiniteField<?>) this.pairing.getGT());
+    }
+
     element.setFromBytes(bytes);
 
     return element.getImmutable();
@@ -444,10 +494,43 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
     // Build an elliptic curve generator that will give us our p (the order r of the generator), and subsequently our bilinear group
     // pairing.
     final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
-    final PairingParametersGenerator<?> generator = new TypeACurveGenerator(prng, this.rBits, this.qBits, false);
-    this.pairingParameters = (PropertiesParameters) generator.generate();
-    this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
-    this.p = this.pairingParameters.getBigInteger("r");
+    PairingParametersGenerator<?> generator = null;
+
+    switch (this.pairingType) {
+      case TYPE_A1:
+        generator = new TypeA1CurveGenerator(prng, 3, this.rBits);//use 3 primes
+        this.pairingParameters = (PropertiesParameters) generator.generate();
+        this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
+        LOG.debug("pairingParameters (n): "+pairingParameters.getBigInteger("n"));
+        LOG.debug("pairingParameters (n) prime: "+pairingParameters.getBigInteger("n").isProbablePrime(10));
+        LOG.debug("pairingParameters (p): "+pairingParameters.getBigInteger("p"));
+        LOG.debug("pairingParameters (p) prime: "+pairingParameters.getBigInteger("p").isProbablePrime(10));
+        this.p = this.pairingParameters.getBigInteger("n"); //not prime!
+        break;
+      case TYPE_E:
+        generator = new TypeECurveGenerator(prng, this.rBits, this.qBits);
+        this.pairingParameters = (PropertiesParameters) generator.generate();
+        this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
+        LOG.debug("pairingParameters (q): "+pairingParameters.getBigInteger("q"));
+        LOG.debug("pairingParameters (q) prime: "+pairingParameters.getBigInteger("q").isProbablePrime(10));
+        LOG.debug("pairingParameters (r): "+pairingParameters.getBigInteger("r"));
+        LOG.debug("pairingParameters (r) prime: "+pairingParameters.getBigInteger("r").isProbablePrime(10));
+        this.p = this.pairingParameters.getBigInteger("r");
+        break;
+      case TYPE_A:
+        generator = new TypeACurveGenerator(prng, this.rBits, this.qBits, true);
+        this.pairingParameters = (PropertiesParameters) generator.generate();
+        this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
+
+        LOG.debug("pairingParameters (q): "+pairingParameters.getBigInteger("q"));
+        LOG.debug("pairingParameters (q) prime: "+pairingParameters.getBigInteger("q").isProbablePrime(10));
+        LOG.debug("pairingParameters (r): "+pairingParameters.getBigInteger("r"));
+        LOG.debug("pairingParameters (r) prime: "+pairingParameters.getBigInteger("r").isProbablePrime(10));
+        this.p = this.pairingParameters.getBigInteger("r");
+        break;
+      default:
+        throw new UnsupportedOperationException("unknown pairing type");
+    }
 
     final BigInteger minP = BigInteger.valueOf((2 * (int) Math.pow(this.q, this.k)) + 1);
     if (this.p.compareTo(minP) <= 0) {
@@ -534,6 +617,7 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
       }
 
     }
+    this.gt = this.pairing.getGT().newElementFromBytes("RandomElement".getBytes()).getImmutable();
   }
 
 
