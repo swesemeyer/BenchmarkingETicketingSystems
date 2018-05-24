@@ -18,16 +18,17 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
 public class UserData implements PPETSFGPSharedMemory.ActorData {
 
   /** The range policy attributes of U. */
-  public static BigInteger[] A_U_range = {BigInteger.valueOf(3), BigInteger.valueOf(2)};
+  public static BigInteger[] A_U_range = {BigInteger.valueOf(3), BigInteger.valueOf(2) };
 
   /** The set policy attributes of U. */
-  public static String[] A_U_set = {"South", "Commuter", "Visually Impaired"};
+  public static String[] A_U_set = {"07", "South", "Commuter", "Visually Impaired" };
 
   /**
    * String capturing which range and set policies the user is a member of
-   * TODO: Need to store this differently. Will do for the prototype
+   *
+   * TODO: Need to store this differently. Will do for the prototype as it not used apart from the hash
    */
-  public String P_U = "R1-R2-S1-S2-S3";
+  public String P_U = "R1-R2-S1-S2-S3-S4";
 
 
   /** The identity of U as an arbitrary array of bytes. */

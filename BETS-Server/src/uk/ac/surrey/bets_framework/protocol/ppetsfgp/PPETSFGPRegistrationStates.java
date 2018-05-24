@@ -235,107 +235,115 @@ public class PPETSFGPRegistrationStates {
       final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory.getData(Actor.CENTRAL_AUTHORITY);
       final Crypto crypto = Crypto.getInstance();
 
-      // Decode the received data.
-      final ListData listData = ListData.fromBytes(data);
+		// Decode the received data.
+		final ListData listData = ListData.fromBytes(data);
 
-      if (listData.getList().size() < 12) {
-        LOG.error("wrong number of data elements: " + listData.getList().size());
-        return null;
-      }
+		if (listData.getList().size() ==0) {//can vary dependent on user range and set policies
+			LOG.error("wrong number of data elements: " + listData.getList().size());
+			return null;
+		}
+		
+      LOG.debug("number of data elements: "+listData.getList().size());
+		int index = 0;
+		final byte[] ID_U = listData.getList().get(index++);
+		final Element M_1_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final Element Y_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final Element R = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final byte[] c_1 = listData.getList().get(index++);
+		final BigInteger c_1Num = new BigInteger(1, c_1).mod(sharedMemory.p);
+		final byte[] c_2 = listData.getList().get(index++);
+		final BigInteger c_2Num = new BigInteger(1, c_2).mod(sharedMemory.p);
+		final BigInteger s_1 = new BigInteger(listData.getList().get(index++));
+		final BigInteger s_2 = new BigInteger(listData.getList().get(index++));
 
-      int index = 0;
-      final byte[] ID_U = listData.getList().get(index++);
-      final Element M_1_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final Element Y_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final Element R = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-      final byte[] c_1 = listData.getList().get(index++);
-      final BigInteger c_1Num = new BigInteger(1, c_1).mod(sharedMemory.p);
-      final byte[] c_2 = listData.getList().get(index++);
-      final BigInteger c_2Num = new BigInteger(1, c_2).mod(sharedMemory.p);
-      final BigInteger s_1 = new BigInteger(listData.getList().get(index++));
-      final BigInteger s_2 = new BigInteger(listData.getList().get(index++));
+		final int numOfUserRanges=(new BigInteger(listData.getList().get(index++))).intValue();
+		LOG.debug("Number of range policies: "+numOfUserRanges);
+		final BigInteger[] A_U_range = new BigInteger[numOfUserRanges];
+		for (int i = 0; i < numOfUserRanges; i++) {
+			A_U_range[i] = new BigInteger(listData.getList().get(index++));
+		}
+		final int numOfUserSets=(new BigInteger(listData.getList().get(index++))).intValue();
+		final String[] A_U_set = new String[numOfUserSets];
+		LOG.debug("Number of set policies: "+numOfUserSets);
+	
+		for (int i = 0; i < numOfUserSets; i++) {
+			A_U_set[i] = new String(listData.getList().get(index++));
+		}
 
-      final BigInteger[] A_U_range = new BigInteger[sharedMemory.N1()];
-      for (int i = 0; i < sharedMemory.N1(); i++) {
-        A_U_range[i] = new BigInteger(listData.getList().get(index++));
-      }
+		final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
+		// NB the validity period could be changed by the CA if required.
 
-      final String[] A_U_set = new String[sharedMemory.N2()];
-      for (int i = 0; i < sharedMemory.N2(); i++) {
-        A_U_set[i] = new String(listData.getList().get(index++));
-      }
- 
-      final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
-      //NB the validity period could be changed by the CA if required.
-      
-      // Verify PI_1_U via c_1 and c_2.
-      LOG.debug("Verifying PI_1_U c1:...");
-      final Element check1 = sharedMemory.xi.mul(s_1).add(Y_U.mul(c_1Num));
-      final ListData c_1VerifyData = new ListData(Arrays.asList(M_1_U.toBytes(), Y_U.toBytes(), check1.toBytes()));
-      final byte[] c_1Verify = crypto.getHash(c_1VerifyData.toBytes());
+		// Verify PI_1_U via c_1 and c_2.
+		LOG.debug("Verifying PI_1_U c1:...");
+		final Element check1 = sharedMemory.xi.mul(s_1).add(Y_U.mul(c_1Num));
+		final ListData c_1VerifyData = new ListData(Arrays.asList(M_1_U.toBytes(), Y_U.toBytes(), check1.toBytes()));
+		final byte[] c_1Verify = crypto.getHash(c_1VerifyData.toBytes());
 
-      if (!Arrays.equals(c_1, c_1Verify)) {
-        LOG.error("failed to verify PI_1_U: c_1");
-        return null;
+		if (!Arrays.equals(c_1, c_1Verify)) {
+			LOG.error("failed to verify PI_1_U: c_1");
+			return null;
 
-      }
-      LOG.debug("SUCCESS: Verified PI_1_U c1:...");
+		}
+		LOG.debug("SUCCESS: Verified PI_1_U c1:...");
 
-      LOG.debug("Verifying PI_1_U c2:...");
-      final Element check2 = sharedMemory.g_frak.mul(s_2).add(R.mul(c_2Num));
-      final ListData c_2VerifyData = new ListData(Arrays.asList(M_1_U.toBytes(), R.toBytes(), check2.toBytes()));
-      final byte[] c_2Verify = crypto.getHash(c_2VerifyData.toBytes());
+		LOG.debug("Verifying PI_1_U c2:...");
+		final Element check2 = sharedMemory.g_frak.mul(s_2).add(R.mul(c_2Num));
+		final ListData c_2VerifyData = new ListData(Arrays.asList(M_1_U.toBytes(), R.toBytes(), check2.toBytes()));
+		final byte[] c_2Verify = crypto.getHash(c_2VerifyData.toBytes());
 
-      if (!Arrays.equals(c_2, c_2Verify)) {
-    	  LOG.error("failed to verify PI_1_U: c_2");
-    	  return null;
+		if (!Arrays.equals(c_2, c_2Verify)) {
+			LOG.error("failed to verify PI_1_U: c_2");
+			return null;
 
-      }
+		}
 
-      LOG.debug("SUCCESS: Verified PI_1_U c2:...");
+		LOG.debug("SUCCESS: Verified PI_1_U c2:...");
 
-      // Select random c_u and r_dash.
-      final BigInteger c_u = crypto.secureRandom(sharedMemory.p);
-      final BigInteger r_dash = crypto.secureRandom(sharedMemory.p);
-      
-      final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
-      final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
+		// Select random c_u and r_dash.
+		final BigInteger c_u = crypto.secureRandom(sharedMemory.p);
+		final BigInteger r_dash = crypto.secureRandom(sharedMemory.p);
 
-      // Compute delta_U using the same GCD approach from above.
-      final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x.add(c_u).mod(sharedMemory.p), sharedMemory.p);
+		final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
+		final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
 
-      Element sum1 = sharedMemory.pairing.getG1().newZeroElement();
-      for (int i = 0; i < sharedMemory.N1(); i++) {
-        final Element value = sharedMemory.g_hat_n[i].mul(A_U_range[i]).getImmutable();
-        sum1 = sum1.add(value);
-      }
-      sum1 = sum1.getImmutable();
+		// Compute delta_U using the same GCD approach from above.
+		final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x.add(c_u).mod(sharedMemory.p),
+				sharedMemory.p);
 
-      Element sum2 = sharedMemory.pairing.getG1().newZeroElement();
-      ;
-      for (int i = 0; i < sharedMemory.N2(); i++) {
-        final byte[] hash = crypto.getHash(A_U_set[i].getBytes());
-        final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
-        final Element value = sharedMemory.eta_n[i].mul(hashNum).getImmutable();
-        sum2 = sum2.add(value);
-      }
-      sum2 = sum2.getImmutable();
+		Element sum1 = sharedMemory.pairing.getG1().newZeroElement();
+		for (int i = 0; i < numOfUserRanges; i++) {
+			final Element value = sharedMemory.g_hat_n[i].mul(A_U_range[i]).getImmutable();
+			sum1 = sum1.add(value);
+		}
+		sum1 = sum1.getImmutable();
 
-      Element delta_U = sharedMemory.g_n[0].add(sharedMemory.g_n[1].mul(vpuHashNum)).add(Y_U).add(R).add(sharedMemory.g_frak.mul(r_dash).add(sum1).add(sum2)).getImmutable();
-      delta_U = delta_U.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
+		Element sum2 = sharedMemory.pairing.getG1().newZeroElement();
+		;
+		for (int i = 0; i < numOfUserSets; i++) {
+			final byte[] hash = crypto.getHash(A_U_set[i].getBytes());
+			final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
+			final Element value = sharedMemory.eta_n[i].mul(hashNum).getImmutable();
+			sum2 = sum2.add(value);
+		}
+		sum2 = sum2.getImmutable();
 
-      // Store ID_U, A_U, Y_U and delta_U.
-      centralAuthorityData.ID_U = ID_U;
-      centralAuthorityData.A_U_range = A_U_range;
-      centralAuthorityData.A_U_set = A_U_set;
-      centralAuthorityData.Y_U = Y_U;
-      centralAuthorityData.delta_U = delta_U;
-      centralAuthorityData.VP_U = VP_U;
+		Element delta_U = sharedMemory.g_n[0].add(sharedMemory.g_n[1].mul(vpuHashNum)).add(Y_U).add(R)
+				.add(sharedMemory.g_frak.mul(r_dash).add(sum1).add(sum2)).getImmutable();
+		delta_U = delta_U.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
-      // Send c_u, r_dash, delta_U, VP_U
+		// Store ID_U, A_U, Y_U and delta_U.
+		centralAuthorityData.ID_U = ID_U;
+		centralAuthorityData.A_U_range = A_U_range;
+		centralAuthorityData.A_U_set = A_U_set;
+		centralAuthorityData.Y_U = Y_U;
+		centralAuthorityData.delta_U = delta_U;
+		centralAuthorityData.VP_U = VP_U;
 
-      final ListData sendData = new ListData(Arrays.asList(c_u.toByteArray(), r_dash.toByteArray(), delta_U.toBytes(), sharedMemory.stringToBytes(VP_U)));
-      return sendData.toBytes();
+		// Send c_u, r_dash, delta_U, VP_U
+
+		final ListData sendData = new ListData(Arrays.asList(c_u.toByteArray(), r_dash.toByteArray(), delta_U.toBytes(),
+				sharedMemory.stringToBytes(VP_U)));
+		return sendData.toBytes();
 
     }
 

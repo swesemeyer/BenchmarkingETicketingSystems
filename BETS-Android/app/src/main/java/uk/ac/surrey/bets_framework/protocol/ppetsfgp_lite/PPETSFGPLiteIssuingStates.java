@@ -46,7 +46,7 @@ public class PPETSFGPLiteIssuingStates {
       if (message.getType() == Message.Type.DATA) {
         // Generate the user pseudonym data.
         if (message.getData() == null) {
-          byte[] data = this.generateUserPseudonym();
+          byte[] data = this.generateUserProof();
 
           if (data != null) {
             LOG.debug("generate user pseudonym complete");

@@ -227,7 +227,8 @@ public class PPETSFGPRegistrationStates {
       final Element Y_dash_U = sharedMemory.xi.mul(x_bar).getImmutable();
       final Element R_dash = sharedMemory.g_frak.mul(r_bar).getImmutable();
 
-      final ListData c_1Data = new ListData(Arrays.asList(M_1_U.toBytes(), userData.Y_U.toBytes(), Y_dash_U.toBytes()));
+      final ListData c_1Data = new ListData(
+              Arrays.asList(M_1_U.toBytes(), userData.Y_U.toBytes(), Y_dash_U.toBytes()));
       final byte[] c_1 = crypto.getHash(c_1Data.toBytes());
       final BigInteger c_1Num = new BigInteger(1, c_1);
 
@@ -240,12 +241,18 @@ public class PPETSFGPRegistrationStates {
 
       // Send ID_U, PI_1_U (which includes Y_U, R), A_U, VP_U
       final List<byte[]> list = new ArrayList<>();
-      list.addAll(Arrays.asList(userData.ID_U, M_1_U.toBytes(), userData.Y_U.toBytes(), R.toBytes
-              (), c_1, c_2, s_1.toByteArray(), s_2.toByteArray()));
-      for (final BigInteger attribute : userData.A_U_range) {
+      list.addAll(Arrays.asList(userData.ID_U, M_1_U.toBytes(), userData.Y_U.toBytes(), R.toBytes(), c_1, c_2,
+              s_1.toByteArray(), s_2.toByteArray()));
+      final BigInteger numOfUserRanges=BigInteger.valueOf(UserData.A_U_range.length);
+
+      list.add(numOfUserRanges.toByteArray());
+      for (final BigInteger attribute : UserData.A_U_range) {
         list.add(attribute.toByteArray());
       }
-      for (final String attribute : userData.A_U_set) {
+
+      final BigInteger numOfUserSets=BigInteger.valueOf(UserData.A_U_set.length);
+      list.add(numOfUserSets.toByteArray());
+      for (final String attribute : UserData.A_U_set) {
         list.add(attribute.getBytes(Data.UTF8));
       }
       list.add(sharedMemory.stringToBytes(userData.VP_U));
@@ -329,16 +336,16 @@ public class PPETSFGPRegistrationStates {
       final Element right4 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_u)
               .getImmutable();
       Element product1 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
-      for (int i = 0; i < sharedMemory.N1(); i++) {
+      for (int i = 0; i < UserData.A_U_range.length; i++) {
         final Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g)
-                .pow(userData.A_U_range[i]).getImmutable();
+                .pow(UserData.A_U_range[i]).getImmutable();
         product1 = product1.mul(value);
       }
       product1 = product1.getImmutable();
 
       Element product2 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
-      for (int i = 0; i < sharedMemory.N2(); i++) {
-        final byte[] hash = crypto.getHash(userData.A_U_set[i].getBytes(Data.UTF8));
+      for (int i = 0; i < UserData.A_U_set.length; i++) {
+        final byte[] hash = crypto.getHash(UserData.A_U_set[i].getBytes(Data.UTF8));
         final BigInteger hashNum = new BigInteger(1, hash).mod(sharedMemory.p);
         final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(hashNum)
                 .getImmutable();
@@ -358,6 +365,7 @@ public class PPETSFGPRegistrationStates {
       userData.r_u = r_u;
       userData.delta_U = delta_U;
       return true;
+
     }
 
     /**

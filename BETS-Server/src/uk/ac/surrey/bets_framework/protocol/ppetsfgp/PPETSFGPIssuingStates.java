@@ -6,6 +6,7 @@
 package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -289,6 +290,7 @@ public class PPETSFGPIssuingStates {
 			final Crypto crypto = Crypto.getInstance();
 
 			// Decode the received data.
+			long timing=Instant.now().toEpochMilli();
 			final ListData listData = ListData.fromBytes(data);
 
 			if (listData.getList().size() <= 0) { // Way too many to go and count.
@@ -305,19 +307,22 @@ public class PPETSFGPIssuingStates {
 			// Save off Y so that we can compute the ticket serial number later
 			sellerData.Y = Y; // the user pseudonym
 			final Element R = sharedMemory.gtFiniteElementFromBytes(listData.getList().get(index++));
+			
+			final int numOfUserRanges=(new BigInteger(listData.getList().get(index++))).intValue();
+			final int numOfUserSets=(new BigInteger(listData.getList().get(index++))).intValue();		
 
-			final Element[] Z_n = new Element[sharedMemory.N1()];
-			final Element[] Z_dash_n = new Element[sharedMemory.N1()];
-			final Element[] Z_bar_n = new Element[sharedMemory.N1()];
-			final Element[] Z_bar_dash_n = new Element[sharedMemory.N1()];
-			final Element[][] A_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
-			final Element[][] A_dash_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
-			final Element[][] V_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
-			final Element[][] V_bar_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
-			final Element[][] V_dash_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
-			final Element[][] V_bar_dash_n_m = new Element[sharedMemory.N1()][sharedMemory.k];
+			final Element[] Z_n = new Element[numOfUserRanges];
+			final Element[] Z_dash_n = new Element[numOfUserRanges];
+			final Element[] Z_bar_n = new Element[numOfUserRanges];
+			final Element[] Z_bar_dash_n = new Element[numOfUserRanges];
+			final Element[][] A_n_m = new Element[numOfUserRanges][sharedMemory.k];
+			final Element[][] A_dash_n_m = new Element[numOfUserRanges][sharedMemory.k];
+			final Element[][] V_n_m = new Element[numOfUserRanges][sharedMemory.k];
+			final Element[][] V_bar_n_m = new Element[numOfUserRanges][sharedMemory.k];
+			final Element[][] V_dash_n_m = new Element[numOfUserRanges][sharedMemory.k];
+			final Element[][] V_bar_dash_n_m = new Element[numOfUserRanges][sharedMemory.k];
 
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				Z_n[i] = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 				Z_dash_n[i] = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 				Z_bar_n[i] = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
@@ -334,12 +339,12 @@ public class PPETSFGPIssuingStates {
 				}
 			}
 
-			final Element[][] B_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
-			final Element[][] W_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
-			final Element[][] W_bar_n_m = new Element[sharedMemory.N2()][sharedMemory.zeta()];
+			final Element[][] B_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
+			final Element[][] W_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
+			final Element[][] W_bar_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 
-			for (int i = 0; i < sharedMemory.N2(); i++) {
-				for (int j = 0; j < sharedMemory.zeta(); j++) {
+			for (int i = 0; i < numOfUserSets; i++) {
+				for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 					B_n_m[i][j] = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 					W_n_m[i][j] = sharedMemory.gtFiniteElementFromBytes(listData.getList().get(index++));
 					W_bar_n_m[i][j] = sharedMemory.gtFiniteElementFromBytes(listData.getList().get(index++));
@@ -357,15 +362,16 @@ public class PPETSFGPIssuingStates {
 			final BigInteger alpha_BAR_dash = new BigInteger(listData.getList().get(index++));
 			final BigInteger beta_BAR_dash = new BigInteger(listData.getList().get(index++));
 
-			final byte[][] e_BAR_m = new byte[sharedMemory.N1()][];
-			final BigInteger[] e_BAR_mNum = new BigInteger[sharedMemory.N1()];
-			final BigInteger[] gammac_BAR_n = new BigInteger[sharedMemory.N1()];
-			final BigInteger[] ac_BAR_n = new BigInteger[sharedMemory.N1()];
-			final BigInteger[] gammae_BAR_n = new BigInteger[sharedMemory.N1()];
-			final BigInteger[] ae_BAR_n = new BigInteger[sharedMemory.N1()];
-			final BigInteger[] ae_BAR_dash_n = new BigInteger[sharedMemory.N1()];
 
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			final byte[][] e_BAR_m = new byte[numOfUserRanges][];
+			final BigInteger[] e_BAR_mNum = new BigInteger[numOfUserRanges];
+			final BigInteger[] gammac_BAR_n = new BigInteger[numOfUserRanges];
+			final BigInteger[] ac_BAR_n = new BigInteger[numOfUserRanges];
+			final BigInteger[] gammae_BAR_n = new BigInteger[numOfUserRanges];
+			final BigInteger[] ae_BAR_n = new BigInteger[numOfUserRanges];
+			final BigInteger[] ae_BAR_dash_n = new BigInteger[numOfUserRanges];
+
+			for (int i = 0; i < numOfUserRanges; i++) {
 				e_BAR_m[i] = listData.getList().get(index++);
 				e_BAR_mNum[i] = new BigInteger(1, e_BAR_m[i]).mod(sharedMemory.p);
 
@@ -377,27 +383,27 @@ public class PPETSFGPIssuingStates {
 				ae_BAR_dash_n[i] = new BigInteger(listData.getList().get(index++));
 			}
 
-			final BigInteger[] e_BAR_n = new BigInteger[sharedMemory.N2()];
-			final BigInteger[] e_BAR_nNum = new BigInteger[sharedMemory.N2()];
-			final BigInteger[] e_BAR_dash_n = new BigInteger[sharedMemory.N2()];
-			final BigInteger[] e_BAR_dash_dash_n = new BigInteger[sharedMemory.N2()];
+			final BigInteger[] e_BAR_n = new BigInteger[numOfUserSets];
+			final BigInteger[] e_BAR_nNum = new BigInteger[numOfUserSets];
+			final BigInteger[] e_BAR_dash_n = new BigInteger[numOfUserSets];
+			final BigInteger[] e_BAR_dash_dash_n = new BigInteger[numOfUserSets];
 
-			for (int i = 0; i < sharedMemory.N2(); i++) {
+			for (int i = 0; i < numOfUserSets; i++) {
 				e_BAR_n[i] = new BigInteger(listData.getList().get(index++));
 				e_BAR_nNum[i] = e_BAR_dash_n[i] = new BigInteger(listData.getList().get(index++));
 				e_BAR_dash_dash_n[i] = new BigInteger(listData.getList().get(index++));
 			}
 
-			final byte[][][] d_BAR_n_m = new byte[sharedMemory.N1()][sharedMemory.k][];
-			final BigInteger[][] d_BAR_n_mNum = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] t_BAR_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] t_BAR_dash_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] we_BAR_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] we_BAR_dash_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] wd_BAR_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
-			final BigInteger[][] wd_BAR_dash_n_m = new BigInteger[sharedMemory.N1()][sharedMemory.k];
+			final byte[][][] d_BAR_n_m = new byte[numOfUserRanges][sharedMemory.k][];
+			final BigInteger[][] d_BAR_n_mNum = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] t_BAR_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] t_BAR_dash_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] we_BAR_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] we_BAR_dash_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] wd_BAR_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
+			final BigInteger[][] wd_BAR_dash_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
 
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				for (int j = 0; j < sharedMemory.k; j++) {
 					d_BAR_n_m[i][j] = listData.getList().get(index++);
 					// Convert the hash to a number
@@ -410,30 +416,40 @@ public class PPETSFGPIssuingStates {
 					wd_BAR_dash_n_m[i][j] = new BigInteger(listData.getList().get(index++));
 				}
 			}
-			
-			//get the user policy membership and store them for later
-			sellerData.U_membershipDetails=sharedMemory.stringFromBytes(listData.getList().get(index++));
-		
-			//get the user's validity period
-			final String VP_U=sharedMemory.stringFromBytes(listData.getList().get(index++));
-			
-			//first check that the VP_U was used correctly in the computation of R
-		    final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
-		    final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
+			// get the user policy membership and store them for later
+			sellerData.U_membershipDetails = sharedMemory.stringFromBytes(listData.getList().get(index++));
 
-		    final Element checkR = sharedMemory.pairing.pairing(C, sharedMemory.g_bar)
-		              .div(sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g).mul
-		                      (sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.g)
-		                              .pow(vpuHashNum))).getImmutable();			
+			// get the user's validity period
+			final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
 
-		    if (!R.isEqual(checkR)) {
-				LOG.error("failed to verify VP_U usuage in computing R");
+			timing=Instant.now().toEpochMilli()-timing;
+			LOG.debug("Decoding data took (ms)= "+timing);
+			
+			
+			//timing of checking R
+			timing=Instant.now().toEpochMilli();
+			// first check that the VP_U was used correctly in the computation of R
+			final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
+			final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
+
+			final Element checkR = sharedMemory.pairing.pairing(C, sharedMemory.g_bar)
+					.div(sharedMemory.pairing.pairing(sharedMemory.g_n[0], sharedMemory.g)
+							.mul(sharedMemory.pairing.pairing(sharedMemory.g_n[1], sharedMemory.g).pow(vpuHashNum)))
+					.getImmutable();
+
+			if (!R.isEqual(checkR)) {
+				LOG.error("failed to verify VP_U usage in computing R");
 				if (!sharedMemory.passVerification) {
 					return false;
-				}		    	
-		    }
-		    
-		    
+				}
+			}
+			LOG.debug("SUCCESS: passed verification of PI_2_U: R");
+			timing=Instant.now().toEpochMilli()-timing;
+			LOG.debug("checking R took (ms): "+timing);
+			
+			//timing of checking c_BAR
+			timing=Instant.now().toEpochMilli();
+			
 			// Verify c_BAR.
 			final List<byte[]> c_BARVerifyList = new ArrayList<>();
 			c_BARVerifyList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes()));
@@ -441,6 +457,7 @@ public class PPETSFGPIssuingStates {
 			// check Y_bar
 			final Element c_BARCheck1 = (sharedMemory.xi.mul(x_BAR_u)).add(sharedMemory.g_n[1].mul(d_BAR))
 					.add(Y.mul(c_BARNum)).getImmutable();
+			//LOG.debug("c_BARCheck1=Y_bar= "+c_BARCheck1);
 
 			c_BARVerifyList.add(c_BARCheck1.toBytes());
 
@@ -450,32 +467,48 @@ public class PPETSFGPIssuingStates {
 			final Element c_BARCheck2 = sharedMemory.g.mul(alpha_BAR).add(sharedMemory.theta.mul(beta_BAR))
 					.add(D.mul(c_BARNum)).getImmutable();
 			c_BARVerifyList.add(c_BARCheck2.toBytes());
-
+			//LOG.debug("c_Barcheck2=D_bar="+c_BARCheck2);
+			
 			c_BARVerifyList.add(phi.toBytes());
 
 			final Element c_BARCheck3 = sharedMemory.g.mul(alpha_BAR_dash).add(sharedMemory.theta.mul(beta_BAR_dash))
 					.add(phi.mul(c_BARNum));
 			c_BARVerifyList.add(c_BARCheck3.toBytes());
+			//LOG.debug("c_Barcheck3=phi_bar="+c_BARCheck3);
 
 			c_BARVerifyList.add(C.toBytes());
 			c_BARVerifyList.add(R.toBytes());
 
 			// the following computations should produce R_dash
 			Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_BAR_u).getImmutable();
-			Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_BAR_u)
-					.getImmutable();
+			Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_BAR_u).getImmutable();
 			Element R_dash3 = sharedMemory.pairing.getGT().newOneElement();
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			//part 1 of range verification
+			long rangeVerificationTiming=Instant.now().toEpochMilli(); 
+			LOG.debug("rangeVerification (part 1 start) so far: "+ rangeVerificationTiming);
+			
+			for (int i = 0; i < numOfUserRanges; i++) {
 				Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(ac_BAR_n[i])
 						.getImmutable();
 				R_dash3 = R_dash3.mul(value);
 			}
+			//end of part 1 of range verification
+			rangeVerificationTiming=Instant.now().toEpochMilli()-rangeVerificationTiming; 
+			LOG.debug("rangeVerification (part 1 end) so far: "+ rangeVerificationTiming);
+			
+			//part 1 of set verification
+			long setVerificationTiming=Instant.now().toEpochMilli(); 
+			LOG.debug("setVerification (part 1 start) so far: "+ setVerificationTiming);
 			Element R_dash4 = sharedMemory.pairing.getGT().newOneElement();
-			for (int i = 0; i < sharedMemory.N2(); i++) {
+			for (int i = 0; i < numOfUserSets; i++) {
 				Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_BAR_dash_n[i])
 						.getImmutable();
 				R_dash4 = R_dash4.mul(value);
 			}
+			//end of part 1 of set verification
+			setVerificationTiming=Instant.now().toEpochMilli()-setVerificationTiming; 
+			LOG.debug("setVerification (part 1 end) so far: "+ setVerificationTiming);
+
 			Element R_dash5 = sharedMemory.pairing.pairing(C, sharedMemory.g).pow(c_BAR_u.negate().mod(sharedMemory.p))
 					.getImmutable();
 			Element R_dash6 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(alpha_BAR_dash)
@@ -485,37 +518,53 @@ public class PPETSFGPIssuingStates {
 			Element R_dash8 = R.pow(c_BARNum).getImmutable();
 			Element R_dash = R_dash1.mul(R_dash2).mul(R_dash3).mul(R_dash4).mul(R_dash5).mul(R_dash6).mul(R_dash7)
 					.mul(R_dash8).getImmutable();
+			
+			//LOG.debug("R_dash_verify="+R_dash);
 
 			c_BARVerifyList.add(R_dash.toBytes());
+			
+			//part 2 of range verification
+			rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
+			LOG.debug("rangeVerification (part 2 start) so far: "+ rangeVerificationTiming);		
 
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				c_BARVerifyList.add(Z_n[i].toBytes());
 			}
 
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				final Element c_BARCheck4 = sharedMemory.g.mul(gammac_BAR_n[i]).add(sharedMemory.h.mul(ac_BAR_n[i]))
 						.add(Z_n[i].mul(c_BARNum));
+				//LOG.debug("verify Z_dash_n["+i+"]= "+ c_BARCheck4);
 				c_BARVerifyList.add(c_BARCheck4.toBytes());
 			}
+			//end of part 2 of range verification
+			rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli();
+			LOG.debug("rangeVerification (part 2 end) so far: "+ rangeVerificationTiming);
+			
+			//part 2 of set verification
+			setVerificationTiming=setVerificationTiming-Instant.now().toEpochMilli(); 
+			LOG.debug("setVerification (part 2 start) so far: "+ setVerificationTiming);
 
-			for (int i = 0; i < sharedMemory.N2(); i++) {
-				for (int j = 0; j < sharedMemory.zeta(); j++) {
+			for (int i = 0; i < numOfUserSets; i++) {
+				for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 					c_BARVerifyList.add(B_n_m[i][j].toBytes());
 				}
 			}
 
-			for (int i = 0; i < sharedMemory.N2(); i++) {
-				for (int j = 0; j < sharedMemory.zeta(); j++) {
+			for (int i = 0; i < numOfUserSets; i++) {
+				for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 					c_BARVerifyList.add(W_n_m[i][j].toBytes());
 				}
 			}
-			for (int i = 0; i < sharedMemory.N2(); i++) {
-				for (int j = 0; j < sharedMemory.zeta(); j++) {
-					if (UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
+			for (int i = 0; i < numOfUserSets; i++) {
+				final int currentSetSize=sharedMemory.zeta(i);
+				for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
+					if ((j<currentSetSize) && UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
 						Element product2 = sharedMemory.pairing.pairing(sharedMemory.eta, sharedMemory.eta_n[i])
 								.pow(e_BAR_n[i]).getImmutable();
-						product2 = product2.mul(sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_n[i])
-								.pow(e_BAR_dash_dash_n[i])).getImmutable();
+						product2 = product2.mul(
+								sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_n[i]).pow(e_BAR_dash_dash_n[i]))
+								.getImmutable();
 						product2 = product2.mul(W_n_m[i][j].pow(c_BARNum)).getImmutable();
 						c_BARVerifyList.add(product2.toBytes());
 					} else {
@@ -524,6 +573,9 @@ public class PPETSFGPIssuingStates {
 					}
 				}
 			}
+			//end of part 2 of set verification
+			setVerificationTiming=setVerificationTiming+Instant.now().toEpochMilli();
+			LOG.debug("setVerification (part 2 end) so far: "+ setVerificationTiming);
 
 			final ListData c_BARVerifyData = new ListData(c_BARVerifyList);
 			final byte[] c_BARVerify = crypto.getHash(c_BARVerifyData.toBytes());
@@ -536,9 +588,17 @@ public class PPETSFGPIssuingStates {
 			}
 
 			LOG.debug("SUCCESS: verified user proof: PI_2_U: c_BAR");
+			timing=Instant.now().toEpochMilli()-timing;
+			LOG.debug("checking c_bar took (ms): "+timing);
 
+			//part 3 of range verification
+			rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
+			LOG.debug("rangeVerification (part 3 start) so far: "+ rangeVerificationTiming);
+
+			//timing e_BAR_m
+			timing=Instant.now().toEpochMilli();
 			// Verify e_BAR_m.
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
 				final BigInteger upper = BigInteger.valueOf(sharedMemory.rangePolicies[i][1]);
 
@@ -558,8 +618,8 @@ public class PPETSFGPIssuingStates {
 					final Element e_BAR_mVerifyCheck2b_j = sharedMemory.h_bar_n[j].mul(we_BAR_n_m[i][j]).getImmutable();
 					e_BAR_mVerifyCheck2b.add(e_BAR_mVerifyCheck2b_j);
 				}
-				final Element e_BAR_mVerifyCheck2c = (Z_n[i]
-						.add(sharedMemory.h.mul(lower.negate().mod(sharedMemory.p)))).mul(e_BAR_mNum[i]).getImmutable();
+				final Element e_BAR_mVerifyCheck2c = (Z_n[i].add(sharedMemory.h.mul(lower.negate().mod(sharedMemory.p))))
+						.mul(e_BAR_mNum[i]).getImmutable();
 				final Element e_BAR_mVerifyCheck2 = e_BAR_mVerifyCheck2a.add(e_BAR_mVerifyCheck2b)
 						.add(e_BAR_mVerifyCheck2c);
 				e_BAR_mVerifyList.add(e_BAR_mVerifyCheck2.toBytes());
@@ -591,9 +651,12 @@ public class PPETSFGPIssuingStates {
 				}
 			}
 			LOG.debug("SUCCESS: verified PI_2_U: e_BAR_n");
+			timing=Instant.now().toEpochMilli()-timing;
+			LOG.debug("checking e_BAR_m took (ms): "+timing);
 
+			timing=Instant.now().toEpochMilli();
 			// Verify d_BAR_n_m
-			for (int i = 0; i < sharedMemory.N1(); i++) {
+			for (int i = 0; i < numOfUserRanges; i++) {
 				for (int j = 0; j < sharedMemory.k; j++) {
 					final List<byte[]> d_BAR_n_mVerifyList = new ArrayList<>();
 					d_BAR_n_mVerifyList.addAll(Arrays.asList(M_2_U.toBytes(), A_n_m[i][j].toBytes(),
@@ -629,7 +692,27 @@ public class PPETSFGPIssuingStates {
 					}
 				}
 			}
+			//end of part 3 of range verification
+			rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli(); 
+			LOG.debug("rangeVerification so far: "+ rangeVerificationTiming);
+			
 			LOG.debug("SUCCESS: verified PI_2_U: d_BAR_n_m");
+			timing=Instant.now().toEpochMilli()-timing;
+			LOG.debug("checking d_BAR_n_m took (ms): "+timing);
+
+
+			
+			LOG.debug("***************************************************************************************");
+			LOG.debug("Total timing for the range verification (ms): "+rangeVerificationTiming);
+			LOG.debug("which involved N1 ranges where N1= "+numOfUserRanges);		
+			LOG.debug("***************************************************************************************");
+			
+
+			LOG.debug("***************************************************************************************");
+			LOG.debug("Total timing for the set verification (ms): "+setVerificationTiming);
+			LOG.debug("which involved N2 sets where N2= "+numOfUserSets);		
+			LOG.debug("***************************************************************************************");
+			
 
 			return true;
 		}

@@ -16,6 +16,10 @@ import it.unisa.dia.gas.plaf.jpbc.field.gt.GTFiniteField;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeACurveGenerator;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeAPairing;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1Pairing;
+import it.unisa.dia.gas.plaf.jpbc.pairing.e.TypeECurveGenerator;
+import it.unisa.dia.gas.plaf.jpbc.pairing.e.TypeEPairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.GsonUtils;
@@ -145,10 +149,13 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 
   /**
    * Fixed set of range policies.
-   * R1={0,5} AgeRange:Child
-   * R2={0,3} Days:railcard for x days
+   * R1={0,31} Days:railcard for x days
+   * R2={0,5} AgeRange:Child
+
    */
-  public final int[][]                          rangePolicies       = new int[][] { { 0, 5 }, { 0, 3 } };
+  public final int[][]                          rangePolicies       = new int[][] { { 0, 7 }, { 0, 5 } };
+  
+  public int longestRangeInterval;
 
   /**
    * The labels for these range policies
@@ -165,13 +172,31 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
   public CurveElement<?, ?>                     rho                 = null;
 
   /** Fixed set of set policies: we use arbitrary strings. */
-  public transient final String[][]             setPolices          = new String[][] { { "North", "South" },
-      { "Commuter", "Non-commuter" }, { "Visually Impaired", "Mobility Impaired", "Epilepsy"} } ;
+  public transient final String[][]             setPolices          = new String[][] { 
+	  {
+		  "00", "01", "02", "03", "04", "05", "06", "07", "08", "09"/*,
+		  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+		  "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+		  "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+		  "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+		  "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+		  "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+		  "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+		  "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+		  "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"*/
+	  }, 
+	  { "North", "South" },
+      { "Commuter", "Non-commuter" }, 
+      { "Visually Impaired", "Mobility Impaired", "Epilepsy"} 
+      } ;
+     
+
+   public int biggestSetSize;
       
   /**
   * The labels for these set policies
   */
-  public final String[] setPolicyNames= {"S1", "S2", "S3"};
+  public final String[] setPolicyNames= {"S1", "S2", "S3", "S4"};
 
   /** Random element theta as a generator of the group G. */
   public CurveElement<?, ?>                     theta               = null;
@@ -345,6 +370,20 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
   }
 
   /**
+   * @return The biggest set policy size.
+   */
+  private int biggestSetSize() {
+    int maxSize = 0;
+  
+    for (final String[] policy : this.setPolices) {
+    	maxSize = Math.max(maxSize, policy.length);
+    }
+
+    return maxSize;
+  }
+  
+  
+  /**
    * @return The number of set policies.
    */
   public int N2() {
@@ -359,7 +398,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
     // Calculate q and k. We assume a value of q = 2 and that p is large,
     // and calculate k.
     this.q = 2;
-    final int longestRangeInterval = this.longestRangeInterval();
+    this.longestRangeInterval = this.longestRangeInterval();
     if (longestRangeInterval < this.q) {
       this.k = 1;
     }
@@ -367,14 +406,17 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
       // No arbitrary log base function.
       this.k = (int) Math.floor(Math.log(longestRangeInterval) / Math.log(this.q)) + 1;
     }
-
+    LOG.debug("The longest interval is longestRangeInterval="+longestRangeInterval+" which is contained in [0, q^k), where q="+this.q+" and k="+this.k);
     // Build an elliptic curve generator that will give us our p (the order r of the generator), and subsequently our bilinear group
     // pairing.
     final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
     final PairingParametersGenerator<?> generator = new TypeACurveGenerator(prng, this.rBits, this.qBits, false);
+    //final PairingParametersGenerator<?> generator = new TypeA1CurveGenerator(prng, 3, this.qBits);
+    //final PairingParametersGenerator<?> generator = new TypeECurveGenerator(prng,this.rBits,this.qBits);
     this.pairingParameters = (PropertiesParameters) generator.generate();
     this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
     this.p = this.pairingParameters.getBigInteger("r");
+    
 
     final BigInteger minP = BigInteger.valueOf((2 * (int) Math.pow(this.q, this.k)) + 1);
     if (this.p.compareTo(minP) <= 0) {
@@ -441,14 +483,25 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
     // Finally we calculate eta_i_j=eta^(1/(mu_i+H(I_i_j)))
 
     final Crypto crypto = Crypto.getInstance();
-    this.eta_n_n = new CurveElement<?, ?>[this.N2()][this.zeta()];
+    this.biggestSetSize=this.biggestSetSize();
+    LOG.debug("The biggest set size is: "+this.biggestSetSize);
+    this.eta_n_n = new CurveElement<?, ?>[this.N2()][biggestSetSize];
 
     for (int i = 0; i < this.N2(); i++) {
-      for (int j = 0; j < this.zeta(); j++) {
+    	//create entries for the proper set members
+      for (int j = 0; j < this.zeta(i); j++) {
         final BigInteger H_n_m_hash = (new BigInteger(1, crypto.getHash(this.setPolices[i][j].getBytes()))).mod(p);
         final BigIntEuclidean gcd = BigIntEuclidean.calculate(caData.mu_n[i].add(H_n_m_hash).mod(p), p);
         this.eta_n_n[i][j] = (CurveElement<?, ?>) this.eta.mul(gcd.x.mod(p)).getImmutable();
       }
+      //create dummy entries for the rest
+      for (int j = this.zeta(i);j<biggestSetSize; j++) {
+    	  final String dummyEntry="DummyEntry["+i+"]["+j+"]";
+          final BigInteger H_n_m_hash = (new BigInteger(1, crypto.getHash(dummyEntry.getBytes()))).mod(p);
+          final BigIntEuclidean gcd = BigIntEuclidean.calculate(caData.mu_n[i].add(H_n_m_hash).mod(p), p);
+          this.eta_n_n[i][j] = (CurveElement<?, ?>) this.eta.mul(gcd.x.mod(p)).getImmutable();
+        }
+      
     }
   }
 
@@ -466,7 +519,8 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
   /**
    * @return The number of items in each set policy.
    */
-  public int zeta() {
-    return this.setPolices[0].length;
+  public int zeta(int i) {
+	  //if index is wrong an out of bound exception will be thrown and terminate the program
+    return this.setPolices[i].length;
   }
 }

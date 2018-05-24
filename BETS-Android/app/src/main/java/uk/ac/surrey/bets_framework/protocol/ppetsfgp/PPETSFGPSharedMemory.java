@@ -10,6 +10,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -38,111 +41,211 @@ import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
 
 public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
 
-  /** Arbitrary bytes to act as random seed for pairing secure random so that we can re-create the pairing. */
+  /**
+   * Logback logger.
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPSharedMemory.class);
+
+  /**
+   * Arbitrary bytes to act as random seed for pairing secure random so that we can re-create the pairing.
+   */
   public static final byte[] PAIRING_RANDOM_SEED = PPETSFGPSharedMemory.class.getSimpleName().getBytes();
 
-  /** Name used for timing the critical part of the protocol. */
+  /**
+   * Name used for timing the critical part of the protocol.
+   */
   public static final String TIMING_NAME = "Validation Timing";
 
   /**
-   * Fixed set of range policies.
-   * R1={0,5} AgeRange:Child
-   * R2={0,3} Days:railcard for x days
+   * Enum defining the different types of actor in the protocol.
    */
-  public final int[][]                          rangePolicies       = new int[][] { { 0, 5 }, { 0, 3 } };
+  public enum Actor {
+    CENTRAL_AUTHORITY, SELLER, USER, VALIDATOR
+  }
+
+  /**
+   * Interface defining actor data.
+   */
+  public interface ActorData {
+  }
+
+  /**
+   * Fixed set of range policies.
+   * R1={0,31} Days:railcard for x days
+   * R2={0,5} AgeRange:Child
+   */
+  public final int[][] rangePolicies = new int[][]{{0, 31}, {0,
+          5}};
+
+  public int longestRangeInterval;
 
   /**
    * The labels for these range policies
    */
-  public final String[] rangePoliciesNames= {"R1", "R2"};
+  public final String[] rangePoliciesNames = {"R1", "R2"};
 
-  /** Fixed set of set policies: we use arbitrary strings. */
-  public transient final String[][]             setPolices          = new String[][] { { "North", "South" },
-          { "Commuter", "Non-commuter" }, { "Visually Impaired", "Mobility Impaired", "Epilepsy"} } ;
+  /**
+   * Fixed set of set policies: we use arbitrary strings.
+   */
+  public transient final String[][] setPolices = new String[][]{
+          {
+                  "00", "01", "02", "03", "04", "05", "06", "07", "08", "09"/*,
+		  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+		  "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+		  "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+		  "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+		  "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+		  "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+		  "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+		  "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+		  "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"*/
+          },
+          {"North", "South"},
+          {"Commuter", "Non-commuter"},
+          {"Visually Impaired", "Mobility Impaired", "Epilepsy"}
+  };
+
+
+  public int biggestSetSize;
 
   /**
    * The labels for these set policies
    */
-  public final String[] setPolicyNames= {"S1", "S2", "S3"};
+  public final String[] setPolicyNames = {"S1", "S2", "S3", "S4"};
 
-  /** Mapping of actor to their data. */
+
+  /**
+   * Mapping of actor to their data.
+   */
   private transient final Map<Actor, ActorData> actorData = new HashMap<>();
 
-  /** Random element eta as a generator of the group G. */
+  /**
+   * Random element eta as a generator of the group G.
+   */
   public CurveElement<?, ?> eta = null;
 
-  /** Elements eta_bar_1 to eta_bar_N2. */
+  /**
+   * Elements eta_bar_1 to eta_bar_N2.
+   */
   public CurveElement<?, ?>[] eta_bar_n = null;
 
-  /** Random elements eta_1 to eta_N2 as generators of the group G. */
+  /**
+   * Random elements eta_1 to eta_N2 as generators of the group G.
+   */
   public CurveElement<?, ?>[] eta_n = null;
 
-  /** Elements eta_1_1 to eta_N2_zeta. */
+  /**
+   * Elements eta_1_1 to eta_N2_zeta.
+   */
   public CurveElement<?, ?>[][] eta_n_n = null;
 
-  /** Random element g as a generator of the group G. */
+  /**
+   * Random element g as a generator of the group G.
+   */
   public CurveElement<?, ?> g = null;
 
-  /** Element g_bar. */
+  /**
+   * Element g_bar.
+   */
   public CurveElement<?, ?> g_bar = null;
 
-  /** Random element y_hat as a generator of the group G. */
+  /**
+   * Random element y_hat as a generator of the group G.
+   */
   public CurveElement<?, ?> g_frak = null;
 
-  /** Random elements g_hat_1 to g_N1 as generators of the group G. */
+  /**
+   * Random elements g_hat_1 to g_N1 as generators of the group G.
+   */
   public CurveElement<?, ?>[] g_hat_n = null;
 
-  /** Random elements g_0 to g_2 as generators of the group G. */
+  /**
+   * Random elements g_0 to g_2 as generators of the group G.
+   */
   public CurveElement<?, ?>[] g_n = null;
 
-  /** Random element h as a generator of the group G. */
+  /**
+   * Random element h as a generator of the group G.
+   */
   public CurveElement<?, ?> h = null;
 
-  /** Element h_bar. */
+  /**
+   * Element h_bar.
+   */
   public CurveElement<?, ?> h_bar = null;
 
-  /** Elements h_bar_0 to h_bar_k-1. */
+  /**
+   * Elements h_bar_0 to h_bar_k-1.
+   */
   public CurveElement<?, ?>[] h_bar_n = null;
 
-  /** Elements h_0 to h_q-1. */
+  /**
+   * Elements h_0 to h_q-1.
+   */
   public CurveElement<?, ?>[] h_n = null;
 
-  /** Value of k such that the longest interval in the range policies is [0, q^k), q member of Z_p. */
+  /**
+   * Value of k such that the longest interval in the range policies is [0, q^k), q member of Z_p.
+   */
   public int k = 0;
-  /** How many times should validation be run? */
+  /**
+   * How many times should validation be run?
+   */
   public int numValidations = 2;
 
-  /** Value of p such that p > 2q^k + 1. */
+  /**
+   * Value of p such that p > 2q^k + 1.
+   */
   public BigInteger p = null;
 
-  /** The bilinear group pairing: transient because we cannot serialise it and instead use the parameters and random seed. */
+  /**
+   * The bilinear group pairing: transient because we cannot serialise it and instead use the parameters and random seed.
+   */
   public transient Pairing pairing = null;
 
-  /** The bilinear group pairing parameters. */
+  /**
+   * The bilinear group pairing parameters.
+   */
   public PropertiesParameters pairingParameters = null;
 
-  /** Always pass verification steps? */
+  /**
+   * Always pass verification steps?
+   */
   public boolean passVerification = false;
 
-  /** Value of q such that the longest interval in the range policies is [0, q^k), q member of Z_p. */
+  /**
+   * Value of q such that the longest interval in the range policies is [0, q^k), q member of Z_p.
+   */
   public int q = 0;
 
-  /** Number of q bits in type a elliptic curve - optionally set as a parameter. */
+  /**
+   * Number of q bits in type a elliptic curve - optionally set as a parameter.
+   */
   public int qBits = 512;
 
-  /** Number of r bits in type a elliptic curve - optionally set as a parameter. */
+  /**
+   * Number of r bits in type a elliptic curve - optionally set as a parameter.
+   */
   public int rBits = 256;
 
-  /** Random element rho as a generator of the group G. */
+  /**
+   * Random element rho as a generator of the group G.
+   */
   public CurveElement<?, ?> rho = null;
 
-  /** Random element theta as a generator of the group G. */
+  /**
+   * Random element theta as a generator of the group G.
+   */
   public CurveElement<?, ?> theta = null;
 
-  /** Random element xi as a generator of the group G. */
+  /**
+   * Random element xi as a generator of the group G.
+   */
   public CurveElement<?, ?> xi = null;
 
-  /** The current actor so that access to shared memory can be checked. */
+  /**
+   * The current actor so that access to shared memory can be checked.
+   */
   private transient Actor actor = Actor.CENTRAL_AUTHORITY;
 
 
@@ -287,7 +390,7 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
    */
   public Element gtFiniteElementFromBytes(byte[] bytes) {
     final Element element = new GTFiniteElement(((TypeAPairing) this.pairing).getPairingMap(), (GTFiniteField<?>) this.pairing
-        .getGT());
+            .getGT());
     element.setFromBytes(bytes);
 
     return element.getImmutable();
@@ -306,6 +409,21 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
     return maxInterval;
   }
 
+
+  /**
+   * @return The biggest set policy size.
+   */
+  private int biggestSetSize() {
+    int maxSize = 0;
+
+    for (final String[] policy : this.setPolices) {
+      maxSize = Math.max(maxSize, policy.length);
+    }
+
+    return maxSize;
+  }
+
+
   /**
    * Sets the bilinear group, which must be done before the central authority
    * can be initialised.
@@ -313,15 +431,16 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
   private void setBilinearGroup() {
     // Calculate q and k. We assume a value of q = 2 and that p is large, and calculate k.
     this.q = 2;
-    final int longestRangeInterval = this.longestRangeInterval();
+    this.longestRangeInterval = this.longestRangeInterval();
     if (longestRangeInterval < this.q) {
       this.k = 1;
-    }
-    else {
+    } else {
       // No arbitrary log base function.
       this.k = (int) Math.floor(Math.log(longestRangeInterval) / Math.log(this.q)) + 1;
     }
 
+    LOG.debug("The longest interval is longestRangeInterval=" + longestRangeInterval + " which is " +
+            "contained in [0, q^k), where q=" + this.q + " and k=" + this.k);
     // Build an elliptic curve generator that will give us our p (the order r of the generator), and subsequently our bilinear group
     // pairing.
     final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
@@ -395,16 +514,28 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
     // Finally we calculate eta_i_j=eta^(1/(mu_i+H(I_i_j)))
 
     final Crypto crypto = Crypto.getInstance();
-    this.eta_n_n = new CurveElement<?, ?>[this.N2()][this.zeta()];
+    this.biggestSetSize = this.biggestSetSize();
+    LOG.debug("The biggest set size is: " + this.biggestSetSize);
+    this.eta_n_n = new CurveElement<?, ?>[this.N2()][biggestSetSize];
 
     for (int i = 0; i < this.N2(); i++) {
-      for (int j = 0; j < this.zeta(); j++) {
+      //create entries for the proper set members
+      for (int j = 0; j < this.zeta(i); j++) {
         final BigInteger H_n_m_hash = (new BigInteger(1, crypto.getHash(this.setPolices[i][j].getBytes()))).mod(p);
         final BigIntEuclidean gcd = BigIntEuclidean.calculate(caData.mu_n[i].add(H_n_m_hash).mod(p), p);
         this.eta_n_n[i][j] = (CurveElement<?, ?>) this.eta.mul(gcd.x.mod(p)).getImmutable();
       }
+      //create dummy entries for the rest
+      for (int j = this.zeta(i); j < biggestSetSize; j++) {
+        final String dummyEntry = "DummyEntry[" + i + "][" + j + "]";
+        final BigInteger H_n_m_hash = (new BigInteger(1, crypto.getHash(dummyEntry.getBytes()))).mod(p);
+        final BigIntEuclidean gcd = BigIntEuclidean.calculate(caData.mu_n[i].add(H_n_m_hash).mod(p), p);
+        this.eta_n_n[i][j] = (CurveElement<?, ?>) this.eta.mul(gcd.x.mod(p)).getImmutable();
+      }
+
     }
   }
+
 
   /**
    * @return Serializes the shared memory to a JSON string.
@@ -420,20 +551,8 @@ public class PPETSFGPSharedMemory extends NFCAndroidSharedMemory {
   /**
    * @return The number of items in each set policy.
    */
-  public int zeta() {
-    return this.setPolices[0].length;
-  }
-
-  /**
-   * Enum defining the different types of actor in the protocol.
-   */
-  public enum Actor {
-    CENTRAL_AUTHORITY, SELLER, USER, VALIDATOR
-  }
-
-  /**
-   * Interface defining actor data.
-   */
-  public interface ActorData {
+  public int zeta(int i) {
+    //if index is wrong an out of bound exception will be thrown and terminate the program
+    return this.setPolices[i].length;
   }
 }
