@@ -86,37 +86,39 @@ will run the ETicket protocol once, using each ticket twice, with log level 3 (i
 The Han et al (draft) protocol has been implemented in the state machine class "PPETSFGP".
 
 The parameters available for the PPETSFGP protocol are:
-* (boolean) always pass verification tests, e.g. false (default).
+* (boolean)skip verification tests which defaults to false.
 * (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
-* (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
-* (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
+* A,A1 or E is the type of pairing to use (see http://gas.dia.unisa.it/projects/jpbc/docs/ecpg.html)
+* (int) number of r bits to use in Type A/E elliptic curve, e.g. 160 (default), for Type A1 this is the number of primes to use
+* (int) number of q bits to use in Type A/E elliptic curve, e.g. 512 (default), for Type A1 this is the size of those primes
 
 For example:
 
--r PPETSFGP:1:2:false:512:1024 -l 3 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
+-r PPETSFGP:1:false:2:E:512:1024 -l 3 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
 
-will run the PPETSFGP protocol once, failing whenever a verification test fails, running ticket validation twice, with elliptic curve pairing R bit length 512, Q bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
+will run the PPETSFGP protocol once, failing whenever a verification test fails, running ticket validation twice, with type E elliptic curve pairing where the prime r has bit length 512,  and the prime q has bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
 
-The pass verification option determines whether all the protocol verification steps continue event if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
+The skip verification option determines whether all the protocol verification steps continue even if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
 
 ## PPETS-FGPLite Protocol ##
 
 There is also a "Lite" version of the PPETSFGP protocol which has been implemented in the state machine class "PPETSFGPLite".
 
-The parameters available for the PPETSFGPLite protocol are:
-* (boolean) always pass verification tests, e.g. false (default).
+The parameters available for the PPETSFGPLite protocol are the same as for the PPETSFGP protocol, ie
+* (boolean) skip verification tests which defaults to false.
 * (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
-* (int) number of r bits to use in Type A elliptic curve, e.g. 256 (default).
-* (int) number of q bits to use in Type A elliptic curve, e.g. 512 (default).
+* A,A1 or E is the type of pairing to use (see http://gas.dia.unisa.it/projects/jpbc/docs/ecpg.html)
+* (int) number of r bits to use in Type A/E elliptic curve, e.g. 160 (default), for Type A1 this is the number of primes to use
+* (int) number of q bits to use in Type A/E elliptic curve, e.g. 512 (default), for Type A1 this is the size of those primes
 
 For example:
 
--r PPETSFGPLite:1:2:false:512:1024 -l 4 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
+-r PPETSFGPLite:1:false:2:A1 -l 4 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
 
-will run the PPETSFGPLite protocol once, failing whenever a verification test fails, running ticket validation twice, with elliptic curve pairing R bit length 512, Q bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
+will run the PPETSFGPLite protocol once, failing whenever a verification test fails, running ticket validation twice, with a type A1 elliptic curve pairing with the default 3 primes of size 160 bits and a log level 3 (info), as well as saving server, client setup (server only) and tear down (server only) to files.
 
-The pass verification option determines whether all the protocol verification steps continue event if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
+The skip verification option determines whether all the protocol verification steps continue even if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
 ## AnonSSO Protocol ##
 
