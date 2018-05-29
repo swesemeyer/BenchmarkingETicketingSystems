@@ -11,7 +11,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
+import java.util.Iterator;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,49 +43,70 @@ public class TestPPETSFGP_Type_X_Pairing {
 
 	/** Logback logger. */
 	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
-			.getLogger("Test_PPETS_FGP_TYPE_X");
+			.getLogger(TestPPETSFGP_Type_X_Pairing.class);
+
+	private static final Logger LOG_TIME = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("timings");
+
 	Encoder base64 = Base64.getEncoder();
 	Crypto crypto;
 	PPETSFGPSharedMemory sharedMemory = null;
+
+	// how many times shall we execute this test?
+	// this helps to average the execution time in a more precise manner
+	int num_of_iterations = 20;
+	// sorted map to store the different timings
+
+	SortedMap<String, LongAdder> sortedTimings = new TreeMap<>();
 
 	@Before
 	public void setUp() throws Exception {
 		// set the desired log level
 		LOG.setLevel(Level.DEBUG);
+	}
 
-		LOG.debug("Starting Setup");
-		long setup_time= Instant.now().toEpochMilli();
+	
+	
+	private void initSystem() {
+		LOG.debug("Starting Initialisation");
+		long setup_time = Instant.now().toEpochMilli();
 		crypto = Crypto.getInstance();
-		
+
 		sharedMemory = new PPETSFGPSharedMemory();
-		//change the Pairing Type to the curve you want
-		sharedMemory.setPairingType(PairingType.TYPE_A1);
+		// change the Pairing Type to the curve you want
+		sharedMemory.setPairingType(PairingType.TYPE_A);
 		sharedMemory.skipVerification = false;
-		sharedMemory.rBits = 160;
+		sharedMemory.rBits = 160; //note for type A1 pairings this represents the number of primes!
 		sharedMemory.qBits = 512;
 		sharedMemory.clearTest();
-		setup_time = Instant.now().toEpochMilli()-setup_time;
+		setup_time = Instant.now().toEpochMilli() - setup_time;
 		LOG.info("Initialising system (Server) took (ms): " + setup_time);
-//		BigInteger p=sharedMemory.pairingParameters.getBigInteger("r");
+/*		// BigInteger p=sharedMemory.pairingParameters.getBigInteger("r");
 		LOG.debug("p = size of E(F_q): " + sharedMemory.p);
-		LOG.debug("is p prime? "+sharedMemory.p.isProbablePrime(10));
-//		BigInteger q=sharedMemory.pairingParameters.getBigInteger("q");
-//		LOG.debug("q = size of F_q: " + q);
-		LOG.debug("Type: "+sharedMemory.pairingParameters.getType());
+		LOG.debug("is p prime? " + sharedMemory.p.isProbablePrime(10));
+
+		LOG.debug("Type: " + sharedMemory.pairingParameters.getType());
 		LOG.debug("Size of G1=G2=GT:" + sharedMemory.pairing.getG1().getOrder() + "="
 				+ sharedMemory.pairing.getG2().getOrder() + "=" + sharedMemory.pairing.getGT().getOrder());
 		LOG.debug("G1=?G2:" + sharedMemory.pairing.getG1().equals(sharedMemory.pairing.getG2()));
-		LOG.debug("length of elements in G:"+sharedMemory.pairing.getG1().getLengthInBytes()*8);
-		LOG.debug("length of elements in GT:"+sharedMemory.pairing.getGT().getLengthInBytes()*8);
-
+		LOG.debug("length of elements in G:" + sharedMemory.pairing.getG1().getLengthInBytes() * 8);
+		LOG.debug("length of elements in GT:" + sharedMemory.pairing.getGT().getLengthInBytes() * 8);
+*/
 		LOG.debug("Setting up Seller:");
 		sharedMemory.actAs(Actor.SELLER);
 		final BigInteger x_s = crypto.secureRandom(sharedMemory.p);
 		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 		sellerData.x_s = x_s;
 		LOG.debug("Seller x_s:" + sellerData.x_s);
-		LOG.debug("Setup complete:");
-
+		LOG.debug("Initialisation complete:");
+	}
+	private void addTimings(String timingsName, long timings) {
+		if (sortedTimings.containsKey(timingsName)) {
+			sortedTimings.get(timingsName).add(timings);
+		} else {
+			LongAdder tmp = new LongAdder();
+			tmp.add(timings);
+			sortedTimings.put(timingsName, tmp);
+		}
 	}
 
 	@Test
@@ -94,176 +119,222 @@ public class TestPPETSFGP_Type_X_Pairing {
 		long time_end;
 		long durationInMS;
 
-		// Registration States:
+		for (int iter = 1; iter <= num_of_iterations; iter++) {
+			LOG.info("***************************************************************************");
+			LOG.info("************************* Iteration: " + iter+" *************************");
+			LOG.info("***************************************************************************");
+			time_start = Instant.now().toEpochMilli();
+			overall_start = time_start;
+			
+			LOG.info("Going through system initialisation states");
+			
+			initSystem();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00000: Initialise System", durationInMS);
+			
+			// Registration States:
+			LOG.info("Going through Registration states");
 
-		LOG.info("Going through Registration states");
+			// Generate Seller Identify: RState02 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			data = this.generateSellerIdentity();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00100: Generate Seller Identify", durationInMS);
+			LOG_TIME.info("Timing-00100: Generate Seller Identify: RState02 (Android) took (ms): " + durationInMS);
 
-		// Generate Seller Identify: RState02 (Android)
-		time_start = Instant.now().toEpochMilli();
-		overall_start = time_start;
-		sharedMemory.actAs(Actor.SELLER);
-		data = this.generateSellerIdentity();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate Seller Identify: RState02 (Android) took (ms): " + durationInMS);
+			// Generates the seller's credentials: RState05 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
+			data = this.generateSellerCredentials(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00200: Generates the seller's credentials", durationInMS);
+			LOG_TIME.info(
+					"Timing-00200: Generates the seller's credentials: RState05 (Server) took (ms): " + durationInMS);
+			if (data == null) {
+				fail("Seller credential creation failed");
+			}
 
-		// Generates the seller's credentials: RState05 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
-		data = this.generateSellerCredentials(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generates the seller's credentials: RState05 (Server) took (ms): " + durationInMS);
-		if (data == null) {
-			fail("Seller credential creation failed");
+			// Verify Seller credentials: RState03 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			success = this.verifySellerCredentials(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00300: Verify Seller credentials", durationInMS);
+			LOG_TIME.info("Timing-00300: Verify Seller credentials: RState03 (Android) took (ms): " + durationInMS);
+			if (!success) {
+				fail("Seller credentials did not validate");
+			}
+
+			// Generate the user identity data: RState04 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			data = this.generateUserIdentity();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00400: Generate the user identity data", durationInMS);
+
+			LOG_TIME.info(
+					"Timing-00400: Generate the user identity data: RState04 (Android) took (ms): " + durationInMS);
+
+			// Generate the user's credentials: RState07 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
+			data = this.generateUserCredentials(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00500: Generate the user's credentials", durationInMS);
+			LOG_TIME.info(
+					"Timing-00500: Generate the user's credentials: RState07 (Server) took (ms): " + durationInMS);
+			if (data == null) {
+				fail("user credential creation failed");
+			}
+
+			// Verify the returned user's credential data:RState05 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			success = this.verifyUserCredentials(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00600: Verify the returned user's credential data", durationInMS);
+			LOG_TIME.info(
+					"Timing-00600: Verify the returned user's credential data: RState05 took (ms): " + durationInMS);
+			if (!success) {
+				fail("User credentials did not validate");
+			}
+
+			LOG.info("Going through Issuing states");
+
+			// Issuing States:
+
+			// Generate the seller's proof: IState08 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			data = this.generateSellerProof();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00700: Generate the seller's proof", durationInMS);
+			LOG_TIME.info("Timing-00700: Generate the seller's proof: IState08 (Server) took (ms): " + durationInMS);
+			if (data == null) {
+				fail("Seller proof generation failed");
+			}
+
+			// Verify the seller's proof: IState06 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			success = this.verifySellerProof(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00800: Verify the seller's proof", durationInMS);
+			LOG_TIME.info("Timing-00800: Verify the seller's proof: IState06 (Android) took (ms): " + durationInMS);
+			if (!success) {
+				fail("Seller proof verification failed");
+			}
+
+			// Generate the user proof data: IState06 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			data = this.generateUserProof();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-00900: Generate the user proof", durationInMS);
+			LOG_TIME.info("Timing-00900: Generate the user proof: IState06 (Android) took (ms): " + durationInMS);
+
+			// Verify the user proof: IState10 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			success = this.verifyUserProof(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01000: Verify the user proof", durationInMS);
+			LOG_TIME.info("Timing-01000: Verify the user proof: IState10 (Server) took (ms): " + durationInMS);
+			if (!success) {
+				fail("user proof verification failed");
+			}
+
+			// Generate ticket serial number: IState10 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.SELLER);
+			data = this.generateTicketSerialNumber();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01100: Generate ticket serial number", durationInMS);
+			LOG_TIME.info("Timing-01100: Generate ticket serial number: IState10 (Server) took (ms): " + durationInMS);
+
+			// Verify the returned ticket serial number data: IState08 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			success = this.verifyTicketSerialNumber(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01200: Verify the returned ticket serial number data", durationInMS);
+			LOG_TIME.info("Timing-01200: Verify the returned ticket serial number data: IState08 (Android) took (ms): "
+					+ durationInMS);
+			if (!success) {
+				fail("ticket serial number verification failed");
+			}
+
+			LOG.info("Going through Validation states");
+
+			// Generate the validator's random number: VState1 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.VALIDATOR);
+			data = this.generateValidatorRandomNumber();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01300: Generate the validator's random number", durationInMS);
+			LOG_TIME.info("Timing-01300: Generate the validator's random number: VState1 (Server) took (ms): "
+					+ durationInMS);
+
+			// Generate the ticket transcript data: VState09 (Android)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.USER);
+			data = this.generateTicketTranscript(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01400: Generate the ticket transcript data", durationInMS);
+			LOG_TIME.info(
+					"Timing-01400: Generate the ticket transcript data: VState09 (Android) took (ms): " + durationInMS);
+
+			// Verifies the ticket proof: VState13 (Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.VALIDATOR);
+			success = this.verifyTicketProof(data);
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01500: Verifies the ticket proof", durationInMS);
+			LOG_TIME.info("Timing-01500: Verifies the ticket proof: VState13 (Server) took (ms): " + durationInMS);
+			if (!success) {
+				fail("ticket proof verification failed");
+			}
+
+			// Detect if the ticket has been double spent: VState13(Server)
+			time_start = Instant.now().toEpochMilli();
+			sharedMemory.actAs(Actor.VALIDATOR);
+			success = !this.detectDoubleSpend();
+			time_end = Instant.now().toEpochMilli();
+			durationInMS = time_end - time_start;
+			addTimings("Timing-01600: Verifies the ticket proof", durationInMS);
+			LOG_TIME.info("Timing-01600: Detect if the ticket has been double spent: VState13(Server) took (ms): "
+					+ durationInMS);
+			if (!success) {
+				fail("ticket double spend check failed");
+			}
+			durationInMS = time_end - overall_start;
+			addTimings("Timing-99999: Overall run", durationInMS);
+			LOG_TIME.info("Timing-99999: Overall run: Total run of the protocol with no comms overhead took (ms): "
+					+ durationInMS);
 		}
-
-		// Verify Seller credentials: RState03 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		success = this.verifySellerCredentials(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verify Seller credentials: RState03 (Android) took (ms): " + durationInMS);
-		if (!success) {
-			fail("Seller credentials did not validate");
+		Iterator<String> iter = sortedTimings.keySet().iterator();
+		while (iter.hasNext()) {
+			String key = iter.next();
+			LOG.debug("Average of " + key + " after " + num_of_iterations + " iterations is: "
+					+ (sortedTimings.get(key).sum() / (double) num_of_iterations));
 		}
-
-		// Generate the user identity data: RState04 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		data = this.generateUserIdentity();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the user identity data: RState04 (Android) took (ms): " + durationInMS);
-
-		// Generate the user's credentials: RState07 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
-		data = this.generateUserCredentials(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the user's credentials: RState07 (Server) took (ms): " + durationInMS);
-		if (data == null) {
-			fail("user credential creation failed");
-		}
-
-		// Verify the returned user's credential data:RState05 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		success = this.verifyUserCredentials(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verify the returned user's credential data:RState05 took (ms): " + durationInMS);
-		if (!success) {
-			fail("User credentials did not validate");
-		}
-
-		LOG.info("Going through Issuing states");
-
-		// Issuing States:
-
-		// Generate the seller's proof: IState08 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		data = this.generateSellerProof();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the seller's proof: IState08 (Server) took (ms): " + durationInMS);
-		if (data == null) {
-			fail("Seller proof generation failed");
-		}
-
-		// Verify the seller's proof: IState06 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		success = this.verifySellerProof(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verify the seller's proof: IState06 (Android) took (ms): " + durationInMS);
-		if (!success) {
-			fail("Seller proof verification failed");
-		}
-
-		// Generate the user proof data: IState06 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		data = this.generateUserProof();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the user pseudonym data: IState06 (Android) took (ms): " + durationInMS);
-
-		// Verify the user proof: IState10 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		success = this.verifyUserProof(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verify the user proof: IState10 (Server) took (ms): " + durationInMS);
-		if (!success) {
-			fail("user proof verification failed");
-		}
-
-		// Generate ticket serial number: IState10 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.SELLER);
-		data = this.generateTicketSerialNumber();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate ticket serial number: IState10 (Server) took (ms): " + durationInMS);
-
-		// Verify the returned ticket serial number data: IState08 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		success = this.verifyTicketSerialNumber(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verify the returned ticket serial number data: IState08 (Android) took (ms): " + durationInMS);
-		if (!success) {
-			fail("ticket serial number verification failed");
-		}
-
-		LOG.info("Going through Validation states");
-
-		// Generate the validator's random number: VState1 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.VALIDATOR);
-		data = this.generateValidatorRandomNumber();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the validator's random number: VState1 (Server) took (ms): " + durationInMS);
-
-		// Generate the ticket transcript data: VState09 (Android)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.USER);
-		data = this.generateTicketTranscript(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Generate the ticket transcript data: VState09 (Android) took (ms): " + durationInMS);
-
-		// Verifies the ticket proof: VState13 (Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.VALIDATOR);
-		success = this.verifyTicketProof(data);
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Verifies the ticket proof: VState13 (Server) took (ms): " + durationInMS);
-		if (!success) {
-			fail("ticket proof verification failed");
-		}
-
-		// Detect if the ticket has been double spent: VState13(Server)
-		time_start = Instant.now().toEpochMilli();
-		sharedMemory.actAs(Actor.VALIDATOR);
-		success = !this.detectDoubleSpend();
-		time_end = Instant.now().toEpochMilli();
-		durationInMS = time_end - time_start;
-		LOG.info("Detect if the ticket has been double spent: VState13(Server) took (ms): " + durationInMS);
-		if (!success) {
-			fail("ticket double spend check failed");
-		}
-
-		LOG.info("Total run of the protocol with no comms overhead took (ms):" + (time_end - overall_start));
 	}
 
 	private byte[] generateSellerIdentity() {
@@ -279,16 +350,16 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// Compute proof PI_1_S = (c, s, M_1_S, Y_I):
 		final BigInteger t_s = crypto.secureRandom(sharedMemory.p);
 		final Element M_1_S = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
-		//LOG.debug("M_1_S: "+M_1_S);
+		// LOG.debug("M_1_S: "+M_1_S);
 
-		//LOG.debug("Y_S: "+sellerData.Y_S);
+		// LOG.debug("Y_S: "+sellerData.Y_S);
 		final CurveElement<?, ?> T_s = rho.mul(t_s);
 		final ListData cData = new ListData(Arrays.asList(M_1_S.toBytes(), sellerData.Y_S.toBytes(), T_s.toBytes()));
 		final byte[] c = crypto.getHash(cData.toBytes());
 		final BigInteger cNum = (new BigInteger(1, c)).mod(sharedMemory.p);
-		//LOG.debug("cNum(no mod p): "+new BigInteger(1, c));
-		//LOG.debug("cNum(mod p): "+cNum);
-		
+		// LOG.debug("cNum(no mod p): "+new BigInteger(1, c));
+		// LOG.debug("cNum(mod p): "+cNum);
+
 		final BigInteger s = (t_s.subtract(cNum.multiply(sellerData.x_s))).mod(sharedMemory.p);
 
 		// Send ID_I, PI_1_S (which includes Y_I) and VP_S
@@ -340,12 +411,12 @@ public class TestPPETSFGP_Type_X_Pairing {
 
 		// ID_I not used.
 		final Element M_1_S = sharedMemory.curveElementFromBytes(listData.getList().get(1));
-		//LOG.debug("M_1_S: "+M_1_S);
+		// LOG.debug("M_1_S: "+M_1_S);
 		final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(2));
-		//LOG.debug("Y_S: "+Y_S);
+		// LOG.debug("Y_S: "+Y_S);
 		final byte[] c = listData.getList().get(3);
 		final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
-		//LOG.debug("cNum: "+cNum);
+		// LOG.debug("cNum: "+cNum);
 		final BigInteger s = new BigInteger(listData.getList().get(4));
 		// How long does the seller want to request credentials for
 		final String VP_S = sharedMemory.stringFromBytes(listData.getList().get(5));
@@ -354,7 +425,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 
 		// Verify PI_1_S via c.
 		final Element check = sharedMemory.rho.mul(s).add(Y_S.mul(cNum));
-		LOG.debug("check= "+check);
+		LOG.debug("check= " + check);
 		final ListData cVerifyData = new ListData(Arrays.asList(M_1_S.toBytes(), Y_S.toBytes(), check.toBytes()));
 		final byte[] cVerify = crypto.getHash(cVerifyData.toBytes());
 		if (!Arrays.equals(c, cVerify)) {
@@ -631,18 +702,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// Ps_bar_U = xi^x-bar_u*g_1^d_bar_u
 		final Element Ps_U = userData.Y_U.add(sharedMemory.g_n[1].mul(userData.d_u)).getImmutable();
 		final Element Ps_bar_U = (sharedMemory.xi.mul(x_bar_u)).add(sharedMemory.g_n[1].mul(d_bar_u)).getImmutable();
-	
-		
 
 		final byte[] hashID_V = crypto.getHash(ID_V);
-		final Element elementFromHashID_V = sharedMemory.pairing.getG1().newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
+		final Element elementFromHashID_V = sharedMemory.pairing.getG1()
+				.newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
 		// Compute:
 		// E = Y_U * H'(ID_V)^(r*s_u)
 		// E_bar = xi^x_bar_u * g_2^(r*s_bar_u)
 		// F = T_U * theta^pi
 		final Element E = (userData.Y_U).add(elementFromHashID_V.mul(r.multiply(userData.s_u).mod(sharedMemory.p)))
 				.getImmutable();
-		final Element E_bar = sharedMemory.xi.mul(x_bar_u).add(elementFromHashID_V.mul(r.multiply(s_bar_u).mod(sharedMemory.p))).getImmutable();
+		final Element E_bar = sharedMemory.xi.mul(x_bar_u)
+				.add(elementFromHashID_V.mul(r.multiply(s_bar_u).mod(sharedMemory.p))).getImmutable();
 		final Element F = userData.T_U.add(sharedMemory.theta.mul(pi)).getImmutable();
 
 		// Compute:
@@ -675,7 +746,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 				.pow(omega_bar_u.negate().mod(sharedMemory.p)).getImmutable();
 		final Element R_bar3 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.rho).pow(pi_bar_dash)
 				.getImmutable();
-		
+
 		final Element R_bar4 = sharedMemory.pairing.pairing(sharedMemory.theta, userData.Y_S).pow(pi_bar)
 				.getImmutable();
 		final Element R_bar = R_bar1.mul(R_bar2).mul(R_bar3).mul(R_bar4).getImmutable();
@@ -710,17 +781,14 @@ public class TestPPETSFGP_Type_X_Pairing {
 				.mod(sharedMemory.p);
 		final BigInteger d_BAR_u = d_bar_u.subtract(cNum.multiply(userData.d_u)).mod(sharedMemory.p);
 
-		
-
-		
-	
-		// Sends P_U, Price, Service, VP_T, M_3_U, D, Ps_U, E, F, J, J_dash, R,  c,
-		// s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash, d_BAR_u, psi_uNum
+		// Sends P_U, Price, Service, VP_T, M_3_U, D, Ps_U, E, F, J, J_dash, R, c,
+		// s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash,
+		// d_BAR_u, psi_uNum
 		// U also needs to send Y_I as the verifier won't have it otherwise
 
-		final ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(userData.P_U),
-				userData.price, userData.service, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(),
-				D.toBytes(), Ps_U.toBytes(), E.toBytes(), F.toBytes(), J.toBytes(), J_dash.toBytes(), R.toBytes(), c,
+		final ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(userData.P_U), userData.price,
+				userData.service, sharedMemory.stringToBytes(userData.VP_T), M_3_U.toBytes(), D.toBytes(),
+				Ps_U.toBytes(), E.toBytes(), F.toBytes(), J.toBytes(), J_dash.toBytes(), R.toBytes(), c,
 				s_BAR_u.toByteArray(), x_BAR_u.toByteArray(), s_hat_u.toByteArray(), pi_BAR.toByteArray(),
 				lambda_BAR.toByteArray(), omega_BAR_u.toByteArray(), pi_BAR_dash.toByteArray(), d_BAR_u.toByteArray(),
 				userData.psi_uNum.toByteArray(), userData.Y_S.toBytes()));
@@ -747,12 +815,12 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// Decode the received data.
 		final ListData listData = ListData.fromBytes(data);
 
-		if (listData.getList().size() ==0) {//can vary dependent on user range and set policies
+		if (listData.getList().size() == 0) {// can vary dependent on user range and set policies
 			LOG.error("wrong number of data elements: " + listData.getList().size());
 			return null;
 		}
-		
-        LOG.debug("number of data elements: "+listData.getList().size());
+
+		LOG.debug("number of data elements: " + listData.getList().size());
 		int index = 0;
 		final byte[] ID_U = listData.getList().get(index++);
 		final Element M_1_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
@@ -765,16 +833,16 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final BigInteger s_1 = new BigInteger(listData.getList().get(index++));
 		final BigInteger s_2 = new BigInteger(listData.getList().get(index++));
 
-		final int numOfUserRanges=(new BigInteger(listData.getList().get(index++))).intValue();
-		LOG.debug("Number of range policies: "+numOfUserRanges);
+		final int numOfUserRanges = (new BigInteger(listData.getList().get(index++))).intValue();
+		LOG.debug("Number of range policies: " + numOfUserRanges);
 		final BigInteger[] A_U_range = new BigInteger[numOfUserRanges];
 		for (int i = 0; i < numOfUserRanges; i++) {
 			A_U_range[i] = new BigInteger(listData.getList().get(index++));
 		}
-		final int numOfUserSets=(new BigInteger(listData.getList().get(index++))).intValue();
+		final int numOfUserSets = (new BigInteger(listData.getList().get(index++))).intValue();
 		final String[] A_U_set = new String[numOfUserSets];
-		LOG.debug("Number of set policies: "+numOfUserSets);
-	
+		LOG.debug("Number of set policies: " + numOfUserSets);
+
 		for (int i = 0; i < numOfUserSets; i++) {
 			A_U_set[i] = new String(listData.getList().get(index++));
 		}
@@ -902,14 +970,14 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final List<byte[]> list = new ArrayList<>();
 		list.addAll(Arrays.asList(userData.ID_U, M_1_U.toBytes(), userData.Y_U.toBytes(), R.toBytes(), c_1, c_2,
 				s_1.toByteArray(), s_2.toByteArray()));
-		final BigInteger numOfUserRanges=BigInteger.valueOf(UserData.A_U_range.length);
-		
+		final BigInteger numOfUserRanges = BigInteger.valueOf(UserData.A_U_range.length);
+
 		list.add(numOfUserRanges.toByteArray());
 		for (final BigInteger attribute : UserData.A_U_range) {
 			list.add(attribute.toByteArray());
 		}
-		
-		final BigInteger numOfUserSets=BigInteger.valueOf(UserData.A_U_set.length);
+
+		final BigInteger numOfUserSets = BigInteger.valueOf(UserData.A_U_set.length);
 		list.add(numOfUserSets.toByteArray());
 		for (final String attribute : UserData.A_U_set) {
 			list.add(attribute.getBytes(Data.UTF8));
@@ -940,9 +1008,9 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final BigInteger r_bar_u = crypto.secureRandom(sharedMemory.p);
 		final BigInteger c_bar_u = crypto.secureRandom(sharedMemory.p);
 
-		final int numOfUserRanges=UserData.A_U_range.length;
-		final int numOfUserSets=UserData.A_U_set.length;
-		
+		final int numOfUserRanges = UserData.A_U_range.length;
+		final int numOfUserSets = UserData.A_U_set.length;
+
 		// Select random gamma_1-N1, gamma_bar_1-N1, a_bar_1-N1, and
 		// t_1-N1_0-(k-1), t_dash_1-N1_0-(k-1), t_bar_1-N1_0-(k-1),
 		// t_bar_dash_1-N1_0-(k-1), w_bar_1-N1_0-(k-1), w_bar_dash_1-N1_0-(k-1)
@@ -957,8 +1025,8 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final BigInteger[][] w_bar_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
 		final BigInteger[][] w_bar_dash_n_m = new BigInteger[numOfUserRanges][sharedMemory.k];
 
-		//part 1 of range proof
-		long rangeProofTiming=Instant.now().toEpochMilli();
+		// part 1 of range proof
+		long rangeProofTiming = Instant.now().toEpochMilli();
 		for (int i = 0; i < numOfUserRanges; i++) {
 			gamma_n[i] = crypto.secureRandom(sharedMemory.p);
 			gamma_bar_n[i] = crypto.secureRandom(sharedMemory.p);
@@ -973,11 +1041,11 @@ public class TestPPETSFGP_Type_X_Pairing {
 				w_bar_dash_n_m[i][j] = crypto.secureRandom(sharedMemory.p);
 			}
 		}
-		//end of part 1
-		rangeProofTiming=Instant.now().toEpochMilli() - rangeProofTiming;
+		// end of part 1
+		rangeProofTiming = Instant.now().toEpochMilli() - rangeProofTiming;
 
-		//part 1 of set proof
-		long setProofTiming=Instant.now().toEpochMilli();
+		// part 1 of set proof
+		long setProofTiming = Instant.now().toEpochMilli();
 		// Select random e_1-N2, e_bar_1-N2, e_hat_1-N2
 		final BigInteger[] e_n = new BigInteger[numOfUserSets];
 		final BigInteger[] e_bar_n = new BigInteger[numOfUserSets];
@@ -987,8 +1055,8 @@ public class TestPPETSFGP_Type_X_Pairing {
 			e_bar_n[i] = crypto.secureRandom(sharedMemory.p);
 			e_hat_n[i] = crypto.secureRandom(sharedMemory.p);
 		}
-		//end of part 1
-		setProofTiming=Instant.now().toEpochMilli() - setProofTiming;
+		// end of part 1
+		setProofTiming = Instant.now().toEpochMilli() - setProofTiming;
 
 		// Select random M_2_U
 		final Element M_2_U = sharedMemory.pairing.getG1().newRandomElement().getImmutable();
@@ -1018,18 +1086,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// PRODUCT_0-(k-1)(h_bar_i^w_bar_1-N1_0-(k-1))
 		// Z_bar_dash_1-N1 = g^gamma_bar_1-N1 *
 		// PRODUCT_0-(k-1)(h_bar_i^w_bar_dash_1-N1_0-(k-1))
-		
+
 		final Element[] Z_n = new Element[numOfUserRanges];
 		final Element[] Z_dash_n = new Element[numOfUserRanges];
 		final Element[] Z_bar_n = new Element[numOfUserRanges];
 		final Element[] Z_bar_dash_n = new Element[numOfUserRanges];
-		
-		//part 2 of range proof
-		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();		
+
+		// part 2 of range proof
+		rangeProofTiming = rangeProofTiming - Instant.now().toEpochMilli();
 		for (int i = 0; i < numOfUserRanges; i++) {
 			Z_n[i] = sharedMemory.g.mul(gamma_n[i]).add(sharedMemory.h.mul(UserData.A_U_range[i])).getImmutable();
 			Z_dash_n[i] = sharedMemory.g.mul(gamma_bar_n[i]).add(sharedMemory.h.mul(a_bar_n[i]).getImmutable());
-			//LOG.debug("Z_dash_n["+i+"]= "+ Z_dash_n[i]);
+			// LOG.debug("Z_dash_n["+i+"]= "+ Z_dash_n[i]);
 
 			Element sum1 = sharedMemory.g.mul(gamma_bar_n[i]).getImmutable();
 			for (int j = 0; j < sharedMemory.k; j++) {
@@ -1123,20 +1191,20 @@ public class TestPPETSFGP_Type_X_Pairing {
 						.getImmutable();
 			}
 		}
-		//end of part 2 of range proof
-		rangeProofTiming=Instant.now().toEpochMilli() + rangeProofTiming;
+		// end of part 2 of range proof
+		rangeProofTiming = Instant.now().toEpochMilli() + rangeProofTiming;
 
 		// Compute D_bar = g^alpha_bar * theta^beta_bar
 		final Element D_bar = sharedMemory.g.mul(alpha_bar).add(sharedMemory.theta.mul(beta_bar)).getImmutable();
-		//LOG.debug("D_bar="+D_bar);
+		// LOG.debug("D_bar="+D_bar);
 
 		// Compute phi_bar = D^c_bar
 		final Element phi_bar = D.mul(c_bar).getImmutable();
-		//LOG.debug("phi_bar="+phi_bar);
+		// LOG.debug("phi_bar="+phi_bar);
 
 		// Compute Y_bar = xi^x_bar_u * g_1^d_bar
 		final Element Y_bar = sharedMemory.xi.mul(x_bar_u).add(sharedMemory.g_n[1].mul(d_bar)).getImmutable();
-		//LOG.debug("Y_bar="+Y_bar);
+		// LOG.debug("Y_bar="+Y_bar);
 
 		// Compute:
 		// R = e(C,g_bar) / (e(g_0,g) e(g_1,g)^H(VP_U)
@@ -1154,7 +1222,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final Element R = R_1.div(R_2.mul(R_3)).getImmutable();
 
 		// part 3 of range proof
-		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
+		rangeProofTiming = rangeProofTiming - Instant.now().toEpochMilli();
 		final Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_bar_u)
 				.getImmutable();
 		final Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_bar_u)
@@ -1165,28 +1233,28 @@ public class TestPPETSFGP_Type_X_Pairing {
 			final Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(a_bar_n[i]);
 			product1 = product1.mul(value);
 		}
-		//end of part 3 of range proof
-		rangeProofTiming=Instant.now().toEpochMilli() + rangeProofTiming;
+		// end of part 3 of range proof
+		rangeProofTiming = Instant.now().toEpochMilli() + rangeProofTiming;
 
-		//part 3 of set proof
-		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
+		// part 3 of set proof
+		setProofTiming = setProofTiming - Instant.now().toEpochMilli();
 		Element product2 = sharedMemory.pairing.getGT().newOneElement().getImmutable();
 
 		for (int i = 0; i < numOfUserSets; i++) {
 			final Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_hat_n[i]);
 			product2 = product2.mul(value);
 		}
-		//end of part 3 of set proof
-		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		// end of part 3 of set proof
+		setProofTiming = setProofTiming + Instant.now().toEpochMilli();
 
 		final Element R_dash3 = sharedMemory.pairing.pairing(C, sharedMemory.g)
 				.pow(c_bar_u.negate().mod(sharedMemory.p));
 		final Element R_dash4 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g).pow(alpha_bar_dash);
 		final Element R_dash5 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.g_bar).pow(alpha_bar);
 
-		final Element R_dash = R_dash1.mul(R_dash2).mul(product1).mul(product2).mul(R_dash3).mul(R_dash4).mul(R_dash5).getImmutable();
-		//LOG.debug("R_dash = "+R_dash);
-		
+		final Element R_dash = R_dash1.mul(R_dash2).mul(product1).mul(product2).mul(R_dash3).mul(R_dash4).mul(R_dash5)
+				.getImmutable();
+		// LOG.debug("R_dash = "+R_dash);
 
 		// Compute:
 		// B_1-N2_j = eta_1-N2_j^e_1-N2
@@ -1198,18 +1266,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// but for completeness, and to ensure that we measure
 		// the maximum possible timing for the protocol, we have selected a
 		// value for all possible set values zeta.
-		
-		//part 4 of set proof
-		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
-		
+
+		// part 4 of set proof
+		setProofTiming = setProofTiming - Instant.now().toEpochMilli();
+
 		final Element[][] B_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 		final Element[][] W_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 		final Element[][] W_bar_n_m = new Element[numOfUserSets][sharedMemory.biggestSetSize];
 
 		for (int i = 0; i < numOfUserSets; i++) {
-			final int currentSetSize=sharedMemory.zeta(i);
+			final int currentSetSize = sharedMemory.zeta(i);
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
-				if ((j<currentSetSize) && UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
+				if ((j < currentSetSize) && UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
 					B_n_m[i][j] = sharedMemory.eta_n_n[i][j].mul(e_n[i]).getImmutable();
 					W_n_m[i][j] = sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_bar_n[i]).getImmutable();
 					Element part1 = sharedMemory.pairing.pairing(sharedMemory.eta, sharedMemory.eta_n[i])
@@ -1226,55 +1294,66 @@ public class TestPPETSFGP_Type_X_Pairing {
 				}
 			}
 		}
-		//end of part 4 of set proof
-		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		// end of part 4 of set proof
+		setProofTiming = setProofTiming + Instant.now().toEpochMilli();
 
 		// Calculate hash c_BAR
 		final List<byte[]> c_BARList = new ArrayList<>();
 		c_BARList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes(), Y_bar.toBytes(), D.toBytes(), D_bar.toBytes(),
 				phi.toBytes(), phi_bar.toBytes(), C.toBytes(), R.toBytes(), R_dash.toBytes()));
 
-		//LOG.debug("Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+		// LOG.debug("Original Hash so far: "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARList.add(Z_n[i].toBytes());
 		}
-		
-		//LOG.debug("Z_n: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
-		
+
+		// LOG.debug("Z_n: Original Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
+
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARList.add(Z_dash_n[i].toBytes());
 		}
-		
-		//LOG.debug("Z_dash_n : Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+
+		// LOG.debug("Z_dash_n : Original Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 				c_BARList.add(B_n_m[i][j].toBytes());
 			}
 		}
-		//LOG.debug("B_n_m: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
-		
+		// LOG.debug("B_n_m: Original Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
+
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
-				//LOG.debug("Original W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
+				// LOG.debug("Original W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
 				c_BARList.add(W_n_m[i][j].toBytes());
 			}
 		}
 
-		//LOG.debug("W_n_m: Original Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
-		
+		// LOG.debug("W_n_m: Original Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
+
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
-				//LOG.debug("W_bar_n_m["+i+"]["+j+"] = "+W_bar_n_m[i][j]);
+				// LOG.debug("W_bar_n_m["+i+"]["+j+"] = "+W_bar_n_m[i][j]);
 				c_BARList.add(W_bar_n_m[i][j].toBytes());
 			}
 		}
-		//LOG.debug("W_bar_n_m: Final Original Hash is: "+base64.encodeToString(crypto.getHash((new ListData(c_BARList)).toBytes())));
+		// LOG.debug("W_bar_n_m: Final Original Hash is:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARList)).toBytes())));
 		final ListData c_BARData = new ListData(c_BARList);
 		final byte[] c_BAR = crypto.getHash(c_BARData.toBytes());
-		//LOG.debug("c_BAR= "+base64.encodeToString(c_BAR));
-		
+		// LOG.debug("c_BAR= "+base64.encodeToString(c_BAR));
+
 		final BigInteger c_BARNum = new BigInteger(1, c_BAR).mod(sharedMemory.p);
-		//LOG.debug("c_BARNum after mod p="+c_BARNum);
+		// LOG.debug("c_BARNum after mod p="+c_BARNum);
 
 		// Compute:
 		// x_BAR_u = x_bar_u - c_BAR * x_u
@@ -1291,19 +1370,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final BigInteger[] gammac_BAR_n = new BigInteger[numOfUserRanges];
 		final BigInteger[] ac_BAR_n = new BigInteger[numOfUserRanges];
 
-		//part 4 of the range proof
-		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
+		// part 4 of the range proof
+		rangeProofTiming = rangeProofTiming - Instant.now().toEpochMilli();
 		for (int i = 0; i < numOfUserRanges; i++) {
 			gammac_BAR_n[i] = gamma_bar_n[i].subtract(c_BARNum.multiply(gamma_n[i])).mod(sharedMemory.p);
 			ac_BAR_n[i] = a_bar_n[i].subtract(c_BARNum.multiply(UserData.A_U_range[i])).mod(sharedMemory.p);
 		}
-		//end of part 4 of the range proof
-		rangeProofTiming=rangeProofTiming + Instant.now().toEpochMilli();
+		// end of part 4 of the range proof
+		rangeProofTiming = rangeProofTiming + Instant.now().toEpochMilli();
 
-		
-		//part 5 of set proof
-		setProofTiming=setProofTiming-Instant.now().toEpochMilli();
-		
+		// part 5 of set proof
+		setProofTiming = setProofTiming - Instant.now().toEpochMilli();
+
 		// Compute:
 		// e_BAR_1-N2 = e_bar_1-N2 - c_BAR * e_1-N2
 		// e_BAR_dash_1-N2 = e_hat_1-N2 - c_BAR * H(I_1-N2_j)
@@ -1323,8 +1401,8 @@ public class TestPPETSFGP_Type_X_Pairing {
 																									// W_bar_n_m
 																									// verification
 		}
-		//end of part 5 of set proof
-		setProofTiming=setProofTiming+Instant.now().toEpochMilli();
+		// end of part 5 of set proof
+		setProofTiming = setProofTiming + Instant.now().toEpochMilli();
 
 		// Compute:
 		// c_BAR_u = c_bar_u - c_BAR * c_u
@@ -1332,19 +1410,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// beta_BAR = beta_bar - c_BAR * beta
 		// alpha_BAR_dash = alpha_bar_dash - c_BAR * alpha_dash
 		// beta_BAR_dash = beta_bar_dash - c_BAR * beta_dash
-		//LOG.debug("c_BARNum= "+c_BARNum);
+		// LOG.debug("c_BARNum= "+c_BARNum);
 		final BigInteger c_BAR_u = c_bar_u.subtract(c_BARNum.multiply(userData.c_u)).mod(sharedMemory.p);
 		final BigInteger alpha_BAR = alpha_bar.subtract(c_BARNum.multiply(alpha)).mod(sharedMemory.p);
 		final BigInteger beta_BAR = beta_bar.subtract(c_BARNum.multiply(beta)).mod(sharedMemory.p);
 		final BigInteger alpha_BAR_dash = alpha_bar_dash.subtract(c_BARNum.multiply(alpha_dash)).mod(sharedMemory.p);
-		//LOG.debug("alpha_BAR_dash= "+alpha_BAR_dash);
+		// LOG.debug("alpha_BAR_dash= "+alpha_BAR_dash);
 		final BigInteger beta_BAR_dash = beta_bar_dash.subtract(c_BARNum.multiply(beta_dash)).mod(sharedMemory.p);
-		//LOG.debug("beta_BAR_dash= "+beta_BAR_dash);
-		//LOG.debug("phi_bar= "+phi_bar);
+		// LOG.debug("beta_BAR_dash= "+beta_BAR_dash);
+		// LOG.debug("phi_bar= "+phi_bar);
 
-		
-		//part 5 of the range proof
-		rangeProofTiming=rangeProofTiming - Instant.now().toEpochMilli();
+		// part 5 of the range proof
+		rangeProofTiming = rangeProofTiming - Instant.now().toEpochMilli();
 		// Compute hashes e_BAR_1-N1
 		final byte[][] e_BAR_m = new byte[numOfUserRanges][];
 		final BigInteger[] e_BAR_mNum = new BigInteger[numOfUserRanges];
@@ -1437,19 +1514,22 @@ public class TestPPETSFGP_Type_X_Pairing {
 			}
 		}
 
-		//end of part 5 of the range proof
-		rangeProofTiming=rangeProofTiming + Instant.now().toEpochMilli();
+		// end of part 5 of the range proof
+		rangeProofTiming = rangeProofTiming + Instant.now().toEpochMilli();
+		addTimings("RangeSetProof-0010: Number of user ranges", numOfUserRanges);
+		addTimings("RangeSetProof-0020: Range proof creation", rangeProofTiming);
 		LOG.debug("***************************************************************************************");
-		LOG.debug("Total timing for the range proof (ms): "+rangeProofTiming);
-		LOG.debug("which involved N1 ranges where N1= "+numOfUserRanges);		
+		LOG.debug("Total timing for the range proof (ms): " + rangeProofTiming);
+		LOG.debug("which involved N1 ranges where N1= " + numOfUserRanges);
 		LOG.debug("***************************************************************************************");
-		
 
+		addTimings("RangeSetProof-0040: Number of user sets", numOfUserSets);
+		addTimings("RangeSetProof-0050: Set proof creation", setProofTiming);
 		LOG.debug("***************************************************************************************");
-		LOG.debug("Total timing for the set proof (ms): "+setProofTiming);
-		LOG.debug("which involved N2 sets where N2= "+numOfUserSets);		
+		LOG.debug("Total timing for the set proof (ms): " + setProofTiming);
+		LOG.debug("which involved N2 sets where N2= " + numOfUserSets);
 		LOG.debug("***************************************************************************************");
-		
+
 		// Save d, Y for later.
 		userData.d = d;
 		userData.Y = Y; // the user pseudonym
@@ -1458,13 +1538,13 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final List<byte[]> sendDataList = new ArrayList<>();
 		sendDataList.addAll(
 				Arrays.asList(M_2_U.toBytes(), C.toBytes(), D.toBytes(), phi.toBytes(), Y.toBytes(), R.toBytes()));
-		
-		//transmit the number of range policies the user has
+
+		// transmit the number of range policies the user has
 		sendDataList.add((BigInteger.valueOf(numOfUserRanges)).toByteArray());
-		
-		//transmit the number of set policies the user has
+
+		// transmit the number of set policies the user has
 		sendDataList.add((BigInteger.valueOf(numOfUserSets)).toByteArray());
-		
+
 		for (int i = 0; i < numOfUserRanges; i++) {
 			sendDataList.add(Z_n[i].toBytes());
 			sendDataList.add(Z_dash_n[i].toBytes());
@@ -1480,7 +1560,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 				sendDataList.add(V_bar_dash_n_m[i][j].toBytes());
 			}
 		}
-		
+
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 				sendDataList.add(B_n_m[i][j].toBytes());
@@ -1746,17 +1826,18 @@ public class TestPPETSFGP_Type_X_Pairing {
 		}
 
 		// Receive P_U, Price, Service, VP_T, M_3_U, D, Ps_U, E, F, J, J_dash, R, c,
-		// s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash, d_BAR_u, psi_uNum
+		// s_BAR_u, x_BAR_u, s_hat_u, pi_BAR, lambda_BAR, omega_BAR_u, pi_BAR_dash,
+		// d_BAR_u, psi_uNum
 		// U also needs to send Y_I as the verifier won't have it otherwise
-		
+
 		int index = 0;
 		final String P_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
 		final byte[] price = listData.getList().get(index++);
 		final byte[] service = listData.getList().get(index++);
-		final String VP_T= sharedMemory.stringFromBytes(listData.getList().get(index++));
+		final String VP_T = sharedMemory.stringFromBytes(listData.getList().get(index++));
 		final Element M_3_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 		final Element D = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
-		final Element Ps_U=sharedMemory.curveElementFromBytes(listData.getList().get(index++));
+		final Element Ps_U = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 		final Element E = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 		final Element F = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 		final Element J = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
@@ -1775,24 +1856,23 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final Element Y_S = sharedMemory.curveElementFromBytes(listData.getList().get(index++));
 
 		// Verify psi_uNum
-		//Compute psi_u = H(P_U || Price || Service || Ticket Valid_Period)
-		final ListData check_psi_uData = new ListData(Arrays.asList(sharedMemory.stringToBytes(P_U), 
-				price, service, sharedMemory.stringToBytes(VP_T)));
+		// Compute psi_u = H(P_U || Price || Service || Ticket Valid_Period)
+		final ListData check_psi_uData = new ListData(
+				Arrays.asList(sharedMemory.stringToBytes(P_U), price, service, sharedMemory.stringToBytes(VP_T)));
 		final byte[] check_psi_u = crypto.getHash(check_psi_uData.toBytes());
-		final BigInteger check_psi_uNum=new BigInteger(1, check_psi_u).mod(sharedMemory.p);
-		
-		if (!psi_uNum.equals(check_psi_uNum)){
+		final BigInteger check_psi_uNum = new BigInteger(1, check_psi_u).mod(sharedMemory.p);
+
+		if (!psi_uNum.equals(check_psi_uNum)) {
 			LOG.error("failed to verify psi_uNum");
 			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
-		
+
 		LOG.debug("SUCCESS: verified psi_uNum");
-		
-		
-		//Verify R
-		
+
+		// Verify R
+
 		// R = e(F,Y_I) / (e(g_0,rho) e(Y,rho) e(g_3, rho)^psi_u
 		// R_bar = e(xi,rho)^x_bar_u * e(g_1,rho)^d_bar_u * e(g_2,rho)^s_bar_u *
 		// e(F,rho)^-omega_bar_u * e(theta,rho)^pi_bar_dash *
@@ -1805,54 +1885,52 @@ public class TestPPETSFGP_Type_X_Pairing {
 				.getImmutable();
 
 		final Element checkR = checkR_1.div(checkR_2.mul(checkR_3).mul(checkR_4)).getImmutable();
-		
-		
-		if (!R.equals(checkR)){
+
+		if (!R.equals(checkR)) {
 			LOG.error("failed to verify R");
 			if (!sharedMemory.skipVerification) {
 				return false;
 			}
 		}
-		
+
 		LOG.debug("SUCCESS: verified R");
-		
+
 		// Verify c.
 		final BigInteger cNum = new BigInteger(1, c).mod(sharedMemory.p);
 		final List<byte[]> cVerifyList = new ArrayList<>();
-		cVerifyList.addAll(Arrays.asList(M_3_U.toBytes(), D.toBytes(), Ps_U.toBytes(), E.toBytes(), J.toBytes(), J_dash.toBytes(),
-				R.toBytes()));
+		cVerifyList.addAll(Arrays.asList(M_3_U.toBytes(), D.toBytes(), Ps_U.toBytes(), E.toBytes(), J.toBytes(),
+				J_dash.toBytes(), R.toBytes()));
 
 		// Verify D_bar
 		final Element cCheck1 = sharedMemory.g.mul(s_BAR_u).add(D.mul(cNum));
 		cVerifyList.add(cCheck1.toBytes());
 
-		//verify Ps_bar_U
-		final Element cCheck2=sharedMemory.xi.mul(x_BAR_u).add(sharedMemory.g_n[1].mul(d_BAR_u)).add(Ps_U.mul(cNum));
+		// verify Ps_bar_U
+		final Element cCheck2 = sharedMemory.xi.mul(x_BAR_u).add(sharedMemory.g_n[1].mul(d_BAR_u)).add(Ps_U.mul(cNum));
 		cVerifyList.add(cCheck2.toBytes());
-		
+
 		// Verify E_bar
 		final byte[] hashID_V = crypto.getHash(ValidatorData.ID_V);
-		final Element elementFromHashID_V = sharedMemory.pairing.getG1().newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
-		
+		final Element elementFromHashID_V = sharedMemory.pairing.getG1()
+				.newElementFromHash(hashID_V, 0, hashID_V.length).getImmutable();
+
 		final Element cCheck3 = sharedMemory.xi.mul(x_BAR_u).add(elementFromHashID_V.mul(s_hat_u)).add(E.mul(cNum));
 		cVerifyList.add(cCheck3.toBytes());
-		
+
 		// Verify J_bar
-		final Element cCheck4 = ((sharedMemory.g.mul(pi_BAR)).add(sharedMemory.theta.mul(lambda_BAR)))
-				.add(J.mul(cNum));
+		final Element cCheck4 = ((sharedMemory.g.mul(pi_BAR)).add(sharedMemory.theta.mul(lambda_BAR))).add(J.mul(cNum));
 		cVerifyList.add(cCheck4.toBytes());
 
 		// Verify J_bar_dash
 		final Element cCheck5 = J.mul(omega_BAR_u).add(J_dash.mul(cNum));
 		cVerifyList.add(cCheck5.toBytes());
 
-		//verify R'
+		// verify R'
 		final Element cCheck6_1 = sharedMemory.pairing.pairing(sharedMemory.g_n[2], sharedMemory.rho).pow(s_BAR_u);
-		final Element cCheck6_2 = sharedMemory.pairing.pairing(F, sharedMemory.rho).pow(omega_BAR_u.negate().mod(sharedMemory.p));
-		final Element cCheck6_3 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.rho)
-				.pow(pi_BAR_dash);
-		final Element cCheck6_4 = sharedMemory.pairing.pairing(sharedMemory.theta, Y_S).pow(pi_BAR)
-				.mul(R.pow(cNum));
+		final Element cCheck6_2 = sharedMemory.pairing.pairing(F, sharedMemory.rho)
+				.pow(omega_BAR_u.negate().mod(sharedMemory.p));
+		final Element cCheck6_3 = sharedMemory.pairing.pairing(sharedMemory.theta, sharedMemory.rho).pow(pi_BAR_dash);
+		final Element cCheck6_4 = sharedMemory.pairing.pairing(sharedMemory.theta, Y_S).pow(pi_BAR).mul(R.pow(cNum));
 		final Element cCheck6 = cCheck6_1.mul(cCheck6_2).mul(cCheck6_3).mul(cCheck6_4);
 		cVerifyList.add(cCheck6.toBytes());
 
@@ -2039,7 +2117,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// final Crypto crypto = Crypto.getInstance();
 
 		// Decode the received data.
-		long timing=Instant.now().toEpochMilli();
+		long timing = Instant.now().toEpochMilli();
 		final ListData listData = ListData.fromBytes(data);
 
 		if (listData.getList().size() <= 0) { // Way too many to go and count.
@@ -2056,11 +2134,11 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// Save off Y so that we can compute the ticket serial number later
 		sellerData.Y = Y; // the user pseudonym
 		final Element R = sharedMemory.gtFiniteElementFromBytes(listData.getList().get(index++));
-		
-		final int numOfUserRanges=(new BigInteger(listData.getList().get(index++))).intValue();
-		final int numOfUserSets=(new BigInteger(listData.getList().get(index++))).intValue();		
-		//LOG.debug("numOfUserRanges= "+numOfUserRanges);
-		//LOG.debug("numOfUserSets= "+numOfUserSets);
+
+		final int numOfUserRanges = (new BigInteger(listData.getList().get(index++))).intValue();
+		final int numOfUserSets = (new BigInteger(listData.getList().get(index++))).intValue();
+		// LOG.debug("numOfUserRanges= "+numOfUserRanges);
+		// LOG.debug("numOfUserSets= "+numOfUserSets);
 
 		final Element[] Z_n = new Element[numOfUserRanges];
 		final Element[] Z_dash_n = new Element[numOfUserRanges];
@@ -2112,7 +2190,6 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final BigInteger beta_BAR = new BigInteger(listData.getList().get(index++));
 		final BigInteger alpha_BAR_dash = new BigInteger(listData.getList().get(index++));
 		final BigInteger beta_BAR_dash = new BigInteger(listData.getList().get(index++));
-
 
 		final byte[][] e_BAR_m = new byte[numOfUserRanges][];
 		final BigInteger[] e_BAR_mNum = new BigInteger[numOfUserRanges];
@@ -2173,12 +2250,11 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// get the user's validity period
 		final String VP_U = sharedMemory.stringFromBytes(listData.getList().get(index++));
 
-		timing=Instant.now().toEpochMilli()-timing;
-		LOG.debug("Decoding data took (ms)= "+timing);
-		
-		
-		//timing of checking R
-		timing=Instant.now().toEpochMilli();
+		timing = Instant.now().toEpochMilli() - timing;
+		LOG.debug("Decoding data took (ms)= " + timing);
+
+		// timing of checking R
+		timing = Instant.now().toEpochMilli();
 		// first check that the VP_U was used correctly in the computation of R
 		final byte[] vpuHash = crypto.getHash(VP_U.getBytes());
 		final BigInteger vpuHashNum = new BigInteger(1, vpuHash).mod(sharedMemory.p);
@@ -2195,12 +2271,12 @@ public class TestPPETSFGP_Type_X_Pairing {
 			}
 		}
 		LOG.debug("SUCCESS: passed verification of PI_2_U: R");
-		timing=Instant.now().toEpochMilli()-timing;
-		LOG.debug("checking R took (ms): "+timing);
-		
-		//timing of checking c_BAR
-		timing=Instant.now().toEpochMilli();
-		
+		timing = Instant.now().toEpochMilli() - timing;
+		LOG.debug("checking R took (ms): " + timing);
+
+		// timing of checking c_BAR
+		timing = Instant.now().toEpochMilli();
+
 		// Verify c_BAR.
 		final List<byte[]> c_BARVerifyList = new ArrayList<>();
 		c_BARVerifyList.addAll(Arrays.asList(M_2_U.toBytes(), Y.toBytes()));
@@ -2208,7 +2284,7 @@ public class TestPPETSFGP_Type_X_Pairing {
 		// check Y_bar
 		final Element c_BARCheck1 = (sharedMemory.xi.mul(x_BAR_u)).add(sharedMemory.g_n[1].mul(d_BAR))
 				.add(Y.mul(c_BARNum)).getImmutable();
-		//LOG.debug("c_BARCheck1=Y_bar= "+c_BARCheck1);
+		// LOG.debug("c_BARCheck1=Y_bar= "+c_BARCheck1);
 
 		c_BARVerifyList.add(c_BARCheck1.toBytes());
 
@@ -2218,14 +2294,14 @@ public class TestPPETSFGP_Type_X_Pairing {
 		final Element c_BARCheck2 = sharedMemory.g.mul(alpha_BAR).add(sharedMemory.theta.mul(beta_BAR))
 				.add(D.mul(c_BARNum)).getImmutable();
 		c_BARVerifyList.add(c_BARCheck2.toBytes());
-		//LOG.debug("c_Barcheck2=D_bar="+c_BARCheck2);
-		
+		// LOG.debug("c_Barcheck2=D_bar="+c_BARCheck2);
+
 		c_BARVerifyList.add(phi.toBytes());
 
 		final Element c_BARCheck3 = sharedMemory.g.mul(alpha_BAR_dash).add(sharedMemory.theta.mul(beta_BAR_dash))
 				.add(phi.mul(c_BARNum));
 		c_BARVerifyList.add(c_BARCheck3.toBytes());
-		//LOG.debug("c_Barcheck3=phi_bar="+c_BARCheck3);
+		// LOG.debug("c_Barcheck3=phi_bar="+c_BARCheck3);
 
 		c_BARVerifyList.add(C.toBytes());
 		c_BARVerifyList.add(R.toBytes());
@@ -2234,31 +2310,31 @@ public class TestPPETSFGP_Type_X_Pairing {
 		Element R_dash1 = sharedMemory.pairing.pairing(sharedMemory.xi, sharedMemory.g).pow(x_BAR_u).getImmutable();
 		Element R_dash2 = sharedMemory.pairing.pairing(sharedMemory.g_frak, sharedMemory.g).pow(r_BAR_u).getImmutable();
 		Element R_dash3 = sharedMemory.pairing.getGT().newOneElement();
-		//part 1 of range verification
-		long rangeVerificationTiming=Instant.now().toEpochMilli(); 
-		LOG.debug("rangeVerification (part 1 start) so far: "+ rangeVerificationTiming);
-		
+		// part 1 of range verification
+		long rangeVerificationTiming = Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification (part 1 start) so far: " + rangeVerificationTiming);
+
 		for (int i = 0; i < numOfUserRanges; i++) {
 			Element value = sharedMemory.pairing.pairing(sharedMemory.g_hat_n[i], sharedMemory.g).pow(ac_BAR_n[i])
 					.getImmutable();
 			R_dash3 = R_dash3.mul(value);
 		}
-		//end of part 1 of range verification
-		rangeVerificationTiming=Instant.now().toEpochMilli()-rangeVerificationTiming; 
-		LOG.debug("rangeVerification (part 1 end) so far: "+ rangeVerificationTiming);
-		
-		//part 1 of set verification
-		long setVerificationTiming=Instant.now().toEpochMilli(); 
-		LOG.debug("setVerification (part 1 start) so far: "+ setVerificationTiming);
+		// end of part 1 of range verification
+		rangeVerificationTiming = Instant.now().toEpochMilli() - rangeVerificationTiming;
+		LOG.debug("rangeVerification (part 1 end) so far: " + rangeVerificationTiming);
+
+		// part 1 of set verification
+		long setVerificationTiming = Instant.now().toEpochMilli();
+		LOG.debug("setVerification (part 1 start) so far: " + setVerificationTiming);
 		Element R_dash4 = sharedMemory.pairing.getGT().newOneElement();
 		for (int i = 0; i < numOfUserSets; i++) {
 			Element value = sharedMemory.pairing.pairing(sharedMemory.eta_n[i], sharedMemory.g).pow(e_BAR_dash_n[i])
 					.getImmutable();
 			R_dash4 = R_dash4.mul(value);
 		}
-		//end of part 1 of set verification
-		setVerificationTiming=Instant.now().toEpochMilli()-setVerificationTiming; 
-		LOG.debug("setVerification (part 1 end) so far: "+ setVerificationTiming);
+		// end of part 1 of set verification
+		setVerificationTiming = Instant.now().toEpochMilli() - setVerificationTiming;
+		LOG.debug("setVerification (part 1 end) so far: " + setVerificationTiming);
 
 		Element R_dash5 = sharedMemory.pairing.pairing(C, sharedMemory.g).pow(c_BAR_u.negate().mod(sharedMemory.p))
 				.getImmutable();
@@ -2269,66 +2345,76 @@ public class TestPPETSFGP_Type_X_Pairing {
 		Element R_dash8 = R.pow(c_BARNum).getImmutable();
 		Element R_dash = R_dash1.mul(R_dash2).mul(R_dash3).mul(R_dash4).mul(R_dash5).mul(R_dash6).mul(R_dash7)
 				.mul(R_dash8).getImmutable();
-		
-		//LOG.debug("R_dash_verify="+R_dash);
+
+		// LOG.debug("R_dash_verify="+R_dash);
 
 		c_BARVerifyList.add(R_dash.toBytes());
-		
-		//LOG.debug("Initial: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
-		
-		//part 2 of range verification
-		rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
-		LOG.debug("rangeVerification (part 2 start) so far: "+ rangeVerificationTiming);		
+
+		// LOG.debug("Initial: Verify Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARVerifyList)).toBytes())));
+
+		// part 2 of range verification
+		rangeVerificationTiming = rangeVerificationTiming - Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification (part 2 start) so far: " + rangeVerificationTiming);
 
 		for (int i = 0; i < numOfUserRanges; i++) {
 			c_BARVerifyList.add(Z_n[i].toBytes());
 		}
-		//LOG.debug("Z_n: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
-		
+		// LOG.debug("Z_n: Verify Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARVerifyList)).toBytes())));
+
 		for (int i = 0; i < numOfUserRanges; i++) {
 			final Element c_BARCheck4 = sharedMemory.g.mul(gammac_BAR_n[i]).add(sharedMemory.h.mul(ac_BAR_n[i]))
 					.add(Z_n[i].mul(c_BARNum));
-			//LOG.debug("verify Z_dash_n["+i+"]= "+ c_BARCheck4);
+			// LOG.debug("verify Z_dash_n["+i+"]= "+ c_BARCheck4);
 			c_BARVerifyList.add(c_BARCheck4.toBytes());
 		}
-		
-		//LOG.debug("Z_dash_n: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
-		
-		//end of part 2 of range verification
-		rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli();
-		LOG.debug("rangeVerification (part 2 end) so far: "+ rangeVerificationTiming);
-		
-		//part 2 of set verification
-		setVerificationTiming=setVerificationTiming-Instant.now().toEpochMilli(); 
-		LOG.debug("setVerification (part 2 start) so far: "+ setVerificationTiming);
+
+		// LOG.debug("Z_dash_n: Verify Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARVerifyList)).toBytes())));
+
+		// end of part 2 of range verification
+		rangeVerificationTiming = rangeVerificationTiming + Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification (part 2 end) so far: " + rangeVerificationTiming);
+
+		// part 2 of set verification
+		setVerificationTiming = setVerificationTiming - Instant.now().toEpochMilli();
+		LOG.debug("setVerification (part 2 start) so far: " + setVerificationTiming);
 
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
 				c_BARVerifyList.add(B_n_m[i][j].toBytes());
 			}
 		}
-		//LOG.debug("B_n_m: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
-		
+		// LOG.debug("B_n_m: Verify Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARVerifyList)).toBytes())));
+
 		for (int i = 0; i < numOfUserSets; i++) {
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
-				//LOG.debug("W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
+				// LOG.debug("W_n_m["+i+"]["+j+"] = "+W_n_m[i][j]);
 				c_BARVerifyList.add(W_n_m[i][j].toBytes());
 			}
 		}
-		
-		//LOG.debug("W_n_m: Verify Hash so far: "+base64.encodeToString(crypto.getHash((new ListData(c_BARVerifyList)).toBytes())));
-		
+
+		// LOG.debug("W_n_m: Verify Hash so far:
+		// "+base64.encodeToString(crypto.getHash((new
+		// ListData(c_BARVerifyList)).toBytes())));
+
 		for (int i = 0; i < numOfUserSets; i++) {
-			final int currentSetSize=sharedMemory.zeta(i);
+			final int currentSetSize = sharedMemory.zeta(i);
 			for (int j = 0; j < sharedMemory.biggestSetSize; j++) {
-				if ((j<currentSetSize) && UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
+				if ((j < currentSetSize) && UserData.A_U_set[i].equalsIgnoreCase(sharedMemory.setPolices[i][j])) {
 					Element product2 = sharedMemory.pairing.pairing(sharedMemory.eta, sharedMemory.eta_n[i])
 							.pow(e_BAR_n[i]).getImmutable();
 					product2 = product2.mul(
 							sharedMemory.pairing.pairing(B_n_m[i][j], sharedMemory.eta_n[i]).pow(e_BAR_dash_dash_n[i]))
 							.getImmutable();
 					product2 = product2.mul(W_n_m[i][j].pow(c_BARNum)).getImmutable();
-					//LOG.debug("W_bar_check["+i+"]["+j+"] = "+product2);
+					// LOG.debug("W_bar_check["+i+"]["+j+"] = "+product2);
 					c_BARVerifyList.add(product2.toBytes());
 				} else {
 					// just stick some random but fixed element here as it is not used...
@@ -2336,15 +2422,15 @@ public class TestPPETSFGP_Type_X_Pairing {
 				}
 			}
 		}
-		//end of part 2 of set verification
-		setVerificationTiming=setVerificationTiming+Instant.now().toEpochMilli();
-		LOG.debug("setVerification (part 2 end) so far: "+ setVerificationTiming);
+		// end of part 2 of set verification
+		setVerificationTiming = setVerificationTiming + Instant.now().toEpochMilli();
+		LOG.debug("setVerification (part 2 end) so far: " + setVerificationTiming);
 
 		final ListData c_BARVerifyData = new ListData(c_BARVerifyList);
 		final byte[] c_BARVerify = crypto.getHash(c_BARVerifyData.toBytes());
-		//LOG.debug("c_BAR="+base64.encodeToString(c_BAR));
-		//LOG.debug("c_BARVerify="+base64.encodeToString(c_BARVerify));
-		
+		// LOG.debug("c_BAR="+base64.encodeToString(c_BAR));
+		// LOG.debug("c_BARVerify="+base64.encodeToString(c_BARVerify));
+
 		if (!Arrays.equals(c_BAR, c_BARVerify)) {
 			LOG.error("failed to verify PI_2_U: c_BAR");
 			if (!sharedMemory.skipVerification) {
@@ -2353,15 +2439,15 @@ public class TestPPETSFGP_Type_X_Pairing {
 		}
 
 		LOG.debug("SUCCESS: verified user proof: PI_2_U: c_BAR");
-		timing=Instant.now().toEpochMilli()-timing;
-		LOG.debug("checking c_bar took (ms): "+timing);
+		timing = Instant.now().toEpochMilli() - timing;
+		LOG.debug("checking c_bar took (ms): " + timing);
 
-		//part 3 of range verification
-		rangeVerificationTiming=rangeVerificationTiming-Instant.now().toEpochMilli(); 
-		LOG.debug("rangeVerification (part 3 start) so far: "+ rangeVerificationTiming);
+		// part 3 of range verification
+		rangeVerificationTiming = rangeVerificationTiming - Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification (part 3 start) so far: " + rangeVerificationTiming);
 
-		//timing e_BAR_m
-		timing=Instant.now().toEpochMilli();
+		// timing e_BAR_m
+		timing = Instant.now().toEpochMilli();
 		// Verify e_BAR_m.
 		for (int i = 0; i < numOfUserRanges; i++) {
 			final BigInteger lower = BigInteger.valueOf(sharedMemory.rangePolicies[i][0]);
@@ -2416,10 +2502,10 @@ public class TestPPETSFGP_Type_X_Pairing {
 			}
 		}
 		LOG.debug("SUCCESS: verified PI_2_U: e_BAR_n");
-		timing=Instant.now().toEpochMilli()-timing;
-		LOG.debug("checking e_BAR_m took (ms): "+timing);
+		timing = Instant.now().toEpochMilli() - timing;
+		LOG.debug("checking e_BAR_m took (ms): " + timing);
 
-		timing=Instant.now().toEpochMilli();
+		timing = Instant.now().toEpochMilli();
 		// Verify d_BAR_n_m
 		for (int i = 0; i < numOfUserRanges; i++) {
 			for (int j = 0; j < sharedMemory.k; j++) {
@@ -2457,27 +2543,24 @@ public class TestPPETSFGP_Type_X_Pairing {
 				}
 			}
 		}
-		//end of part 3 of range verification
-		rangeVerificationTiming=rangeVerificationTiming+Instant.now().toEpochMilli(); 
-		LOG.debug("rangeVerification so far: "+ rangeVerificationTiming);
-		
+		// end of part 3 of range verification
+		rangeVerificationTiming = rangeVerificationTiming + Instant.now().toEpochMilli();
+		LOG.debug("rangeVerification so far: " + rangeVerificationTiming);
+
 		LOG.debug("SUCCESS: verified PI_2_U: d_BAR_n_m");
-		timing=Instant.now().toEpochMilli()-timing;
-		LOG.debug("checking d_BAR_n_m took (ms): "+timing);
+		timing = Instant.now().toEpochMilli() - timing;
+		LOG.debug("checking d_BAR_n_m took (ms): " + timing);
 
-
-		
+		addTimings("RangeSetProof-0030: Range proof verification", rangeVerificationTiming);
 		LOG.debug("***************************************************************************************");
-		LOG.debug("Total timing for the range verification (ms): "+rangeVerificationTiming);
-		LOG.debug("which involved N1 ranges where N1= "+numOfUserRanges);		
+		LOG.debug("Total timing for the range verification (ms): " + rangeVerificationTiming);
+		LOG.debug("which involved N1 ranges where N1= " + numOfUserRanges);
 		LOG.debug("***************************************************************************************");
-		
-
+		addTimings("RangeSetProof-0060: Set proof verification", setVerificationTiming);
 		LOG.debug("***************************************************************************************");
-		LOG.debug("Total timing for the set verification (ms): "+setVerificationTiming);
-		LOG.debug("which involved N2 sets where N2= "+numOfUserSets);		
+		LOG.debug("Total timing for the set verification (ms): " + setVerificationTiming);
+		LOG.debug("which involved N2 sets where N2= " + numOfUserSets);
 		LOG.debug("***************************************************************************************");
-		
 
 		return true;
 	}

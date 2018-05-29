@@ -105,10 +105,10 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 
 	/** Random elements g_0 to g_2 as generators of the group G. */
 	public CurveElement<?, ?>[] g_n = null;
-	
+
 	/** Random element gt from the Group G_t */
-	
-	public transient Element gt=null;
+
+	public transient Element gt = null;
 
 	/** Random element h as a generator of the group G. */
 	public CurveElement<?, ?> h = null;
@@ -143,9 +143,8 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	/** The bilinear group pairing parameters. */
 	public PropertiesParameters pairingParameters = null;
 
-	/** 
-	 * Skip verification steps? 
-	 * default(false) is to verify everything 
+	/**
+	 * Skip verification steps? default(false) is to verify everything
 	 */
 	public boolean skipVerification = false;
 
@@ -161,11 +160,11 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	public int qBits = 512;
 
 	/**
-	 * Fixed set of range policies. R1={0,31} Days:railcard for x days R2={0,5}
+	 * Fixed set of range policies. R1={0,7} Days:railcard for x days R2={0,5}
 	 * AgeRange:Child
 	 * 
 	 */
-	public final int[][] rangePolicies = new int[][] { { 0, 7 }, { 0, 5 } };
+	public final int[][] rangePolicies = new int[][] { { 0, 1048755 }, { 0, 5 } };
 
 	public int longestRangeInterval;
 
@@ -183,18 +182,21 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	public CurveElement<?, ?> rho = null;
 
 	/** Fixed set of set policies: we use arbitrary strings. */
-	public transient final String[][] setPolices = new String[][] { { "00", "01", "02", "03", "04", "05", "06", "07",
-			"08", "09"/*
-						 * , "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
-						 * "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34",
-						 * "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47",
-						 * "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60",
-						 * "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73",
-						 * "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86",
-						 * "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
-						 */
-			}, { "North", "South" }, { "Commuter", "Non-commuter" },
-			{ "Visually Impaired", "Mobility Impaired", "Epilepsy" } };
+	public transient final String[][] setPolices = new String[][] { { 
+		"00", "01", "02", "03", "04", "05", "06", "07",	"08", "09"//, 
+//		"10", "11", "12", "13", "14", "15", "16", "17", "18", "19", 
+//		"20", "21", "22", "23", "24", "25",	"26", "27", "28", "29", 
+//		"30", "31", "32", "33", "34", "35", "36", "37", "38", "39", 
+//		"40", "41", "42", "43",	"44", "45", "46", "47", "48", "49", 
+//		"50", "51", "52", "53", "54", "55", "56", "57", "58", "59", 
+//		"60", "61",	"62", "63", "64", "65", "66", "67", "68", "69", 
+//		"70", "71", "72", "73", "74", "75", "76", "77", "78", "79",	
+//		"80", "81", "82", "83", "84", "85", "86", "87", "88", "89", 
+//		"90", "91", "92", "93", "94", "95", "96", "97",	"98", "99"
+		}, //some random set
+		{ "North", "South" }, //some random location 
+		{ "Commuter", "Occasional", "Leisure", "Tourist" }, //some random traveller types
+		{ "Visually Impaired", "Mobility Impaired", "Epilepsy" } }; //some random disabilities
 
 	public int biggestSetSize;
 
@@ -209,8 +211,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	/** Random element xi as a generator of the group G. */
 	public CurveElement<?, ?> xi = null;
 
-	public PairingType pairingType=PairingType.TYPE_A;
-
+	public PairingType pairingType = PairingType.TYPE_A;
 
 	/**
 	 * setting the pairing type to be used
@@ -370,11 +371,11 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 			element = new GTFiniteElement(((TypeEPairing) this.pairing).getPairingMap(),
 					(GTFiniteField<?>) this.pairing.getGT());
 			break;
-			
+
 		case TYPE_A1:
 			element = new GTFiniteElement(((TypeA1Pairing) this.pairing).getPairingMap(),
 					(GTFiniteField<?>) this.pairing.getGT());
-			break;			
+			break;
 		default:
 			// Type A
 			element = new GTFiniteElement(((TypeAPairing) this.pairing).getPairingMap(),
@@ -451,34 +452,35 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 
 		switch (this.pairingType) {
 		case TYPE_A1:
-			generator = new TypeA1CurveGenerator(prng, this.rBits, this.qBits);//use rBits to represent the number of primes
+			generator = new TypeA1CurveGenerator(prng, this.rBits, this.qBits);// use rBits to represent the number of
+																				// primes
 			this.pairingParameters = (PropertiesParameters) generator.generate();
 			this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
-			LOG.debug("pairingParameters (n): "+pairingParameters.getBigInteger("n"));
-			LOG.debug("pairingParameters (n) prime: "+pairingParameters.getBigInteger("n").isProbablePrime(10));
-			LOG.debug("pairingParameters (p): "+pairingParameters.getBigInteger("p"));
-			LOG.debug("pairingParameters (p) prime: "+pairingParameters.getBigInteger("p").isProbablePrime(10));			
-			this.p = this.pairingParameters.getBigInteger("n"); //not prime!
+			LOG.debug("pairingParameters (n): " + pairingParameters.getBigInteger("n"));
+			LOG.debug("pairingParameters (n) prime: " + pairingParameters.getBigInteger("n").isProbablePrime(10));
+			LOG.debug("pairingParameters (p): " + pairingParameters.getBigInteger("p"));
+			LOG.debug("pairingParameters (p) prime: " + pairingParameters.getBigInteger("p").isProbablePrime(10));
+			this.p = this.pairingParameters.getBigInteger("n"); // not prime!
 			break;
 		case TYPE_E:
 			generator = new TypeECurveGenerator(prng, this.rBits, this.qBits);
 			this.pairingParameters = (PropertiesParameters) generator.generate();
 			this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
-			LOG.debug("pairingParameters (q): "+pairingParameters.getBigInteger("q"));
-			LOG.debug("pairingParameters (q) prime: "+pairingParameters.getBigInteger("q").isProbablePrime(10));
-			LOG.debug("pairingParameters (r): "+pairingParameters.getBigInteger("r"));
-			LOG.debug("pairingParameters (r) prime: "+pairingParameters.getBigInteger("r").isProbablePrime(10));
+			LOG.debug("pairingParameters (q): " + pairingParameters.getBigInteger("q"));
+			LOG.debug("pairingParameters (q) prime: " + pairingParameters.getBigInteger("q").isProbablePrime(10));
+			LOG.debug("pairingParameters (r): " + pairingParameters.getBigInteger("r"));
+			LOG.debug("pairingParameters (r) prime: " + pairingParameters.getBigInteger("r").isProbablePrime(10));
 			this.p = this.pairingParameters.getBigInteger("r");
 			break;
 		case TYPE_A:
 			generator = new TypeACurveGenerator(prng, this.rBits, this.qBits, true);
 			this.pairingParameters = (PropertiesParameters) generator.generate();
 			this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
-			
-			LOG.debug("pairingParameters (q): "+pairingParameters.getBigInteger("q"));
-			LOG.debug("pairingParameters (q) prime: "+pairingParameters.getBigInteger("q").isProbablePrime(10));
-			LOG.debug("pairingParameters (r): "+pairingParameters.getBigInteger("r"));
-			LOG.debug("pairingParameters (r) prime: "+pairingParameters.getBigInteger("r").isProbablePrime(10));
+
+			LOG.debug("pairingParameters (q): " + pairingParameters.getBigInteger("q"));
+			LOG.debug("pairingParameters (q) prime: " + pairingParameters.getBigInteger("q").isProbablePrime(10));
+			LOG.debug("pairingParameters (r): " + pairingParameters.getBigInteger("r"));
+			LOG.debug("pairingParameters (r) prime: " + pairingParameters.getBigInteger("r").isProbablePrime(10));
 			this.p = this.pairingParameters.getBigInteger("r");
 			break;
 		default:
