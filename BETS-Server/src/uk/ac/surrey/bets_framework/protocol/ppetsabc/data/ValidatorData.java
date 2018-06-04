@@ -3,19 +3,19 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp.data;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc.data;
 
 import it.unisa.dia.gas.jpbc.Element;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
 
 import java.math.BigInteger;
 
 /**
- * Implements validator data for the PPETS-FGP NFC protocol as a state machine.
+ * Implements validator data for the PPETS-ABC NFC protocol as a state machine.
  *
  * @author Matthew Casey
  */
-public class ValidatorData implements PPETSFGPSharedMemory.ActorData {
+public class ValidatorData implements PPETSABCSharedMemory.ActorData {
 
 	/** The identity of V as an arbitrary array of bytes. */
 	public static final byte[] ID_V = "Validator".getBytes();

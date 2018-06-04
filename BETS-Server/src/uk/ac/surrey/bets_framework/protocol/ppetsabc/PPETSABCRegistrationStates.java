@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
@@ -12,9 +12,9 @@ import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.State;
@@ -28,11 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Registration states of the PPETS-FGP state machine protocol.
+ * Registration states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPRegistrationStates {
+public class PPETSABCRegistrationStates {
 
   /**
    * State 4.
@@ -48,7 +48,7 @@ public class PPETSFGPRegistrationStates {
      */
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 
       // Get the seller identity data.
@@ -72,7 +72,7 @@ public class PPETSFGPRegistrationStates {
       // Note that all elliptic curve calculations are in an additive
       // group such that * -> + and ^ -> *.
       final Crypto crypto = Crypto.getInstance();
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 
       final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory.getData(Actor.CENTRAL_AUTHORITY);
 
@@ -231,7 +231,7 @@ public class PPETSFGPRegistrationStates {
     private byte[] generateUserCredentials(byte[] data) {
       // Note that all elliptic curve calculations are in an additive
       // group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory.getData(Actor.CENTRAL_AUTHORITY);
       final Crypto crypto = Crypto.getInstance();
 
@@ -371,6 +371,6 @@ public class PPETSFGPRegistrationStates {
   }
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPRegistrationStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCRegistrationStates.class);
 
 }

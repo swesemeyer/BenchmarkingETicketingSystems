@@ -3,20 +3,20 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp.data;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc.data;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
 
 import java.math.BigInteger;
 
 /**
- * Implements central authority data for the PPETS-FGP NFC protocol as a state machine.
+ * Implements central authority data for the PPETS-ABC NFC protocol as a state machine.
  *
  * @author Matthew Casey
  */
-public class CentralAuthorityData implements PPETSFGPSharedMemory.ActorData {
+public class CentralAuthorityData implements PPETSABCSharedMemory.ActorData {
 
   /** The range policy attributes of U. */
   public BigInteger[] A_U_range = null;

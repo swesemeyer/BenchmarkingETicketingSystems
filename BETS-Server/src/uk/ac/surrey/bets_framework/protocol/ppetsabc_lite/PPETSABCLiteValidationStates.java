@@ -3,16 +3,16 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp_lite;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc_lite;
 
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.ValidatorData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.State;
@@ -28,11 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Ticket validation and double spend detection states of the PPETS-FGP state machine protocol.
+ * Ticket validation and double spend detection states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPLiteValidationStates {
+public class PPETSABCLiteValidationStates {
 
   /**
    * State 11.
@@ -48,14 +48,14 @@ public class PPETSFGPLiteValidationStates {
     @Override
     public Action<NFCReaderCommand> getAction(Message message) {
       // We are now the validator.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(Actor.VALIDATOR);
 
       if (message.getType() == Type.SUCCESS) {
         LOG.info("ticket validation: " + sharedMemory.numValidations);
 
         // Start the timing block.
-        this.startTiming(PPETSFGPSharedMemory.TIMING_NAME);
+        this.startTiming(PPETSABCSharedMemory.TIMING_NAME);
 
         // Get the user ticket transcript.
         return new Action<>(Status.CONTINUE, 12, NFCReaderCommand.GET, null, NFC.USE_MAXIMUM_LENGTH);
@@ -76,7 +76,7 @@ public class PPETSFGPLiteValidationStates {
      * @return True if the ticket is double spent.
      */
     private boolean detectDoubleSpend() {
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 
       // Check whether the previous pseudonym is the same as the current pseudonym.
@@ -99,10 +99,10 @@ public class PPETSFGPLiteValidationStates {
           LOG.debug("ticket validation complete - double spend: " + doubleSpend);
 
           // Stop the timing block.
-          this.stopTiming(PPETSFGPSharedMemory.TIMING_NAME);
+          this.stopTiming(PPETSABCSharedMemory.TIMING_NAME);
 
           // If we have more iterations of ticket validation to do, then go back to the start of validation, otherwise end.
-          final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+          final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 
           if (sharedMemory.numValidations > 1) {
             sharedMemory.numValidations--;
@@ -128,7 +128,7 @@ public class PPETSFGPLiteValidationStates {
      * @return True if the ticket proof is verified.
      */
     private boolean verifyTicketProof(byte[] data) {
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 		final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 		final Crypto crypto = Crypto.getInstance();
 
@@ -225,5 +225,5 @@ public class PPETSFGPLiteValidationStates {
   }
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPLiteValidationStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCLiteValidationStates.class);
 }

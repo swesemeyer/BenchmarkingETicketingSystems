@@ -1,10 +1,9 @@
 /**
  * DICE NFC evaluation.
  *
- * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
+ * (c) University of Surrey and Pervasive Intelligence Ltd 2017-2018.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp_lite;
-
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,39 +11,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.surrey.bets_framework.protocol.NFCReaderStateMachine;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPIssuingStates;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPRegistrationStates;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSetupStates;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.PairingType;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.PairingType;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
 
 /**
- * Implements the revised, lighter version of the PPETS-FGP (Han, unpublished) NFC protocol as a state machine.
+ * Implements the PPETS-ABC (Han, submitted) NFC protocol as a state machine.
  *
- * Han, J., Chen, L., Schneider, S. & Treharne, H. (unpublished).
- * "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
+ * Han, J., Chen, L., Schneider, S. & Treharne, H. (submitted).
+ * "PPETS-ABC: Privacy-preserving Electronic Ticket Scheme with Attribute-based Credentials".
  *
  * @author Matthew Casey
  */
-public class PPETSFGPLite extends NFCReaderStateMachine {
+public class PPETSABC extends NFCReaderStateMachine {
 
   /** Logback logger. */
-  private static final Logger  LOG          = LoggerFactory.getLogger(PPETSFGPLite.class);
+  private static final Logger  LOG          = LoggerFactory.getLogger(PPETSABC.class);
 
   /** The shared memory. */
-  private PPETSFGPSharedMemory sharedMemory = new PPETSFGPSharedMemory();
+  private PPETSABCSharedMemory sharedMemory = new PPETSABCSharedMemory();
 
   /**
    * Default constructor.
    */
-  public PPETSFGPLite() {
-    // Note that some states are modified from the non-lite version.
-    super(Arrays.asList(new PPETSFGPSetupStates.SState00(), new PPETSFGPSetupStates.SState01(), new PPETSFGPSetupStates.SState02(),
-        new PPETSFGPSetupStates.SState03(), new PPETSFGPRegistrationStates.RState04(), new PPETSFGPRegistrationStates.RState05(),
-        new PPETSFGPRegistrationStates.RState06(), new PPETSFGPRegistrationStates.RState07(),
-        new PPETSGFPLiteIssuingStates.ImState08(), new PPETSFGPIssuingStates.IState09(), new PPETSFGPIssuingStates.IState10(),
-        new PPETSFGPLiteValidationStates.VState11(), new PPETSFGPLiteValidationStates.VState12()));
+  public PPETSABC() {
+    super(Arrays.asList(new PPETSABCSetupStates.SState00(), new PPETSABCSetupStates.SState01(), 
+        new PPETSABCSetupStates.SState02(), new PPETSABCSetupStates.SState03(), 
+        new PPETSABCRegistrationStates.RState04(), new PPETSABCRegistrationStates.RState05(),
+        new PPETSABCRegistrationStates.RState06(), new PPETSABCRegistrationStates.RState07(), 
+        new PPETSABCIssuingStates.IState08(), new PPETSABCIssuingStates.IState09(), 
+        new PPETSABCIssuingStates.IState10(), new PPETSABCValidationStates.VState11(),
+        new PPETSABCValidationStates.VState12(), new PPETSABCValidationStates.VState13()));
   }
 
   /**
@@ -79,7 +75,7 @@ public class PPETSFGPLite extends NFCReaderStateMachine {
       if (parameters.size() > 1) {
         this.sharedMemory.numValidations = Integer.parseInt(parameters.get(1));
       }
-
+      
       if (parameters.size()>2) {
     	  String pairingType=parameters.get(2);
     	  switch (pairingType) {
@@ -126,6 +122,6 @@ public class PPETSFGPLite extends NFCReaderStateMachine {
    */
   @Override
   public void setSharedMemory(SharedMemory sharedMemory) {
-    this.sharedMemory = (PPETSFGPSharedMemory) sharedMemory;
+    this.sharedMemory = (PPETSABCSharedMemory) sharedMemory;
   }
 }

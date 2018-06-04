@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -18,8 +18,8 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.ValidatorData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message;
@@ -27,12 +27,12 @@ import uk.ac.surrey.bets_framework.state.Message.Type;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * Ticket validation and double spend detection states of the PPETS-FGP state
+ * Ticket validation and double spend detection states of the PPETS-ABC state
  * machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPValidationStates {
+public class PPETSABCValidationStates {
 
 	/**
 	 * State 11.
@@ -45,7 +45,7 @@ public class PPETSFGPValidationStates {
 		 * @return The validator's random number.
 		 */
 		private byte[] generateValidatorRandomNumber() {
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 			final Crypto crypto = Crypto.getInstance();
 
@@ -71,14 +71,14 @@ public class PPETSFGPValidationStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			// We are now the validator.
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.VALIDATOR);
 
 			if (message.getType() == Type.SUCCESS) {
 				LOG.info("ticket validation: " + sharedMemory.numValidations);
 
 				// Start the timing block.
-				this.startTiming(PPETSFGPSharedMemory.TIMING_NAME);
+				this.startTiming(PPETSABCSharedMemory.TIMING_NAME);
 
 				// Generate the validator's random number and send it.
 				final byte[] data = this.generateValidatorRandomNumber();
@@ -127,7 +127,7 @@ public class PPETSFGPValidationStates {
 		 * @return True if the ticket is double spent.
 		 */
 		private boolean detectDoubleSpend() {
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 
 			// Here we do not (and cannot since it requires the private x_u)
@@ -153,11 +153,11 @@ public class PPETSFGPValidationStates {
 					LOG.debug("ticket validation complete - double spend: " + doubleSpend);
 
 					// Stop the timing block.
-					this.stopTiming(PPETSFGPSharedMemory.TIMING_NAME);
+					this.stopTiming(PPETSABCSharedMemory.TIMING_NAME);
 
 					// If we have more iterations of ticket validation to do, then go back to the
 					// start of validation, otherwise end.
-					final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+					final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 
 					if (sharedMemory.numValidations > 1) {
 						sharedMemory.numValidations--;
@@ -183,7 +183,7 @@ public class PPETSFGPValidationStates {
 		 * @return True if the ticket proof is verified.
 		 */
 		private boolean verifyTicketProof(byte[] data) {
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 			final Crypto crypto = Crypto.getInstance();
 
@@ -335,5 +335,5 @@ public class PPETSFGPValidationStates {
 	}
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPValidationStates.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PPETSABCValidationStates.class);
 }

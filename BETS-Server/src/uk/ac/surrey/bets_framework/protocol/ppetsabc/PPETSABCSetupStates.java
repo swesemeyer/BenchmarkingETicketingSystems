@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import java.math.BigInteger;
 
@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message;
@@ -22,11 +22,11 @@ import uk.ac.surrey.bets_framework.state.Message.Type;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * Setup states of the PPETS-FGP state machine protocol.
+ * Setup states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPSetupStates {
+public class PPETSABCSetupStates {
 
 	/**
 	 * State 0.
@@ -43,7 +43,7 @@ public class PPETSFGPSetupStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			// Clear out shared memory as we are starting again.
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			sharedMemory.clear();
 
 			if (message.getType() == Type.START) {
@@ -87,7 +87,7 @@ public class PPETSFGPSetupStates {
 		 * @return The setup bytes to send.
 		 */
 		private byte[] getSetup() {
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			byte[] result = null;
 
 			result = sharedMemory.toJson().getBytes(Data.UTF8);
@@ -152,7 +152,7 @@ public class PPETSFGPSetupStates {
 		 * @return True if processing was successful.
 		 */
 		private boolean processSetup(byte[] data) {
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 
 			// Store the seller's random x_s so that we can act as the seller in the
 			// protocol later.
@@ -164,5 +164,5 @@ public class PPETSFGPSetupStates {
 	}
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPSetupStates.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PPETSABCSetupStates.class);
 }

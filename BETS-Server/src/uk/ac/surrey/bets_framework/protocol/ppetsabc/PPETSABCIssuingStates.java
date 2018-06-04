@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -20,9 +20,9 @@ import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message;
@@ -30,11 +30,11 @@ import uk.ac.surrey.bets_framework.state.Message.Type;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * Ticket issuing states of the PPETS-FGP state machine protocol.
+ * Ticket issuing states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPIssuingStates {
+public class PPETSABCIssuingStates {
 
 	/**
 	 * State 8.
@@ -49,7 +49,7 @@ public class PPETSFGPIssuingStates {
 		private byte[] generateSellerProof() {
 			// Note that all elliptic curve calculations are in an additive group such that
 			// * -> + and ^ -> *.
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 			final Crypto crypto = Crypto.getInstance();
 
@@ -165,7 +165,7 @@ public class PPETSFGPIssuingStates {
 		@Override
 		public Action<NFCReaderCommand> getAction(Message message) {
 			// We are now the seller.
-			((PPETSFGPSharedMemory) this.getSharedMemory()).actAs(Actor.SELLER);
+			((PPETSABCSharedMemory) this.getSharedMemory()).actAs(Actor.SELLER);
 
 			if (message.getType() == Type.SUCCESS) {
 				// Generate the seller's proof and send it.
@@ -219,7 +219,7 @@ public class PPETSFGPIssuingStates {
 		private byte[] generateTicketSerialNumber() {
 			// Note that all elliptic curve calculations are in an additive group such that
 			// * -> + and ^ -> *.
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 			final Crypto crypto = Crypto.getInstance();
 
@@ -285,7 +285,7 @@ public class PPETSFGPIssuingStates {
 		private boolean verifyUserProof(byte[] data) {
 			// Note that all elliptic curve calculations are in an additive group such that
 			// * -> + and ^ -> *.
-			final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+			final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
 			final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 			final Crypto crypto = Crypto.getInstance();
 
@@ -719,6 +719,6 @@ public class PPETSFGPIssuingStates {
 	}
 
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPIssuingStates.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PPETSABCIssuingStates.class);
 
 }

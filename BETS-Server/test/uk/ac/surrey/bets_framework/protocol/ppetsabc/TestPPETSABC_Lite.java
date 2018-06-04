@@ -1,7 +1,7 @@
 /**
  *
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import static org.junit.Assert.fail;
 
@@ -24,24 +24,25 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.ValidatorData;
 
 /**
  * @author swesemeyer
  *
  */
-public class TestPPETSFGP_Lite {
+public class TestPPETSABC_Lite {
 
 	/** Logback logger. */
 	private static final Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
 			.getLogger("TestEllipticCurvesMaths");
 	Encoder base64 = Base64.getEncoder();
 	Crypto crypto;
-	PPETSFGPSharedMemory sharedMemory = null;
+	PPETSABCSharedMemory sharedMemory = null;
 
 	@Before
 	public void setUp() throws Exception {
@@ -50,7 +51,7 @@ public class TestPPETSFGP_Lite {
 
 		LOG.debug("Starting Setup");
 		crypto = Crypto.getInstance();
-		sharedMemory = new PPETSFGPSharedMemory();
+		sharedMemory = new PPETSABCSharedMemory();
 		sharedMemory.skipVerification = false;
 		sharedMemory.rBits = 256;
 		sharedMemory.qBits = 512;
@@ -237,7 +238,7 @@ public class TestPPETSFGP_Lite {
 	 * @return True if the ticket is double spent.
 	 */
 	private boolean detectDoubleSpend() {
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 
@@ -361,7 +362,7 @@ public class TestPPETSFGP_Lite {
 	private byte[] generateSellerIdentity() {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 		final Crypto crypto = Crypto.getInstance();
@@ -392,7 +393,7 @@ public class TestPPETSFGP_Lite {
 	private byte[] generateTicketSerialNumber() {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 		final Crypto crypto = Crypto.getInstance();
@@ -437,7 +438,7 @@ public class TestPPETSFGP_Lite {
 	private byte[] generateTicketTranscript(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive group such that
 		// * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();
@@ -485,7 +486,7 @@ public class TestPPETSFGP_Lite {
 	private byte[] generateUserCredentials(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive
 		// group such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 				.getData(Actor.CENTRAL_AUTHORITY);
@@ -611,7 +612,7 @@ public class TestPPETSFGP_Lite {
 	private byte[] generateUserIdentity() {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();
@@ -1219,7 +1220,7 @@ public class TestPPETSFGP_Lite {
 	 * @return The validator's random number.
 	 */
 	private byte[] generateValidatorRandomNumber() {
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 		// final Crypto crypto = Crypto.getInstance();
@@ -1242,8 +1243,8 @@ public class TestPPETSFGP_Lite {
 	 * @return True if the verification is successful.
 	 */
 	private boolean verifySellerCredentials(byte[] data) {
-		// final PPETSFGPSharedMemory sharedMemory =
-		// (PPETSFGPSharedMemory)this.getSharedMemory();
+		// final PPETSABCSharedMemory sharedMemory =
+		// (PPETSABCSharedMemory)this.getSharedMemory();
 		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 		final Crypto crypto = Crypto.getInstance();
 
@@ -1294,7 +1295,7 @@ public class TestPPETSFGP_Lite {
 	private boolean verifySellerProof(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		// final Crypto crypto = Crypto.getInstance();
 
@@ -1406,7 +1407,7 @@ public class TestPPETSFGP_Lite {
 	 * @return True if the ticket proof is verified.
 	 */
 	private boolean verifyTicketProof(byte[] data) {
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final ValidatorData validatorData = (ValidatorData) sharedMemory.getData(Actor.VALIDATOR);
 		final Crypto crypto = Crypto.getInstance();
@@ -1505,7 +1506,7 @@ public class TestPPETSFGP_Lite {
 	private boolean verifyTicketSerialNumber(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 
@@ -1581,7 +1582,7 @@ public class TestPPETSFGP_Lite {
 	private boolean verifyUserCredentials(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive group such that
 		// * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 		final Crypto crypto = Crypto.getInstance();
@@ -1658,7 +1659,7 @@ public class TestPPETSFGP_Lite {
 	private boolean verifyUserProof(byte[] data) {
 		// Note that all elliptic curve calculations are in an additive group
 		// such that * -> + and ^ -> *.
-		// final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory)
+		// final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory)
 		// this.getSharedMemory();
 		final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
 		// final Crypto crypto = Crypto.getInstance();

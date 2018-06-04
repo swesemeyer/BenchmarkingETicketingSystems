@@ -81,11 +81,11 @@ For example:
 
 will run the ETicket protocol once, using each ticket twice, with log level 3 (info), key length 512, loading DH parameters from file, and saving server, client setup (server only) and tear down (server only) to files.
 
-## PPETS-FGP Protocol ##
+## PPETS-ABC Protocol ##
 
-The Han et al (draft) protocol has been implemented in the state machine class "PPETSFGP".
+The Han et al (draft) protocol has been implemented in the state machine class "PPETSABC".
 
-The parameters available for the PPETSFGP protocol are:
+The parameters available for the PPETSABC protocol are:
 * (boolean)skip verification tests which defaults to false.
 * (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
 * A,A1 or E is the type of pairing to use (see http://gas.dia.unisa.it/projects/jpbc/docs/ecpg.html)
@@ -94,18 +94,19 @@ The parameters available for the PPETSFGP protocol are:
 
 For example:
 
--r PPETSFGP:1:false:2:E:512:1024 -l 3 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
+-r PPETSABC:1:false:2:E:512:1024 -l 3 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
 
-will run the PPETSFGP protocol once, failing whenever a verification test fails, running ticket validation twice, with type E elliptic curve pairing where the prime r has bit length 512,  and the prime q has bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
+will run the PPETSABC protocol once, failing whenever a verification test fails, running ticket validation twice, with type E elliptic curve pairing where the prime r has bit length 512,  and the prime q has bit length 1024, with log level 3 (info), and saving server, client setup (server only) and tear down (server only) to files.
 
 The skip verification option determines whether all the protocol verification steps continue even if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
 
-## PPETS-FGPLite Protocol ##
+## PPETS-ABCLite Protocol ##
 
-There is also a "Lite" version of the PPETSFGP protocol which has been implemented in the state machine class "PPETSFGPLite".
+There is also a "Lite" version of the PPETSABC protocol which has been implemented in the state machine class "PPETSABCLite".
+The lite version has a simplified verification process which is less computationally expensive but as a consequence has slightly different security properties.
 
-The parameters available for the PPETSFGPLite protocol are the same as for the PPETSFGP protocol, ie
+The parameters available for the PPETSABCLite protocol are the same as for the PPETSABC protocol, ie
 * (boolean) skip verification tests which defaults to false.
 * (int) the number of times that a ticket should be validated to provoke double spend, e.g. 2 (default).
 * A,A1 or E is the type of pairing to use (see http://gas.dia.unisa.it/projects/jpbc/docs/ecpg.html)
@@ -114,9 +115,9 @@ The parameters available for the PPETSFGPLite protocol are the same as for the P
 
 For example:
 
--r PPETSFGPLite:1:false:2:A1 -l 4 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
+-r PPETSABCLite:1:false:2:A1 -l 4 -s log/server.csv -c log/client.csv -u log/setup.csv -d log/tear_down.csv
 
-will run the PPETSFGPLite protocol once, failing whenever a verification test fails, running ticket validation twice, with a type A1 elliptic curve pairing with the default 3 primes of size 160 bits and a log level 3 (info), as well as saving server, client setup (server only) and tear down (server only) to files.
+will run the PPETSABCLite protocol once, failing whenever a verification test fails, running ticket validation twice, with a type A1 elliptic curve pairing with the default 3 primes of size 160 bits and a log level 3 (info), as well as saving server, client setup (server only) and tear down (server only) to files.
 
 The skip verification option determines whether all the protocol verification steps continue even if a verification fails. Set this to true to ensure that the protocol continues to the end regardless of the verification outcome, or false to allow the protocol to fail at the relevant stage. 
 
@@ -141,6 +142,6 @@ will run the AnonSSO protocol once with an elliptic curve whose elements are r=3
 
 Guasch, A.V. (2013). "Contributions to the Security and Privacy of Electronic Ticketing Systems". Ph.D Dissertation, Universitat Rovira i Virgili.
 
-Han, J., Chen, L., Schneider, S., Treharne, H., Casey, M & Wesemeyer, S. (draft). "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
+Han, J., Chen, L., Schneider, S., Treharne, H., Wesemeyer, S. (draft). "PPETS-ABC: Privacy-preserving Electronic Ticket Scheme with Attribute-based Credentials".
 
 Han, J., Chen, L., Schneider, S., Treharne, H., Wesemeyer, S. (draft). "Anonymous Single-Sign-On for n designated services with traceability" (http://arxiv.org/abs/1804.07201).

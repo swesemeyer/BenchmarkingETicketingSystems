@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -38,14 +38,14 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
 import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.NFCSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.CentralAuthorityData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.ValidatorData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.ValidatorData;
 
-public class PPETSFGPSharedMemory extends NFCSharedMemory {
+public class PPETSABCSharedMemory extends NFCSharedMemory {
 	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPSharedMemory.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PPETSABCSharedMemory.class);
 
 	/**
 	 * Enum defining the different types of actor in the protocol.
@@ -68,7 +68,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	 * Arbitrary bytes to act as random seed for pairing secure random so that we
 	 * can re-create the pairing.
 	 */
-	public static final byte[] PAIRING_RANDOM_SEED = PPETSFGPSharedMemory.class.getSimpleName().getBytes();
+	public static final byte[] PAIRING_RANDOM_SEED = PPETSABCSharedMemory.class.getSimpleName().getBytes();
 
 	/** Name used for timing the critical part of the protocol. */
 	public static final String TIMING_NAME = "Validation Timing";
@@ -230,7 +230,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 	 *            The JSON to deserialize from.
 	 * @return The shared memory.
 	 */
-	public static PPETSFGPSharedMemory fromJson(String json) {
+	public static PPETSABCSharedMemory fromJson(String json) {
 		// First we need to extract the pairing information from the JSON before
 		// we deserialize.
 		final JsonParser jsonParser = new JsonParser();
@@ -252,7 +252,7 @@ public class PPETSFGPSharedMemory extends NFCSharedMemory {
 		gson = gsonBuilder.create();
 
 		// Deserialize and set the pairing.
-		final PPETSFGPSharedMemory sharedMemory = gson.fromJson(json, PPETSFGPSharedMemory.class);
+		final PPETSABCSharedMemory sharedMemory = gson.fromJson(json, PPETSABCSharedMemory.class);
 		sharedMemory.pairing = pairing;
 
 		return sharedMemory;
