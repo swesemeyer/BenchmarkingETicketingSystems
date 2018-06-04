@@ -3,34 +3,34 @@
  * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp_lite;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc_lite;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPIssuingStates;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCIssuingStates;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * Modified ticket issuing states of the PPETS-FGP Lite state machine protocol.
+ * Modified ticket issuing states of the PPETS-ABC Lite state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPLiteIssuingStates {
+public class PPETSABCLiteIssuingStates {
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPLiteIssuingStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCLiteIssuingStates.class);
 
   /**
    * Modified state 6.
    */
-  public static class ImState06 extends PPETSFGPIssuingStates.IState06 {
+  public static class ImState06 extends PPETSABCIssuingStates.IState06 {
 
     /**
      * Gets the required action given a message.
@@ -41,7 +41,7 @@ public class PPETSFGPLiteIssuingStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPETSFGPSharedMemory) this.getSharedMemory()).actAs(PPETSFGPSharedMemory.Actor.USER);
+      ((PPETSABCSharedMemory) this.getSharedMemory()).actAs(PPETSABCSharedMemory.Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Generate the user pseudonym data.

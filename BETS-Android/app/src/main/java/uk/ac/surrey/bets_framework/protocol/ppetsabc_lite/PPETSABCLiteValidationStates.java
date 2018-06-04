@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp_lite;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc_lite;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,21 +17,21 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * Ticket validation and double spend detection states of the PPETS-FGP state machine protocol.
+ * Ticket validation and double spend detection states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPLiteValidationStates {
+public class PPETSABCLiteValidationStates {
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPLiteValidationStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCLiteValidationStates.class);
 
   /**
    * State 9.
@@ -45,7 +45,7 @@ public class PPETSFGPLiteValidationStates {
      */
     private byte[] generateTicketTranscript() {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -91,19 +91,19 @@ public class PPETSFGPLiteValidationStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPETSFGPSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
+      ((PPETSABCSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Generate the ticket transcript.
         if (message.getData() == null) {
           // Start the timing block.
-          this.startTiming(PPETSFGPSharedMemory.TIMING_NAME);
+          this.startTiming(PPETSABCSharedMemory.TIMING_NAME);
 
           // Do the time critical stuff.
           byte[] data = this.generateTicketTranscript();
 
           // Stop the timing block.
-          this.stopTiming(PPETSFGPSharedMemory.TIMING_NAME);
+          this.stopTiming(PPETSABCSharedMemory.TIMING_NAME);
 
           if (data != null) {
             LOG.debug("generate ticket transcript complete");

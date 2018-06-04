@@ -3,7 +3,7 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,32 +15,32 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidStateMachine;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
 import uk.ac.surrey.bets_framework.state.State;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.PairingType;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.PairingType;
 
 /**
- * Implements the PPETS-FGP (Han, submitted) NFC protocol as a state machine.
+ * Implements the PPETS-ABC (Han, submitted) NFC protocol as a state machine.
  *
- * Han, J., Chen, L., Schneider, S. & Treharne, H. (submitted).
- * "PPETS-FGP: Privacy-preserving Electronic Ticket Scheme with Fine-grained Pricing".
+ * Han, J., Chen, L., Schneider, S.,  Treharne, H. & Wesemeyer, S(submitted).
+ * "PPETS-ABC: Privacy-preserving Electronic Ticket Scheme with Attribute-based Credentials".
  *
  * @author Matthew Casey
  */
-public class PPETSFGP extends NFCAndroidStateMachine {
+public class PPETSABC extends NFCAndroidStateMachine {
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGP.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABC.class);
 
   /** The shared memory. */
-  private PPETSFGPSharedMemory sharedMemory = new PPETSFGPSharedMemory();
+  private PPETSABCSharedMemory sharedMemory = new PPETSABCSharedMemory();
 
   /**
    * Default constructor.
    */
-  public PPETSFGP() {
-    super(Arrays.<State<NFCAndroidCommand>>asList(new PPETSFGPSetupStates.SState00(), new PPETSFGPSetupStates.SState01(), new
-        PPETSFGPRegistrationStates.RState02(), new PPETSFGPRegistrationStates.RState03(), new PPETSFGPRegistrationStates.RState04
-        (), new PPETSFGPRegistrationStates.RState05(), new PPETSFGPIssuingStates.IState06(), new PPETSFGPIssuingStates.IState07()
-        , new PPETSFGPIssuingStates.IState08(), new PPETSFGPValidationStates.VState09(), new PPETSFGPValidationStates.VState10()));
+  public PPETSABC() {
+    super(Arrays.<State<NFCAndroidCommand>>asList(new PPETSABCSetupStates.SState00(), new PPETSABCSetupStates.SState01(), new
+        PPETSABCRegistrationStates.RState02(), new PPETSABCRegistrationStates.RState03(), new PPETSABCRegistrationStates.RState04
+        (), new PPETSABCRegistrationStates.RState05(), new PPETSABCIssuingStates.IState06(), new PPETSABCIssuingStates.IState07()
+        , new PPETSABCIssuingStates.IState08(), new PPETSABCValidationStates.VState09(), new PPETSABCValidationStates.VState10()));
   }
 
   /**
@@ -123,6 +123,6 @@ public class PPETSFGP extends NFCAndroidStateMachine {
    */
   @Override
   public void setSharedMemory(SharedMemory sharedMemory) {
-    this.sharedMemory = (PPETSFGPSharedMemory) sharedMemory;
+    this.sharedMemory = (PPETSABCSharedMemory) sharedMemory;
   }
 }

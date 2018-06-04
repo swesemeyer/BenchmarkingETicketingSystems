@@ -3,31 +3,29 @@
  * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
 
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * Setup states of the PPETS-FGP state machine protocol.
+ * Setup states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPSetupStates {
+public class PPETSABCSetupStates {
 
   /** Logback logger. */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPSetupStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCSetupStates.class);
 
   /**
    * State 0.
@@ -63,7 +61,7 @@ public class PPETSFGPSetupStates {
     private boolean processSetup(byte[] data) {
       // Use the data to re-create the shared memory so that we have all of the public parameters.
       // Decode the shared memory.
-      PPETSFGPSharedMemory sharedMemory = PPETSFGPSharedMemory.fromJson(new String(data, Data.UTF8));
+      PPETSABCSharedMemory sharedMemory = PPETSABCSharedMemory.fromJson(new String(data, Data.UTF8));
 
       // Initialise the shared memory which has not been copied in.
       sharedMemory.clearAndroid();
@@ -87,15 +85,15 @@ public class PPETSFGPSetupStates {
      * @return The setup data to return
      */
     private byte[] generateSetup() {
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
-      sharedMemory.actAs(PPETSFGPSharedMemory.Actor.SELLER);
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
+      sharedMemory.actAs(PPETSABCSharedMemory.Actor.SELLER);
 
       // Generate the seller's random number.
       final Crypto crypto = Crypto.getInstance();
-      ((SellerData) sharedMemory.getData(PPETSFGPSharedMemory.Actor.SELLER)).x_s = crypto.secureRandom(sharedMemory.p);
+      ((SellerData) sharedMemory.getData(PPETSABCSharedMemory.Actor.SELLER)).x_s = crypto.secureRandom(sharedMemory.p);
 
       // Send back x_s.
-      return ((SellerData) sharedMemory.getData(PPETSFGPSharedMemory.Actor.SELLER)).x_s.toByteArray();
+      return ((SellerData) sharedMemory.getData(PPETSABCSharedMemory.Actor.SELLER)).x_s.toByteArray();
     }
 
     /**

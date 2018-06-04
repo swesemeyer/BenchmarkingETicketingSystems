@@ -3,7 +3,7 @@
  * <p>
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,23 +21,23 @@ import uk.ac.surrey.bets_framework.protocol.NFCAndroidSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.NFCAndroidState;
 import uk.ac.surrey.bets_framework.protocol.data.Data;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory.Actor;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.SellerData;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.data.UserData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.SellerData;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.data.UserData;
 import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Message;
 
 /**
- * Registration states of the PPETS-FGP state machine protocol.
+ * Registration states of the PPETS-ABC state machine protocol.
  *
  * @author Matthew Casey
  */
-public class PPETSFGPRegistrationStates {
+public class PPETSABCRegistrationStates {
 
   /**
    * Logback logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(PPETSFGPRegistrationStates.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PPETSABCRegistrationStates.class);
 
   /**
    * State 2.
@@ -51,7 +51,7 @@ public class PPETSFGPRegistrationStates {
      */
     private byte[] generateSellerIdentity() {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -88,7 +88,7 @@ public class PPETSFGPRegistrationStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // Clear out shared memory as we are starting again.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       sharedMemory.actAs(Actor.SELLER);
 
       if (message.getType() == Message.Type.DATA) {
@@ -120,7 +120,7 @@ public class PPETSFGPRegistrationStates {
      */
     private boolean verifySellerCredentials(byte[] data) {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final SellerData sellerData = (SellerData) sharedMemory.getData(Actor.SELLER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -204,7 +204,7 @@ public class PPETSFGPRegistrationStates {
      */
     private byte[] generateUserIdentity() {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 
@@ -269,7 +269,7 @@ public class PPETSFGPRegistrationStates {
     @Override
     public Action<NFCAndroidCommand> getAction(Message message) {
       // We are now the user.
-      ((PPETSFGPSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
+      ((PPETSABCSharedMemory) this.getSharedMemory()).actAs(Actor.USER);
 
       if (message.getType() == Message.Type.DATA) {
         // Send back the user identity data.
@@ -300,7 +300,7 @@ public class PPETSFGPRegistrationStates {
      */
     private boolean verifyUserCredentials(byte[] data) {
       // Note that all elliptic curve calculations are in an additive group such that * -> + and ^ -> *.
-      final PPETSFGPSharedMemory sharedMemory = (PPETSFGPSharedMemory) this.getSharedMemory();
+      final PPETSABCSharedMemory sharedMemory = (PPETSABCSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
       final Crypto crypto = Crypto.getInstance();
 

@@ -3,19 +3,19 @@
  *
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
-package uk.ac.surrey.bets_framework.protocol.ppetsfgp.data;
+package uk.ac.surrey.bets_framework.protocol.ppetsabc.data;
 
 import java.math.BigInteger;
 
 import it.unisa.dia.gas.jpbc.Element;
-import uk.ac.surrey.bets_framework.protocol.ppetsfgp.PPETSFGPSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.ppetsabc.PPETSABCSharedMemory;
 
 /**
- * Implements seller data for the PPETS-FGP NFC protocol as a state machine.
+ * Implements seller data for the PPETS-ABC NFC protocol as a state machine.
  *
  * @author Matthew Casey
  */
-public class SellerData implements PPETSFGPSharedMemory.ActorData {
+public class SellerData implements PPETSABCSharedMemory.ActorData {
 
   /** The identity of S as an arbitrary array of bytes. */
   public static final byte[] ID_S = new byte[]{0x00, 0x01, 0x02, 0x03};

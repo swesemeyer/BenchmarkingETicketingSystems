@@ -26,3 +26,6 @@ The above is then automatically repeated for each required iteration of the prot
 Currently, an activity is installed and will open when the app is run.  The activity only shows which protocol is being processed and could be removed.
 
 All NFC communications are chunked into 32 bytes (plus protocol).  This is because the communications become unstable with a larger number of bytes in each packet sent.  This makes protocol runs slow and the number of bytes possible to transmit should be increased if possible.
+
+We also use the Java-based JPBC library ( http://gas.dia.unisa.it/projects/jpbc/) for the bilinear maps used in the protocols which is very slow (at least on the Samsung Galaxy J3 used for testing). 
+It should be possible to migrate that to the "pure" C-based version (https://crypto.stanford.edu/pbc/) to speed up the computations on the Android device.
