@@ -18,7 +18,7 @@ import uk.ac.surrey.bets_framework.state.Message.Type;
 import uk.ac.surrey.bets_framework.state.State;
 
 /**
- * Setup states for the AnonSSO state machine protocol.
+ * Setup states for the AnonProxy state machine protocol.
  *
  * @author Steve Wesemeyer
  */

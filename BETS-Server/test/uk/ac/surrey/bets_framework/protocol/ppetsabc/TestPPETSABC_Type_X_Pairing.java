@@ -81,17 +81,6 @@ public class TestPPETSABC_Type_X_Pairing {
 		sharedMemory.clearTest();
 		setup_time = Instant.now().toEpochMilli() - setup_time;
 		LOG.info("Initialising system (Server) took (ms): " + setup_time);
-/*		// BigInteger p=sharedMemory.pairingParameters.getBigInteger("r");
-		LOG.debug("p = size of E(F_q): " + sharedMemory.p);
-		LOG.debug("is p prime? " + sharedMemory.p.isProbablePrime(10));
-
-		LOG.debug("Type: " + sharedMemory.pairingParameters.getType());
-		LOG.debug("Size of G1=G2=GT:" + sharedMemory.pairing.getG1().getOrder() + "="
-				+ sharedMemory.pairing.getG2().getOrder() + "=" + sharedMemory.pairing.getGT().getOrder());
-		LOG.debug("G1=?G2:" + sharedMemory.pairing.getG1().equals(sharedMemory.pairing.getG2()));
-		LOG.debug("length of elements in G:" + sharedMemory.pairing.getG1().getLengthInBytes() * 8);
-		LOG.debug("length of elements in GT:" + sharedMemory.pairing.getGT().getLengthInBytes() * 8);
-*/
 		LOG.debug("Setting up Seller:");
 		sharedMemory.actAs(Actor.SELLER);
 		final BigInteger x_s = crypto.secureRandom(sharedMemory.p);

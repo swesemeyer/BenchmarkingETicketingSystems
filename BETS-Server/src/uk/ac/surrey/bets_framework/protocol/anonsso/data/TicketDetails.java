@@ -15,7 +15,7 @@ import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 
 /** 
- * store the ticket information for the AnonSSO NFC protocol implementation
+ * store the ticket information for the AnonProxy NFC protocol implementation
  * 
  * @author Steve Wesemeyer
  *

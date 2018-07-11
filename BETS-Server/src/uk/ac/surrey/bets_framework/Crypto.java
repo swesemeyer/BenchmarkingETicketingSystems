@@ -21,6 +21,10 @@ import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Base64.Encoder;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -34,6 +38,9 @@ import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.jpbc.Field;
 
 /**
  * Encapsulates all cryptographic operations as a singleton.
@@ -188,6 +195,14 @@ public class Crypto {
   /** The internally used random number generator */
   private SecureRandom        secRNG                        = null;
 
+  
+  /** The internal randomOracle hash functions  */
+  
+  private HashMap<String, Map<String, Element>> randomOracles = new HashMap<>();
+  
+  /** internal Base64 encoder */
+  private Encoder base64 = Base64.getEncoder();
+  
   /**
    * 
    * Private constructor.
@@ -392,6 +407,46 @@ public class Crypto {
     return hash;
   }
 
+  
+  /**
+   * Produces a hash of the specified data.
+   *
+   * @param data The data to hash.
+   * @param hashParameters the name of the hash algorithm to use
+   * @param G the field to hash to
+   * @return The hashed data.
+   */
+  public Element getHash(byte[] data, String[] hashParameters, Field<?> G) {
+    Element hash = null;
+    String key=base64.encodeToString(data);
+    Map<String,Element> randomOracleHash=null;
+    String hashName=hashParameters[1];
+    LOG.debug("computing hash for data:"+key);
+    
+    if (hashParameters[0].equalsIgnoreCase("randomOracle")) {
+    	if (randomOracles.containsKey(hashName)) {
+    		LOG.debug("Found an existing hashmap for "+hashName);
+    		randomOracleHash=randomOracles.get(hashName);
+    	}else {
+    		LOG.debug("Storing a new hashmap for "+hashName);
+    		randomOracleHash=new HashMap<String,Element>();
+    		randomOracles.put(hashName, randomOracleHash);
+    	}
+    	if (randomOracleHash.containsKey(key)) {
+    		LOG.debug("match found for data- returning it");
+    		return randomOracleHash.get(key);
+    	}else {
+    		LOG.debug("no match found for data- computing hash");
+    		hash=G.newRandomElement().getImmutable();
+    		randomOracleHash.put(key, hash);    	}
+    }
+    LOG.debug("returning hash: "+hash);
+    return hash;
+  }
+  
+  
+  
+  
   /**
    * Produces a hash of the specified data.
    * This uses the default hashing algorithm

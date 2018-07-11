@@ -4,7 +4,6 @@
  * (c) University of Surrey and Pervasive Intelligence Ltd 2017.
  */
 package uk.ac.surrey.bets_framework.protocol.anonsso;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,20 +13,16 @@ import org.slf4j.LoggerFactory;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderStateMachine;
 import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 import uk.ac.surrey.bets_framework.state.SharedMemory;
-
 /**
- * Implements the AnonSSO(Han et al) protocol as a state machine.
+ * Implements the AnonProxy(Han et al) protocol as a state machine.
  *
- * Han, J. et al "Anonymous Single-Sign-On for n designated services with traceability" (AnonSSO)
+ * Han, J. et al "Anonymous Single-Sign-On for n designated services with traceability" (AnonProxy)
  * 
  * available at https://arxiv.org/abs/1804.07201
  *
  * @author Steve Wesemeyer
  */
 public class AnonSSO extends NFCReaderStateMachine {
-
-	/** Logback logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(AnonSSO.class);
 
 	/** The shared memory. */
 	private AnonSSOSharedMemory sharedMemory = new AnonSSOSharedMemory();
@@ -53,7 +48,6 @@ public class AnonSSO extends NFCReaderStateMachine {
 				new AnonSSOVerifyingStates.VState28(), new AnonSSOVerifyingStates.VState29(),
 				new AnonSSOVerifyingStates.VState30()));
 	}
-
 	/**
 	 * @return The shared memory for the state machine.
 	 */
@@ -62,6 +56,7 @@ public class AnonSSO extends NFCReaderStateMachine {
 		return this.sharedMemory;
 	}
 
+	
 	/**
 	 * Sets the state machine parameters, clearing out any existing parameters.
 	 *
@@ -103,4 +98,7 @@ public class AnonSSO extends NFCReaderStateMachine {
 	public void setSharedMemory(SharedMemory sharedMemory) {
 		this.sharedMemory = (AnonSSOSharedMemory) sharedMemory;
 	}
+	
+	/** Logback logger. */
+	private static final Logger LOG = LoggerFactory.getLogger(AnonSSO.class);
 }

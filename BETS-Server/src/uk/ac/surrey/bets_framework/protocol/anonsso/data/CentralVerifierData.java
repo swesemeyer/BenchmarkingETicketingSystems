@@ -10,7 +10,7 @@ import java.math.BigInteger;
 import it.unisa.dia.gas.jpbc.Element;
 
 /**
- * Implements the central verifier data for the AnonSSO NFC protocol as a state
+ * Implements the central verifier data for the AnonProxy NFC protocol as a state
  * machine.
  *
  * @author Steve Wesemeyer

@@ -25,7 +25,7 @@ import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message.Type;
 
 /**
- * Ticket issuing states of the AnonSSO state machine protocol.
+ * Ticket issuing states of the AnonProxy state machine protocol.
  *
  * @author Steve Wesemeyer
  */

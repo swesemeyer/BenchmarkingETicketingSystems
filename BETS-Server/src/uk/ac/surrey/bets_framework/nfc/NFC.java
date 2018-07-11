@@ -227,7 +227,7 @@ public class NFC {
     
     this.responseCode=RESPONSE_OK_INT;
     
-    if (length == 0 || this.channel == null || this.data == null) {
+    if (length == 0 || this.data == null) {
       return false;
     }
     if (length >= 0 && length < this.data.length) {
@@ -416,9 +416,6 @@ public class NFC {
    */
   public boolean put_internal(byte[] data) {
     this.responseCode = RESPONSE_OK_INT;
-    if (this.channel == null) {
-      return false;
-    }
     this.data = data;
     return true;
   }

@@ -12,7 +12,7 @@ import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory;
 
 /**
- * Implements verifier data for the AnonSSO NFC protocol as a state machine.
+ * Implements verifier data for the AnonProxy NFC protocol as a state machine.
  *
  * @author Steve Wesemeyer
  */

@@ -33,7 +33,7 @@ import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 import uk.ac.surrey.bets_framework.protocol.data.ListData;
 
 /**
- * This test provides a complete server-side run of the AnonSSO protocol
+ * This test provides a complete server-side run of the AnonProxy protocol
  * together with the timings for each step of the protocol
  * 
  * @author swesemeyer
@@ -62,43 +62,9 @@ public class TestAnonSSO {
 		overall_start = time_start;
 		crypto = Crypto.getInstance();
 		sharedMemory = new AnonSSOSharedMemory();
-		sharedMemory.rBits = 320;
+		sharedMemory.rBits = 160;
+		sharedMemory.validateVerifiers=true; //we should verify everything
 		sharedMemory.clearTest();
-		/*LOG.debug("Y_A=" + sharedMemory.Y_A);
-		LOG.debug("g_frak=" + sharedMemory.g_frak);
-		LOG.debug("g=" + sharedMemory.g);
-		LOG.debug("h=" + sharedMemory.h);
-		String json = sharedMemory.toJson();
-		LOG.debug("JSON version of sharedMemory: " + json);
-		AnonSSOSharedMemory deserialSharedMemory = AnonSSOSharedMemory.fromJson(json);
-		LOG.debug("Y_A_deserial=" + deserialSharedMemory.Y_A);
-		LOG.debug("g_frak_deserial=" + deserialSharedMemory.g_frak);
-		LOG.debug("g_deserial=" + deserialSharedMemory.g);
-		LOG.debug("h_deserial=" + deserialSharedMemory.h);
-		LOG.debug("p: " + sharedMemory.pairingParameters.getBigInteger("r"));
-		LOG.debug("q: " + sharedMemory.pairingParameters.getBigInteger("q"));
-		LOG.debug("Size of G1=G2=GT:" + sharedMemory.pairing.getG1().getOrder() + "="
-				+ sharedMemory.pairing.getG2().getOrder() + "=" + sharedMemory.pairing.getGT().getOrder());
-		LOG.debug("G1=?G2:" + sharedMemory.pairing.getG1().equals(sharedMemory.pairing.getG2()));
-		LOG.debug("Testing the various hashes: ");
-		byte[] testHash = "HelloWorld".getBytes();
-		LOG.debug("Hash1: RipeMD256: " + base64.encodeToString(crypto.getHash(testHash, "RipeMD256")));// sharedMemory.Hash1)));
-		LOG.debug("Hash1: " + sharedMemory.Hash1 + " :" + base64.encodeToString(crypto.getHash(testHash, "RipeMD256")));// sharedMemory.Hash1)));
-		LOG.debug("Hash2: " + sharedMemory.Hash2 + " : "
-				+ base64.encodeToString(crypto.getHash(testHash, sharedMemory.Hash2)));
-
-		LOG.debug("Computing an element from Hash");
-		Element e1 = sharedMemory.pairing.getG1().newRandomElement();
-		LOG.debug("e1=" + e1);
-		byte[] myHash = "12345678912345667891233456IDV1ismyhashValue!!!!!".getBytes();
-		Element e2 = e1.setFromHash(myHash, 0, 32);
-		LOG.debug("e2=" + e2);
-		e1 = sharedMemory.pairing.getG1().newRandomElement();
-		LOG.debug("new e1=" + e1);
-		Element e3 = e1.setFromHash(myHash, 0, 32);
-		LOG.debug("e3=" + e3);
-		Assert.assertTrue(e2.isEqual(e3));
-*/
 		time_end = Instant.now().toEpochMilli();
 		durationInMS = time_end - time_start;
 		LOG.info("*************************************************************");
