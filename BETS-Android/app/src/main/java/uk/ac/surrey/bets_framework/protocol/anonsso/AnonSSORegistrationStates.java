@@ -38,17 +38,15 @@ public class AnonSSORegistrationStates {
    */
   public static class RState02 extends NFCAndroidState {
 
-
     private byte[] generateUserIdentity() {
       final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
       final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
-
       // Send ID_U, Y_U
-      final ListData sendData = new ListData(Arrays.asList(userData.ID_U.getBytes(), userData.Y_U.toBytes()));
+      final ListData sendData = new ListData(Arrays.asList(userData.ID_U.getBytes(),
+              userData.Y_U.toBytes()));
       LOG.debug("User public key = " + userData.Y_U);
       return sendData.toBytes();
     }
-
     /**
      * Gets the required action given a message.
      *
@@ -64,7 +62,6 @@ public class AnonSSORegistrationStates {
         // Send back the user identity data.
         if (message.getData() == null) {
           byte[] data = this.generateUserIdentity();
-
           if (data != null) {
             LOG.debug("generate user identity complete");
             byte[] response = this.addResponseCode(data, NFCAndroidSharedMemory.RESPONSE_OK);
@@ -73,16 +70,15 @@ public class AnonSSORegistrationStates {
           }
         }
       }
-
       return super.getAction(message);
     }
-
   }
 
   /**
    * State 03
    * As user: verifiy the Central Authority's data and store the user credentials
    */
+
   public static class RState03 extends NFCAndroidState {
 
     private boolean verifyUserCredentials(byte[] data) {
@@ -124,7 +120,6 @@ public class AnonSSORegistrationStates {
       userData.sigma_U = sigma_U;
       return true;
     }
-
 
     /**
      * Gets the required action given a message.
