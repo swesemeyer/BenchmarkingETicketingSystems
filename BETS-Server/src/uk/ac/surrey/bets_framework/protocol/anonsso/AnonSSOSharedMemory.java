@@ -33,6 +33,7 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.GsonUtils;
 import uk.ac.surrey.bets_framework.protocol.NFCSharedMemory;
+import uk.ac.surrey.bets_framework.protocol.anonproxy.AnonProxySharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralAuthorityData;
 import uk.ac.surrey.bets_framework.protocol.anonsso.data.CentralVerifierData;
 import uk.ac.surrey.bets_framework.protocol.anonsso.data.IssuerData;
@@ -42,7 +43,7 @@ import uk.ac.surrey.bets_framework.protocol.anonsso.data.VerifierData;
 public class AnonSSOSharedMemory extends NFCSharedMemory {
 	/** Logback logger. */
 	private static final Logger LOG = LoggerFactory.getLogger(AnonSSOSharedMemory.class);
-	
+
 	/**
 	 * static class enumerating the names of the different types of actor in the
 	 * protocol.
@@ -56,11 +57,11 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 				"Verifier5" };
 	}
 
-	  /**
-	   * The list of services the user wants to access
-	   */
-	  public static final String [] J_U={ Actor.VERIFIERS[1], Actor.VERIFIERS[2]};
-	
+	/**
+	 * The list of services the user wants to access
+	 */
+	public static final String[] J_U = { Actor.VERIFIERS[1], Actor.VERIFIERS[2] };
+
 	/**
 	 * Interface defining actor data.
 	 */
@@ -118,7 +119,6 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 	/** The name of the second hash algorithm */
 	public String Hash2 = "SHA-256";
 
-
 	/** The public key of the CA */
 
 	public CurveElement<?, ?> Y_A = null;
@@ -136,12 +136,12 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 	public CurveElement<?, ?> Y_bar_I = null;
 
 	/** The public keys of the Verifiers **/
-	
-	public Map<String, CurveElement<?,?>> Y_V=new HashMap<>();
-	
+
+	public Map<String, CurveElement<?, ?>> Y_V = new HashMap<>();
+
 	/** flag to indicate whether to validate verifiers */
-	
-	boolean validateVerifiers = false; //default to false as it is very time-consuming! 
+
+	boolean validateVerifiers = false; // default to false as it is very time-consuming!
 
 	/**
 	 * Deserialises the shared memory from a JSON string.
@@ -210,8 +210,8 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 		this.actorData.put(Actor.ISSUER, new IssuerData(Actor.ISSUER, this.p, this.xi, this.g_frak));
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i], this.p, this.xi));
-			//save the public key in a hashmap
-			this.Y_V.put(Actor.VERIFIERS[i],(CurveElement<?,?>) this.getPublicKey(Actor.VERIFIERS[i]));
+			// save the public key in a hashmap
+			this.Y_V.put(Actor.VERIFIERS[i], (CurveElement<?, ?>) this.getPublicKey(Actor.VERIFIERS[i]));
 		}
 		this.actorData.put(Actor.CENTRAL_VERIFIER, new CentralVerifierData(Actor.CENTRAL_VERIFIER, this.p, this.xi));
 
@@ -273,7 +273,7 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 		this.Y_CV = (CurveElement<?, ?>) this.getPublicKey(Actor.CENTRAL_VERIFIER);
 		this.Y_bar_I = (CurveElement<?, ?>) this.getPublicKey(Actor.ISSUER);
 		this.Y_U = (CurveElement<?, ?>) this.getPublicKey(Actor.USER);
-		this.validateVerifiers=true;
+		this.validateVerifiers = true;
 	}
 
 	/**
@@ -289,7 +289,6 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 
 		return element.getImmutable();
 	}
-
 
 	/**
 	 * Convenience method to create a G2curve element from a byte array.
@@ -349,8 +348,9 @@ public class AnonSSOSharedMemory extends NFCSharedMemory {
 		// pairing.
 		final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
 		final PairingParametersGenerator<?> generator = new TypeFCurveGenerator(prng, this.rBits);
-		//final PairingParametersGenerator<?> generator = new PBCTypeFCurveGenerator(this.rBits);
-		//PairingFactory.getInstance().setUsePBCWhenPossible(true);
+		// final PairingParametersGenerator<?> generator = new
+		// PBCTypeFCurveGenerator(this.rBits);
+		// PairingFactory.getInstance().setUsePBCWhenPossible(true);
 		this.pairingParameters = (PropertiesParameters) generator.generate();
 		this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
 		this.p = this.pairingParameters.getBigInteger("r");

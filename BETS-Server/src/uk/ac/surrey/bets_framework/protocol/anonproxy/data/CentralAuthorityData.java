@@ -26,8 +26,8 @@ public class CentralAuthorityData implements AnonProxySharedMemory.ActorData {
 
 	public class VerifierCredentials {
 		public String ID_V = null;
-		public BigInteger d_V = null;
-		public BigInteger e_V = null;
+		public BigInteger d_v = null;
+		public BigInteger e_v = null;
 		public Element sigma_V = null;
 		public Element SK_V = null;
 
@@ -51,12 +51,6 @@ public class CentralAuthorityData implements AnonProxySharedMemory.ActorData {
 	/** the second public key of the CA */
 	public Element Y_tilde_A = null;
 	
-	/** Random number theta1 */
-	public BigInteger theta1 = null;
-
-	/** Random number theta2 */
-	public BigInteger theta2 = null;
-
 	
 	/** the issuer's credentials */
 	public String ID_I = null;
@@ -77,8 +71,8 @@ public class CentralAuthorityData implements AnonProxySharedMemory.ActorData {
 	/** the central verifier's credentials */
 	public String ID_CV = null;
 	public Element Y_CV = null;
-	public BigInteger r_CV = null;
-	public BigInteger e_CV = null;
+	public BigInteger d_cv = null;
+	public BigInteger e_cv = null;
 	public Element sigma_CV = null;
 	
 	/** the verifier's credentials */
@@ -101,11 +95,7 @@ public class CentralAuthorityData implements AnonProxySharedMemory.ActorData {
 		// create the CA's master key
 		this.alpha = crypto.secureRandom(p);
 		this.beta = crypto.secureRandom(p);
-		
-		//select some random numbers
-		this.theta1 = crypto.secureRandom(p);
-		this.theta2 = crypto.secureRandom(p);
-		
+				
 		
 		// compute the first public key
 		this.Y_A = g_frak.mul(this.alpha).getImmutable();

@@ -37,21 +37,24 @@ public class UserData implements AnonProxySharedMemory.ActorData {
 
 	/** User pseudonym */
 	public Element Y_U = null;
-
+	
+	/** some random number needed for ticket validation	 */
+	public BigInteger y_3=null;
+	
 	/** secret ticket number */
-	public BigInteger z_u = null;
+	//public BigInteger z_u = null;
 
 	/** secret ticket element */
-	public Element C_U = null;
+	public Element R_U = null;
 
 	/** ticket details */
-	// public TicketDetails ticketDetails = null;
+	public TicketDetails ticketDetails = null;
 
 	public UserData() {
 		super();
 	}
 
-	public UserData(String ID_U, BigInteger p, Element g) {
+	public UserData(String ID_U, BigInteger p, Element g_tilde) {
 		super();
 		this.ID_U = ID_U;
 		// Generate the required random numbers.
@@ -61,7 +64,7 @@ public class UserData implements AnonProxySharedMemory.ActorData {
 		this.x_u = crypto.secureRandom(p);
 
 		// compute the public key
-		this.Y_U = g.mul(this.x_u).getImmutable();
+		this.Y_U = g_tilde.mul(this.x_u).getImmutable();
 
 	}
 

@@ -21,6 +21,7 @@ import uk.ac.surrey.bets_framework.icc.ICC;
 import uk.ac.surrey.bets_framework.protocol.ICCCommand;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.AnonProxySharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralAuthorityData;
+import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralVerifierData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.UserData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.VerifierData;
@@ -79,28 +80,6 @@ public class AnonProxyRegistrationStates {
 			return super.getAction(message);
 		}
 
-	}
-
-	/**
-	 * State 03: As Central Authority: get the data from the issuer
-	 */
-	public static class RState03 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
-			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
-
-			// Get the issuer identity data.
-			return new Action<>(Status.CONTINUE, 4, ICCCommand.GET, null, ICC.USE_MAXIMUM_LENGTH);
-		}
 	}
 
 	/**
@@ -169,26 +148,6 @@ public class AnonProxyRegistrationStates {
 	}
 
 	/**
-	 * State 05 As issuer: Get the data from the Central Authority
-	 */
-	public static class RState05 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-
-			// Get the issuer credentials data.
-			return new Action<>(Status.CONTINUE, 6, ICCCommand.GET, null, -1);
-		}
-	}
-
-	/**
 	 * State 06 As issuer: verify the Central Authority's data and store the
 	 * issuer credentials
 	 */
@@ -243,7 +202,6 @@ public class AnonProxyRegistrationStates {
 				final boolean success = this.verifyIssuerCredentials(message.getData());
 				if (success) {
 					LOG.debug("Successfully registered issuer!");
-					//return new Action<>(Status.END_SUCCESS, 0, null, null, 0);
 					return new Action<>(7);
 				}
 			}
@@ -293,28 +251,6 @@ public class AnonProxyRegistrationStates {
 	}	
 	
 	
-	/**
-	 * State 08 As Central Authority: receive the user's identity
-	 */
-
-	public static class RState08 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-			// Get the user's identity data.
-			LOG.debug("Getting the user's identity details");
-			return new Action<>(Status.CONTINUE, 9, ICCCommand.GET, null, 
-					ICC.USE_MAXIMUM_LENGTH);
-		}
-	}
-
 
 	/**
 	 * State 09: As Central Authority: generate the user's credentials and send them
@@ -379,26 +315,6 @@ public class AnonProxyRegistrationStates {
 		}
 	}
 	
-	/**
-	 * State 10 As User: Get the data from the Central Authority
-	 */
-	public static class RState10 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-
-			// Get the user's credentials data.
-			return new Action<>(Status.CONTINUE, 11, ICCCommand.GET, null, ICC.USE_MAXIMUM_LENGTH);
-		}
-	}
-
 	/**
 	 * State 11 As user: verify the Central Authority's data and store the
 	 * issuer credentials
@@ -512,25 +428,6 @@ public class AnonProxyRegistrationStates {
 	}
 
 	/**
-	 * State 13: As Central Authority: get the data from the verifier
-	 */
-	public static class RState13 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-			LOG.debug("getting verifier identity data");
-			return new Action<>(Status.CONTINUE, 14, ICCCommand.GET, null, ICC.USE_MAXIMUM_LENGTH);
-		}
-	}
-
-	/**
 	 * State 14: As Central Authority: generate the verifier credentials and send
 	 * them to the verifier
 	 */
@@ -553,8 +450,8 @@ public class AnonProxyRegistrationStates {
 			}
 
 			final String ID_V = sharedMemory.stringFromBytes(listData.getList().get(0));
-			BigInteger e_V; 
-			BigInteger d_V;
+			BigInteger e_v; 
+			BigInteger d_v;
 			Element sigma_V;
 			Element SK_V;
 			
@@ -562,10 +459,10 @@ public class AnonProxyRegistrationStates {
 			if (centralAuthorityData.verifiers.containsKey(ID_V)) {
 				// we can simply retrieve its details
 				CentralAuthorityData.VerifierCredentials verifierDetails=centralAuthorityData.verifiers.get(ID_V);
-				d_V=verifierDetails.d_V;
-				e_V=verifierDetails.e_V;
+				d_v=verifierDetails.d_v;
+				e_v=verifierDetails.e_v;
 				sigma_V=verifierDetails.sigma_V;
-				SK_V=verifierDetails.sigma_V;
+				SK_V=verifierDetails.SK_V;
 			}else {
 				// we need to do some computation
 				final List<byte[]> hash_IDvData = new ArrayList<>();
@@ -575,21 +472,22 @@ public class AnonProxyRegistrationStates {
 				final BigInteger hash_IDvNum = (new BigInteger(1, crypto.getHash((new ListData(hash_IDvData)).toBytes(), sharedMemory.Hash1))).mod(sharedMemory.p);
 
 				// compute sigma_v
-				e_V = crypto.secureRandom(sharedMemory.p);
-				d_V = crypto.secureRandom(sharedMemory.p);
+				e_v = crypto.secureRandom(sharedMemory.p);
+				d_v = crypto.secureRandom(sharedMemory.p);
 				final BigIntEuclidean gcd = BigIntEuclidean
-						.calculate(centralAuthorityData.alpha.add(e_V).mod(sharedMemory.p), sharedMemory.p);
+						.calculate(centralAuthorityData.alpha.add(e_v).mod(sharedMemory.p), sharedMemory.p);
 
-				sigma_V = (sharedMemory.g_1.add(sharedMemory.g_2.mul(d_V)).add(sharedMemory.g_tilde.mul(hash_IDvNum)))
+				sigma_V = (sharedMemory.g_1.add(sharedMemory.g_2.mul(d_v)).add(sharedMemory.g_tilde.mul(hash_IDvNum)))
 						.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 				
 				SK_V=crypto.getHash(ID_V_bytes, sharedMemory.Hash2,sharedMemory.pairing.getG2()).mul(centralAuthorityData.beta).getImmutable();
 
+				
 				CentralAuthorityData.VerifierCredentials verifierDetails = centralAuthorityData
 						.getVerifierCredentialsInstance();
 				verifierDetails.ID_V = ID_V;
-				verifierDetails.d_V = d_V;
-				verifierDetails.e_V = e_V;
+				verifierDetails.d_v = d_v;
+				verifierDetails.e_v = e_v;
 				verifierDetails.sigma_V = sigma_V;
 				verifierDetails.SK_V=SK_V;
 
@@ -597,7 +495,7 @@ public class AnonProxyRegistrationStates {
 			}
 			// Send sigma_V, d_V, e_V, SK_V back
 			final ListData sendData = new ListData(
-					Arrays.asList(sigma_V.toBytes(), d_V.toByteArray(), e_V.toByteArray(), SK_V.toBytes()));
+					Arrays.asList(sigma_V.toBytes(), d_v.toByteArray(), e_v.toByteArray(), SK_V.toBytes()));
 			return sendData.toBytes();
 
 		}
@@ -627,25 +525,6 @@ public class AnonProxyRegistrationStates {
 		}
 	}
 
-	/**
-	 * State 15 As verifier: Get the data from the Central Authority
-	 */
-	public static class RState15 extends State<ICCCommand> {
-
-		/**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 */
-		@Override
-		public Action<ICCCommand> getAction(Message message) {
-
-			LOG.debug("getting verifier credential data");
-			return new Action<>(Status.CONTINUE, 16, ICCCommand.GET, null, ICC.USE_MAXIMUM_LENGTH);
-		}
-	}
 
 	/**
 	 * State 16 As verifier: verify the Central Authority's data and store the
@@ -677,8 +556,8 @@ public class AnonProxyRegistrationStates {
 			final Element sigma_V = sharedMemory.G1ElementFromBytes(listData.getList().get(0));
 			final BigInteger d_v = new BigInteger(listData.getList().get(1));
 			final BigInteger e_v = new BigInteger(listData.getList().get(2));
+			LOG.debug("Byte data for SK_V:"+crypto.base64Encode(listData.getList().get(3)));
 			final Element SK_V= sharedMemory.G2ElementFromBytes(listData.getList().get(3));
-			LOG.debug("SK_V="+SK_V);
 			
 			final List<byte[]> hash_IDvData = new ArrayList<>();
 			final byte[] ID_V_bytes=sharedMemory.stringToBytes(verifierData.ID_V);
@@ -739,8 +618,7 @@ public class AnonProxyRegistrationStates {
 					this.index++;
 					if (this.index == this.verifiers.length) {
 						LOG.debug("all verifier details registered now!");
-						return new Action<>(Status.END_SUCCESS, 0, null, null, 0);
-						//return new Action<>(17);
+						return new Action<>(17);
 					} else {
 						LOG.debug("more verifier details to be registered...");
 						return new Action<>(12);
@@ -757,55 +635,30 @@ public class AnonProxyRegistrationStates {
 	
 	
 	
-	
-
 	/**
-	 * State 11
-	 *//*
-	public static class RState11 extends State<NFCReaderCommand> {
-
-		*//**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 *//*
-		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
-			if (message.getType() == Type.SUCCESS) {
-				LOG.debug("successfully registered user via NFC");
-				return new Action<>(12);
-			}
-
-			return super.getAction(message);
-		}
-	}
-
-	*//**
-	 * State 12: As Central Verifier: generate the CV identity
-	 *//*
-	public static class RState12 extends State<NFCReaderCommand> {
+	 * State 17: As Central Verifier: generate the CV identity
+	 */
+	public static class RState17 extends State<ICCCommand> {
 
 		private byte[] generateCVIdentity() {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
 
-			// Send ID_U, Y_U
-			final ListData sendData = new ListData(Arrays.asList(cenVerData.ID_V.getBytes(), cenVerData.Y_V.toBytes()));
+			// Send ID_CV, Y_CV
+			final ListData sendData = new ListData(Arrays.asList(cenVerData.ID_V.getBytes(), cenVerData.Y_CV.toBytes()));
 			return sendData.toBytes();
 		}
 
-		*//**
+		/**
 		 * Gets the required action given a message.
 		 *
 		 * @param message
 		 *            The received message to process.
 		 * @return The required action.
-		 *//*
+		 */
 		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+		public Action<ICCCommand> getAction(Message message) {
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.SUCCESS) {
 				// Send the setup data.
@@ -813,7 +666,7 @@ public class AnonProxyRegistrationStates {
 
 				if (data != null) {
 					LOG.debug("sending central verifier identity data");
-					return new Action<>(Status.CONTINUE, 13, NFCReaderCommand.PUT_INTERNAL, data, 0);
+					return new Action<>(Status.CONTINUE, 18, ICCCommand.PUT, data, 0);
 				}
 			}
 
@@ -822,33 +675,15 @@ public class AnonProxyRegistrationStates {
 
 	}
 
-	*//**
-	 * State 13: As Central Authority: get the data from the central verifier
-	 *//*
-	public static class RState13 extends State<NFCReaderCommand> {
 
-		*//**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 *//*
-		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
-			LOG.debug("getting CV identity data");
-			return new Action<>(Status.CONTINUE, 14, NFCReaderCommand.GET_INTERNAL, null, NFC.USE_MAXIMUM_LENGTH);
-		}
-	}
-
-	*//**
-	 * State 14: As Central Authority: generate the central verifier credentials and send them
-	 * to the police
-	 *//*
-	public static class RState14 extends State<NFCReaderCommand> {
+	/**
+	 * State 19: As Central Authority: generate the central verifier credentials and send them
+	 * to the central verifier
+	 */
+	public static class RState19 extends State<ICCCommand> {
 
 		private byte[] generateCVCredentials(byte[] data) {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 
 			final CentralAuthorityData centralAuthorityData = (CentralAuthorityData) sharedMemory
 					.getData(Actor.CENTRAL_AUTHORITY);
@@ -862,49 +697,98 @@ public class AnonProxyRegistrationStates {
 				return null;
 			}
 
-			final String ID_P = sharedMemory.stringFromBytes(listData.getList().get(0));
-			final Element Y_P = sharedMemory.curveG1ElementFromBytes(listData.getList().get(1));
+			final String ID_CV = sharedMemory.stringFromBytes(listData.getList().get(0));
+			final Element Y_CV = sharedMemory.G1ElementFromBytes(listData.getList().get(1));
 
-			// compute Z_CV
-			final BigInteger e_CV = crypto.secureRandom(sharedMemory.p);
-			final BigInteger r_CV = crypto.secureRandom(sharedMemory.p);
-			final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.x_a.add(e_CV).mod(sharedMemory.p),
+			//compute the "normal" verifier stuff first
+			BigInteger e_v; 
+			BigInteger d_v;
+			Element sigma_V;
+			Element SK_V;
+			
+			//check if we already computed the details for this verifier
+			if (centralAuthorityData.verifiers.containsKey(ID_CV)) {
+				// we can simply retrieve its details
+				CentralAuthorityData.VerifierCredentials verifierDetails=centralAuthorityData.verifiers.get(ID_CV);
+				d_v=verifierDetails.d_v;
+				e_v=verifierDetails.e_v;
+				sigma_V=verifierDetails.sigma_V;
+				SK_V=verifierDetails.SK_V;
+			}else {
+				// we need to do some computation
+				final List<byte[]> hash_IDvData = new ArrayList<>();
+				final byte[] ID_V_bytes=sharedMemory.stringToBytes(ID_CV);
+				hash_IDvData.add(ID_V_bytes);
+				
+				final BigInteger hash_IDvNum = (new BigInteger(1, crypto.getHash((new ListData(hash_IDvData)).toBytes(), sharedMemory.Hash1))).mod(sharedMemory.p);
+
+				// compute sigma_CV
+				e_v = crypto.secureRandom(sharedMemory.p);
+				d_v = crypto.secureRandom(sharedMemory.p);
+				final BigIntEuclidean gcd = BigIntEuclidean
+						.calculate(centralAuthorityData.alpha.add(e_v).mod(sharedMemory.p), sharedMemory.p);
+
+				sigma_V = (sharedMemory.g_1.add(sharedMemory.g_2.mul(d_v)).add(sharedMemory.g_tilde.mul(hash_IDvNum)))
+						.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
+				
+				SK_V=crypto.getHash(ID_V_bytes, sharedMemory.Hash2,sharedMemory.pairing.getG2()).mul(centralAuthorityData.beta).getImmutable();
+
+				CentralAuthorityData.VerifierCredentials verifierDetails = centralAuthorityData
+						.getVerifierCredentialsInstance();
+				verifierDetails.ID_V = ID_CV;
+				verifierDetails.d_v = d_v;
+				verifierDetails.e_v = e_v;
+				verifierDetails.sigma_V = sigma_V;
+				verifierDetails.SK_V=SK_V;
+
+				centralAuthorityData.verifiers.put(ID_CV, verifierDetails);
+			}
+			
+			//now compute the specific CV keys
+			
+			// compute sigma_CV
+			final BigInteger d_cv = crypto.secureRandom(sharedMemory.p);
+			final BigInteger e_cv = crypto.secureRandom(sharedMemory.p);
+			final BigIntEuclidean gcd = BigIntEuclidean.calculate(centralAuthorityData.alpha.add(e_cv).mod(sharedMemory.p),
 					sharedMemory.p);
 
-			final Element sigma_P = (sharedMemory.g.add(sharedMemory.h.mul(r_CV)).add(Y_P))
+			final Element sigma_CV = (sharedMemory.g_1.add(sharedMemory.g_2.mul(d_cv)).add(Y_CV))
 					.mul(gcd.x.mod(sharedMemory.p)).getImmutable();
 
-			centralAuthorityData.ID_CV = ID_P;
-			centralAuthorityData.Y_CV = Y_P;
-			centralAuthorityData.r_CV = r_CV;
-			centralAuthorityData.e_CV = e_CV;
-			centralAuthorityData.sigma_CV = sigma_P;
+			centralAuthorityData.ID_CV = ID_CV;
+			centralAuthorityData.Y_CV = Y_CV;
+			centralAuthorityData.d_cv = d_cv;
+			centralAuthorityData.e_cv = e_cv;
+			centralAuthorityData.sigma_CV = sigma_CV;
 
-			// Send sigma_s, e_s, r_s
+			
+			
+			// Send sigma_V, d_v, e_v, SK_V, sigma_CV, d_cv, e_cv back
 			final ListData sendData = new ListData(
-					Arrays.asList(sigma_P.toBytes(), r_CV.toByteArray(), e_CV.toByteArray()));
-
+					Arrays.asList(sigma_V.toBytes(), d_v.toByteArray(), e_v.toByteArray(), SK_V.toBytes(),
+							sigma_CV.toBytes(), d_cv.toByteArray(), e_cv.toByteArray()));
+		
 			return sendData.toBytes();
 		}
 
-		*//**
+		/**
 		 * Gets the required action given a message.
 		 *
 		 * @param message
 		 *            The received message to process.
 		 * @return The required action.
-		 *//*
+		 */
 		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+		public Action<ICCCommand> getAction(Message message) {
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
 				final byte[] data = this.generateCVCredentials(message.getData());
 
 				if (data != null) {
-					LOG.debug("sending police credentials data");
-					return new Action<>(Status.CONTINUE, 15, NFCReaderCommand.PUT_INTERNAL, data, 0);
+					LOG.debug("sending central verifier credentials data");
+					return new Action<>(Status.CONTINUE, 20, ICCCommand.PUT, data, 0);
 				}
 			}
 
@@ -912,79 +796,102 @@ public class AnonProxyRegistrationStates {
 		}
 	}
 
-	*//**
-	 * State 15 As police: Get the data from the Central Authority
-	 *//*
-	public static class RState15 extends State<NFCReaderCommand> {
 
-		*//**
-		 * Gets the required action given a message.
-		 *
-		 * @param message
-		 *            The received message to process.
-		 * @return The required action.
-		 *//*
-		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
 
-			LOG.debug("getting police credential data");
-			return new Action<>(Status.CONTINUE, 16, NFCReaderCommand.GET_INTERNAL, null, NFC.USE_MAXIMUM_LENGTH);
-		}
-	}
-
-	*//**
-	 * State 16 As Central Verifier: verify the Central Authority's data and store the
+	/**
+	 * State 21 As Central Verifier: verify the Central Authority's data and store the
 	 * CV's credentials
-	 *//*
-	public static class RState16 extends State<NFCReaderCommand> {
+	 */
+	public static class RState21 extends State<ICCCommand> {
 
 		private boolean verifyCVCredentials(byte[] data) {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			final CentralVerifierData cenVerData = (CentralVerifierData) sharedMemory.getData(Actor.CENTRAL_VERIFIER);
-
+			final Crypto crypto = Crypto.getInstance();
+			
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
 
-			if (listData.getList().size() != 3) {
+			if (listData.getList().size() != 7) {
 				LOG.error("wrong number of data elements: " + listData.getList().size());
 				return false;
 			}
 
-			final Element sigma_CV = sharedMemory.curveG1ElementFromBytes(listData.getList().get(0));
-			final BigInteger r_CV = new BigInteger(listData.getList().get(1));
-			final BigInteger e_CV = new BigInteger(listData.getList().get(2));
+			final Element sigma_V = sharedMemory.G1ElementFromBytes(listData.getList().get(0));
+			final BigInteger d_v = new BigInteger(listData.getList().get(1));
+			final BigInteger e_v = new BigInteger(listData.getList().get(2));
+			final Element SK_V= sharedMemory.G2ElementFromBytes(listData.getList().get(3));
+			final Element sigma_CV = sharedMemory.G1ElementFromBytes(listData.getList().get(4));
+			final BigInteger d_cv = new BigInteger(listData.getList().get(5));
+			final BigInteger e_cv = new BigInteger(listData.getList().get(6));
+			
+			final List<byte[]> hash_IDvData = new ArrayList<>();
+			final byte[] ID_V_bytes=sharedMemory.stringToBytes(cenVerData.ID_V);
+			hash_IDvData.add(ID_V_bytes);
+			final BigInteger hash_IDvNum = (new BigInteger(1, crypto.getHash((new ListData(hash_IDvData)).toBytes(), sharedMemory.Hash1))).mod(sharedMemory.p);
+
 
 			// verify the credentials
 
 			// get the public key of the CA
-			final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY);
+			final Element Y_A = sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY)[0];
+			final Element Y_tilde_A=sharedMemory.getPublicKey(Actor.CENTRAL_AUTHORITY)[1];
 
-			final Element lhs = sharedMemory.pairing.pairing(sigma_CV, Y_A.add(sharedMemory.g_frak.mul(e_CV)))
+			final Element lhs1 = sharedMemory.pairing.pairing(sigma_V, Y_A.add(sharedMemory.g_frak.mul(e_v)))
+					.getImmutable();
+			final Element rhs1 = sharedMemory.pairing
+					.pairing(sharedMemory.g_1.add(sharedMemory.g_2.mul(d_v)).add(sharedMemory.g_tilde.mul(hash_IDvNum)), sharedMemory.g_frak)
+					.getImmutable();
+
+			if (!lhs1.isEqual(rhs1)) {
+				LOG.debug("failed the first CV as V verification check");
+				return false;
+			}
+			LOG.debug("passed the first CV as V verification check");
+			//check SK_V
+			final Element lhs2=sharedMemory.pairing.pairing(sharedMemory.g_tilde,SK_V);
+			final Element rhs2=sharedMemory.pairing.pairing(Y_tilde_A,crypto.getHash(ID_V_bytes, sharedMemory.Hash2,sharedMemory.pairing.getG2()));
+			
+			if (!lhs2.isEqual(rhs2)) {
+				LOG.debug("failed the second CV as V verification check");
+				return false;
+			}
+			LOG.debug("passed the second verification check");
+			cenVerData.d_v = d_v;
+			cenVerData.e_v = e_v;
+			cenVerData.sigma_V = sigma_V;
+			cenVerData.SK_V=SK_V;
+
+			// verify the credentials
+
+
+			final Element lhs = sharedMemory.pairing.pairing(sigma_CV, Y_A.add(sharedMemory.g_frak.mul(e_cv)))
 					.getImmutable();
 			final Element rhs = sharedMemory.pairing
-					.pairing(sharedMemory.g.add(sharedMemory.h.mul(r_CV)).add(cenVerData.Y_V), sharedMemory.g_frak)
+					.pairing(sharedMemory.g_1.add(sharedMemory.g_2.mul(d_cv)).add(cenVerData.Y_CV), sharedMemory.g_frak)
 					.getImmutable();
 
 			if (!lhs.isEqual(rhs)) {
+				LOG.debug("failed the CV as CV verification check");
 				return false;
 			}
-
-			cenVerData.e_V = e_CV;
-			cenVerData.r_V = r_CV;
-			cenVerData.sigma_V = sigma_CV;
+			LOG.debug("passed the CV as CV verification check");
+			cenVerData.e_cv = e_cv;
+			cenVerData.d_cv = d_cv;
+			cenVerData.sigma_CV = sigma_CV;
 			return true;
 		}
 
-		*//**
+		/**
 		 * Gets the required action given a message.
 		 *
 		 * @param message
 		 *            The received message to process.
 		 * @return The required action.
-		 *//*
+		 */
 		@Override
-		public Action<NFCReaderCommand> getAction(Message message) {
-			final AnonSSOSharedMemory sharedMemory = (AnonSSOSharedMemory) this.getSharedMemory();
+		public Action<ICCCommand> getAction(Message message) {
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(Actor.CENTRAL_VERIFIER);
 			if (message.getType() == Type.DATA) {
 				// Send the setup data.
@@ -992,7 +899,8 @@ public class AnonProxyRegistrationStates {
 
 				if (success) {
 					LOG.debug("Successfully registered central verifier details!");
-					return new Action<>(17);
+					//return new Action<>(Status.END_SUCCESS, 0, null, null, 0);
+					return new Action<>(22);
 				}
 			}
 
@@ -1000,7 +908,6 @@ public class AnonProxyRegistrationStates {
 		}
 	}
 
-	*/
 	
 
 	

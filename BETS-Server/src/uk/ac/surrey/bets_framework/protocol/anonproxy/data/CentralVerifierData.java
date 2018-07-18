@@ -23,9 +23,17 @@ public class CentralVerifierData extends VerifierData {
 	
 	//The public key of the Central Verifier
 	public Element Y_CV=null;
+	
+	//note that the normal verifier elements are
+	//available through the parent class
+	
+	// The credentials  of the Central Verifier
+	public BigInteger d_cv;
+	public BigInteger e_cv;
+	public Element sigma_CV=null;
 
 	// default constructor
-	public CentralVerifierData(String ID_CV, BigInteger p, Element g) {
+	public CentralVerifierData(String ID_CV, BigInteger p, Element g_tilde) {
 		super(ID_CV);	
 
 		// Generate the required random numbers.
@@ -35,7 +43,7 @@ public class CentralVerifierData extends VerifierData {
 		this.x_cv = crypto.secureRandom(p);
 
 		// compute the public key
-		this.Y_CV = g.mul(this.x_cv).getImmutable();
+		this.Y_CV = g_tilde.mul(this.x_cv).getImmutable();
 
 	}
 

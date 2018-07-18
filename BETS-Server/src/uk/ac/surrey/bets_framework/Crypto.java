@@ -198,7 +198,7 @@ public class Crypto {
   
   /** The internal randomOracle hash functions  */
   
-  private HashMap<String, Map<String, Element>> randomOracles = new HashMap<>();
+  private HashMap<String, Map<String, Element>> randomOracles = null;
   
   /** internal Base64 encoder */
   private Encoder base64 = Base64.getEncoder();
@@ -229,6 +229,7 @@ public class Crypto {
       // This RNG is truly random...
       this.secRNG = new SecureRandom(Crypto.PAIRING_RANDOM_SEED);
     }
+    this.randomOracles=new HashMap<>();
   }
 
   /**
@@ -407,9 +408,17 @@ public class Crypto {
     return hash;
   }
 
+  /**
+   * method to clear the random Oracale hashes between runs of the protocol
+   */
+  
+  public void clearRandomOracleHashes() {
+	  this.randomOracles=new HashMap<>();
+  }
+  
   
   /**
-   * Produces a hash of the specified data.
+   * Produces an "element hash" of the specified data into the field G
    *
    * @param data The data to hash.
    * @param hashParameters the name of the hash algorithm to use
@@ -445,6 +454,12 @@ public class Crypto {
   }
   
   
+  public String base64Encode(byte[] data) {
+	  if (data==null || data.length==0) {
+		  return "null/empty byte array";
+	  }
+	  return base64.encodeToString(data);
+  }
   
   
   /**

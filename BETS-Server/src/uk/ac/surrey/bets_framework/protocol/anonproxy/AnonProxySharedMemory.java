@@ -11,12 +11,7 @@ import org.slf4j.LoggerFactory;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.PairingParametersGenerator;
-import it.unisa.dia.gas.plaf.jpbc.field.curve.CurveElement;
-import it.unisa.dia.gas.plaf.jpbc.field.gt.GTFiniteElement;
-import it.unisa.dia.gas.plaf.jpbc.field.gt.GTFiniteField;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
-import it.unisa.dia.gas.plaf.jpbc.pairing.f.TypeFCurveGenerator;
-import it.unisa.dia.gas.plaf.jpbc.pairing.f.TypeFPairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.parameters.PropertiesParameters;
 import it.unisa.dia.gas.plaf.jpbc.pbc.curve.PBCTypeFCurveGenerator;
 import uk.ac.surrey.bets_framework.Crypto;
@@ -26,7 +21,7 @@ import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralVerifierData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.UserData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.VerifierData;
-	
+import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 
 public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** Logback logger. */
@@ -48,8 +43,17 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/**
 	 * The list of services the user wants to access
 	 */
-	public static final String[] J_U = { Actor.VERIFIERS[1], Actor.VERIFIERS[2] };
-
+	public static final String[] J_U = 
+		{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[2], Actor.VERIFIERS[3] };
+	
+	/**
+	 * the list of verifiers - needs to be the same length as J_U and if the entries differ the verifier can act as  proxy for the
+	 * service the user originally needed. We don't test the case where a user does not have a valid token.
+	 */
+	public static final String[] Verifiers_for_J_U = 
+		{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[2], Actor.VERIFIERS[3] };
+		//{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[4], Actor.VERIFIERS[5] };
+	
 	/**
 	 * Interface defining actor data.
 	 */
@@ -85,6 +89,9 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	public Element g_tilde = null;
 
 	/** Random generator of the group G1. */
+	public Element g_bar = null;
+
+	/** Random generator of the group G1. */
 	public Element g_1 = null;
 
 	/** Random generator of the group G1. */
@@ -93,23 +100,20 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** Random generator of the group G1. */
 	public Element g_3 = null;
 
-	/** Random generator of the group G1. */
-	public Element g_4 = null;
-
-	/** Random generator of the group G1. */
-	public Element g_5 = null;
-
-	/** Random generator of the group G1. */
-	public Element g_6 = null;
-
+	// /** Random generator of the group G1. */
+	// public Element g_5 = null;
+	//
+	// /** Random generator of the group G1. */
+	// public Element g_6 = null;
+	//
 	/** Random generator of the group G2. */
 	public Element g_frak = null;
 
-	/** some random number chosen by the CA */
-	public BigInteger theta1 = null;
+	/** some random generator for G2 chosen by the CA */
+	public Element theta1 = null;
 
-	/** some random number chosen by the CA */
-	public BigInteger theta2 = null;
+	/** some random generator for G2 chosen by the CA */
+	public Element theta2 = null;
 
 	/** Value of p */
 	public BigInteger p = null;
@@ -129,8 +133,11 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** The name of the second hash algorithm */
 	public String[] Hash2 = { "randomOracle", "H2" };
 
-	/** The name of the third hash algorithm */
-	public String[] Hash3 = { "randomOracle", "H3" };
+	/** The name of the second hash algorithm */
+	public String Hash3 = "SHA-256";
+
+	// /** The name of the fourth hash algorithm */
+	// public String[] Hash4 = { "randomOracle", "H4" };
 
 	/** The first public key of the CA */
 
@@ -139,9 +146,7 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** The second public key of the CA */
 
 	public Element Y_tilde_A = null;
-	
-	
-	
+
 	/** The first public key of the Issuer */
 
 	public Element Y_I = null;
@@ -149,26 +154,22 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** The second public key of the Issuer */
 
 	public Element Y_tilde_I = null;
-	
+
 	/** The public key of the User */
 
 	public Element Y_U = null;
 
 	/** The public key of the CV acting as CV */
-	
+
 	public Element Y_CV = null;
-	
+
 	/** The public key of the CV acting just as a verifier */
-	
-	public Element Y_V_cv= null;
-	
+
+	public Element Y_V_cv = null;
+
 	/** The public keys of the Verifiers */
-	public Map<String, Element> Y_Vs=new HashMap<>();
-	
-	
-	
-	
-	
+	public Map<String, Element> Y_Vs = new HashMap<>();
+
 	/**
 	 * Change the current actor.
 	 *
@@ -186,6 +187,7 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	public void clear() {
 		// Reset the shared parameters. Other parameters are kept as they are required
 		// across protocol runs.
+		Crypto.getInstance().clearRandomOracleHashes();
 		this.actor = Actor.CENTRAL_AUTHORITY;
 		this.setBilinearGroup();
 
@@ -199,44 +201,38 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 				this.g_tilde);
 		this.actorData.put(Actor.CENTRAL_AUTHORITY, caData);
 
-		// The CA also provides the following 2 numbers as part of the public parameters
-		this.theta1 = caData.theta1;
-		this.theta2 = caData.theta2;
-		
-		//The CA's public keys
+		// The CA's public keys
 		this.Y_A = caData.Y_A;
-		this.Y_tilde_A = caData.Y_tilde_A;	
+		this.Y_tilde_A = caData.Y_tilde_A;
 
-		//The Issuer
-		IssuerData issuerData=new IssuerData(Actor.ISSUER,this.p,this.g,this.g_frak);
+		// The Issuer
+		IssuerData issuerData = new IssuerData(Actor.ISSUER, this.p, this.g, this.g_frak);
 		this.actorData.put(Actor.ISSUER, issuerData);
-		
-		//The issuer's public keys
-		this.Y_I=issuerData.Y_I;
-		this.Y_tilde_I=issuerData.Y_tilde_I;
-		
-		//The User
-		UserData userData=new UserData(Actor.USER,this.p,this.g);
-		this.actorData.put(Actor.USER,userData);
-		
-		//The user's public key
-		this.Y_U=userData.Y_U;
-		
-		
+
+		// The issuer's public keys
+		this.Y_I = issuerData.Y_I;
+		this.Y_tilde_I = issuerData.Y_tilde_I;
+
+		// The User
+		UserData userData = new UserData(Actor.USER, this.p, this.g_tilde);
+		this.actorData.put(Actor.USER, userData);
+
+		// The user's public key
+		this.Y_U = userData.Y_U;
+
 		for (int i = 0; i < Actor.VERIFIERS.length; i++) {
 			this.actorData.put(Actor.VERIFIERS[i], new VerifierData(Actor.VERIFIERS[i]));
-			//we need to register these verifiers first before we can store their 
-			//public keys
+			// we need to register these verifiers first before we can store their
+			// public keys
 		}
-	
-		
-		//The Central Verifier
-		CentralVerifierData cvData=new CentralVerifierData(Actor.CENTRAL_VERIFIER, this.p, this.g);
-		this.actorData.put(Actor.CENTRAL_VERIFIER,cvData);
-		
-		//we can only store the public key of the CV when it acts as the CV
-		this.Y_CV=cvData.Y_CV;
-		
+
+		// The Central Verifier
+		CentralVerifierData cvData = new CentralVerifierData(Actor.CENTRAL_VERIFIER, this.p, this.g_tilde);
+		this.actorData.put(Actor.CENTRAL_VERIFIER, cvData);
+
+		// we can only store the public key of the CV when it acts as the CV
+		this.Y_CV = cvData.Y_CV;
+
 	}
 
 	private void setPublicParameters() {
@@ -245,16 +241,15 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 		// create some random generators for G1
 		this.g = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_tilde = this.pairing.getG1().newRandomElement().getImmutable();
+		this.g_bar = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_1 = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_2 = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_3 = this.pairing.getG1().newRandomElement().getImmutable();
-		this.g_4 = this.pairing.getG1().newRandomElement().getImmutable();
-		this.g_5 = this.pairing.getG1().newRandomElement().getImmutable();
-		this.g_6 = this.pairing.getG1().newRandomElement().getImmutable();
 
 		// create some random generator for G2
 		this.g_frak = this.pairing.getG2().newRandomElement().getImmutable();
-
+		this.theta1 = this.pairing.getG2().newRandomElement().getImmutable();
+		this.theta2 = this.pairing.getG2().newRandomElement().getImmutable();
 	}
 
 	private void setBilinearGroup() {
@@ -311,10 +306,10 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	 * @return The restored G1 finite element.
 	 */
 	public Element G1ElementFromBytes(byte[] bytes) {
-		final Element element =this.pairing.getG1().newElementFromBytes(bytes);
+		final Element element = this.pairing.getG1().newElementFromBytes(bytes);
 		return element.getImmutable();
 	}
-	
+
 	/**
 	 * Convenience method to create a G2 finite element from a byte array.
 	 *
@@ -323,9 +318,20 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	 * @return The restored G2 finite element.
 	 */
 	public Element G2ElementFromBytes(byte[] bytes) {
-		final Element element =this.pairing.getG2().newElementFromBytes(bytes);
+		final Element element = this.pairing.getG2().newElementFromBytes(bytes);
 		return element.getImmutable();
 	}
-	
-	
+
+	/**
+	 * Convenience method to create a GT finite element from a byte array.
+	 *
+	 * @param bytes
+	 *            The bytes containing the GT finite element data.
+	 * @return The restored GT finite element.
+	 */
+	public Element GTElementFromBytes(byte[] bytes) {
+		final Element element = this.pairing.getGT().newElementFromBytes(bytes);
+		return element.getImmutable();
+	}
+
 }

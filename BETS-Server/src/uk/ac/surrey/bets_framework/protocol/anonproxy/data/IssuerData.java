@@ -45,8 +45,8 @@ public class IssuerData implements AnonProxySharedMemory.ActorData {
 	/** Issuer credentials: sigma_I. */
 	public Element sigma_I = null;
 
-	/** Random x_i. */
-	private BigInteger x_i = null;
+	/** Random x_i secret key of Issuer*/
+	public BigInteger x_i = null;
 
 	/** Issuer public key1. */
 	public Element Y_I = null;
