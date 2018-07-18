@@ -71,13 +71,13 @@ public class AnonProxy extends ICCStateMachine {
 				//Issuer registration states
 				new AnonProxyRegistrationStates.RState02(),//put issuer data
 				new AnonProxy.GetState(4),//get data
-				new AnonProxyRegistrationStates.RState04(),//compute credentials & put data
+				new AnonProxyRegistrationStates.RState04(),//compute issuer credentials & put data
 				new AnonProxy.GetState(6),//get data,//get data
 				new AnonProxyRegistrationStates.RState06(),//verify credentials
 				//User registration states
 				new AnonProxyRegistrationStates.RState07(),//put user data
 				new AnonProxy.GetState(9),//get data
-				new AnonProxyRegistrationStates.RState09(),//compute credentials & put data
+				new AnonProxyRegistrationStates.RState09(),//compute user credentials & put data
 				new AnonProxy.GetState(11),//get data
 				new AnonProxyRegistrationStates.RState11(),//verify credentials
 				//Verifiers registration states
@@ -110,8 +110,12 @@ public class AnonProxy extends ICCStateMachine {
 				//send Tag, Proof and T_U is done by Vstate29
 				//which then goes to GetState 33
 				new AnonProxy.GetState(34),//get data 
-				new AnonProxyVerifyingStates.VState34() //verify Tag, Proof and de-anonymise user and services from T_U
-//				
+				new AnonProxyVerifyingStates.VState34(), //verify Tag, Proof and de-anonymise user and services from T_U
+				new AnonProxy.GetState(36),
+				new AnonProxyVerifyingStates.VState36(),//get ID_V and ID_V' and generate rekeys
+				new AnonProxy.GetState(38),
+				new AnonProxyVerifyingStates.VState38()//store the rekeys and return to VState27
+
 				
 			
 				

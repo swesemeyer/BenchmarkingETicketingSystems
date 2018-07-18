@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.bouncycastle.crypto.params.ISO18033KDFParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.ICCCommand;
 import uk.ac.surrey.bets_framework.protocol.NFCReaderCommand;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.AnonProxySharedMemory.Actor;
+import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralAuthorityData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralVerifierData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.TicketDetails;
@@ -25,6 +27,7 @@ import uk.ac.surrey.bets_framework.state.Action;
 import uk.ac.surrey.bets_framework.state.Action.Status;
 import uk.ac.surrey.bets_framework.state.Message;
 import uk.ac.surrey.bets_framework.state.Message.Type;
+import uk.ac.surrey.bets_framework.state.SharedMemory;
 import uk.ac.surrey.bets_framework.state.State;
 
 public class AnonProxyVerifyingStates {
@@ -62,15 +65,18 @@ public class AnonProxyVerifyingStates {
 			if (serviceName.compareTo(verifierName) != 0) {
 				actAsProxy = true;
 			}
-			LOG.debug("We are acting as a proxy is :" +actAsProxy);
+			LOG.debug("We are acting as a proxy is :" + actAsProxy);
 			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			sharedMemory.actAs(verifierName);
 			final VerifierData verifierData = (VerifierData) sharedMemory.getData(verifierName);
 			LOG.debug("Verifier Name, ID = " + verifierName + ", " + verifierData.ID_V);
-			ListData sendData = new ListData(Arrays.asList(sharedMemory.stringToBytes(verifierData.ID_V)));
+			final List<byte[]> sendDataList = new ArrayList<>();
+			sendDataList.add(sharedMemory.stringToBytes(verifierData.ID_V));
+
 			if (actAsProxy) {
-				sendData.getList().add(sharedMemory.stringToBytes(serviceName));
+				sendDataList.add(sharedMemory.stringToBytes(serviceName));
 			}
+			final ListData sendData = new ListData(sendDataList);
 			return sendData.toBytes();
 		}
 
@@ -84,16 +90,35 @@ public class AnonProxyVerifyingStates {
 		@Override
 		public Action<ICCCommand> getAction(Message message) {
 			LOG.debug("reached the verifying state - meesage type is " + message.getType());
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
+			sharedMemory.actAs(this.verifiers[this.index]);
+			VerifierData verData = (VerifierData) sharedMemory.getData(this.verifiers[this.index]);
+			boolean obtainRekeys = false;
+
 			if (message.getType() == Type.SUCCESS) {
-
-				// Obtain the verifier ID_V and send it to the client.
 				final byte[] data = this.generateVerifierID(this.verifiers[this.index], this.user_services[this.index]);
-
-				if (data != null) {
-					LOG.debug("sending verifier/proxy details");
-					this.index++;
-					return new Action<>(Status.CONTINUE, 28, ICCCommand.PUT, data, 0);
+				if (this.verifiers[this.index].compareTo(this.user_services[this.index]) != 0) {
+					// proxying needed
+					LOG.debug("We are proxying - do we need the keys?");
+					if (verData.RK_1 == null || verData.RK_1 == null) {
+						// we need to obtained the re-keys.
+						LOG.debug("Yes we do...");
+						obtainRekeys = true;
+					} else {
+						LOG.debug("No we have obtained them already...");
+					}
 				}
+				if (data != null) {
+					if (obtainRekeys) {
+						LOG.debug("sending verifier/proxy details to CA to obtain rekeys");
+						return new Action<>(Status.CONTINUE, 35, ICCCommand.PUT, data, 0);
+					} else {
+						this.index++;
+						LOG.debug("sending verifier/proxy details to user to get tag/ticket");
+						return new Action<>(Status.CONTINUE, 28, ICCCommand.PUT, data, 0);
+					}
+				}
+
 			}
 			return super.getAction(message);
 		}
@@ -103,16 +128,15 @@ public class AnonProxyVerifyingStates {
 	 * State 29 As User: generate the ticket proof for ID_V
 	 */
 	public static class VState29 extends State<ICCCommand> {
-		
-		private boolean inProxyMode=false;
-		private boolean isTicketTrace=false;
+
+		private boolean inProxyMode = false;
+		private boolean isTicketTrace = false;
 
 		private byte[] generateTagProof(byte[] data) {
 			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 
 			final UserData userData = (UserData) sharedMemory.getData(Actor.USER);
 			final Crypto crypto = Crypto.getInstance();
-
 
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
@@ -127,29 +151,31 @@ public class AnonProxyVerifyingStates {
 			if (numOfIDVs == 2) {
 				this.inProxyMode = true;
 				LOG.debug("We are in proxy mode");
-				ID_proxy = sharedMemory.stringFromBytes(listData.getList().get(2));
+				ID_proxy = sharedMemory.stringFromBytes(listData.getList().get(1));
 				LOG.debug(ID_V + " is also a proxy for " + ID_proxy);
 			}
 			LOG.debug("If we have a tag for ID_V = " + ID_V + " then send that...");
 
-			final byte[] D_VdataHash=crypto.getHash(
+			byte[] D_VdataHash = crypto.getHash(
 					(new ListData(Arrays.asList(userData.R_U.toBytes(), ID_V.getBytes()))).toBytes(),
 					sharedMemory.Hash3);
-			Element D_Vhash =  sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0,
-					D_VdataHash.length);
+			Element D_Vhash = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0, D_VdataHash.length);
 
 			TicketDetails userTicket = userData.ticketDetails;
 			int index = userTicket.getVerifierIndex(D_Vhash);
 			if (index == -1) {
 				LOG.debug("Did not find a tag for ID_V: " + ID_V);
-				D_Vhash = crypto.getHash(
+				LOG.debug("Now looking for ID_proxy: " + ID_proxy);
+				D_VdataHash = crypto.getHash(
 						(new ListData(Arrays.asList(userData.R_U.toBytes(), ID_proxy.getBytes()))).toBytes(),
-						sharedMemory.Hash2, sharedMemory.pairing.getG2());
+						sharedMemory.Hash3);
+				D_Vhash = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0, D_VdataHash.length);
 				index = userTicket.getVerifierIndex(D_Vhash);
 				if (index == -1) {
 					LOG.debug("Did not find a tag for ID_Proxy: " + ID_proxy + ", either. Aborting!");
 					return null;
 				}
+
 			}
 			// found the verifier - now proceed with ZKP PI^2_U.
 			// get some constants from shared memory...
@@ -158,8 +184,11 @@ public class AnonProxyVerifyingStates {
 			final Element g_tilde = sharedMemory.g_tilde;
 			final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER)[1];
 
+			String hashIDV = (inProxyMode ? ID_proxy : ID_V);
+			LOG.debug("Using hasIDV=" + hashIDV);
+
 			final byte[] k_vHash = crypto.getHash(
-					(new ListData(Arrays.asList(userData.y_3.toByteArray(), ID_V.getBytes()))).toBytes(),
+					(new ListData(Arrays.asList(userData.y_3.toByteArray(), hashIDV.getBytes()))).toBytes(),
 					sharedMemory.Hash1);
 			final BigInteger k_vNum = (new BigInteger(1, k_vHash)).mod(p);
 
@@ -183,11 +212,8 @@ public class AnonProxyVerifyingStates {
 
 			// collect everything that needs to be sent
 			final List<byte[]> sendDataList = new ArrayList<>();
-			if (inProxyMode) {
-				sendDataList.add(sharedMemory.stringToBytes(ID_proxy));
-			} else {
-				sendDataList.add(sharedMemory.stringToBytes(ID_V));
-			}
+			sendDataList.add(sharedMemory.stringToBytes(hashIDV));
+
 			sendDataList.addAll(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
 					userTicket.Q_V[index].toBytes(), Q_dash_V.toBytes(), c_vHash, x_hat_u.toByteArray(),
 					k_hat_v.toByteArray(), userTicket.E_V_1[index].toBytes(), userTicket.E_V_2[index].toBytes(),
@@ -199,7 +225,7 @@ public class AnonProxyVerifyingStates {
 			// if it was the central verifier who asked then we need to add the whole
 			// ticket, too
 			if (ID_V.equalsIgnoreCase(Actor.CENTRAL_VERIFIER)) {
-				this.isTicketTrace=true;
+				this.isTicketTrace = true;
 				LOG.debug("it's a trace so add the whole ticket, too!");
 				userData.ticketDetails.getTicketDetails(sendDataList);
 			}
@@ -219,7 +245,7 @@ public class AnonProxyVerifyingStates {
 			// We are now the user.
 			((AnonProxySharedMemory) this.getSharedMemory()).actAs(AnonProxySharedMemory.Actor.USER);
 			this.inProxyMode = false;
-			this.isTicketTrace=false;
+			this.isTicketTrace = false;
 			LOG.debug("Ticket Proof or Ticket Details");
 			if (message.getType() == Message.Type.DATA) {
 				if (message.getData() != null) {
@@ -230,9 +256,8 @@ public class AnonProxyVerifyingStates {
 					if (data != null) {
 						LOG.debug("generate user tag proof complete");
 						if (!isTicketTrace) {
-						return new Action<>(Status.CONTINUE, 30, ICCCommand.PUT, data, 0);
-						}
-						else {
+							return new Action<>(Status.CONTINUE, 30, ICCCommand.PUT, data, 0);
+						} else {
 							return new Action<>(Status.CONTINUE, 33, ICCCommand.PUT, data, 0);
 						}
 					}
@@ -267,9 +292,11 @@ public class AnonProxyVerifyingStates {
 		}
 
 		private boolean verifyTagProof(byte[] data, String verifierID) {
+			this.startTiming("Common Tag verification");
 			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
 			final VerifierData verifierData = (VerifierData) sharedMemory.getData(verifierID);
 			final Crypto crypto = Crypto.getInstance();
+			boolean isProxy = false;
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
 			if (listData.getList().size() != 17) {
@@ -278,23 +305,21 @@ public class AnonProxyVerifyingStates {
 			}
 			// some constants from shared Memory
 			final BigInteger p = sharedMemory.p;
-			final Element g_1=sharedMemory.g_1;
-			final Element g_2=sharedMemory.g_2;
-			final Element g_3=sharedMemory.g_3;
+			final Element g_1 = sharedMemory.g_1;
+			final Element g_2 = sharedMemory.g_2;
+			final Element g_3 = sharedMemory.g_3;
 			final Element g_tilde = sharedMemory.g_tilde.getImmutable();
 			final Element g_frak = sharedMemory.g_frak.getImmutable();
 			final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER)[1].getImmutable();
 			final Element Y_tilde_I = sharedMemory.getPublicKey(Actor.ISSUER)[1].getImmutable();
 
-			
-		
-			
 			// get the elements needed for the ZKP
 			int index = 0;
-			String ID_V=sharedMemory.stringFromBytes(listData.getList().get(index++));
-			if (ID_V.compareTo(verifierID)!=0){
-				LOG.debug("This is proxy mode - not yet implemented...");
-				return false;
+			String ID_V = sharedMemory.stringFromBytes(listData.getList().get(index++));
+			if (ID_V.compareTo(verifierID) != 0) {
+				LOG.debug("This is proxy mode ! We received the tag of " + ID_V);
+
+				isProxy = true;
 			}
 			final Element P_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
 			final Element P_dash_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
@@ -316,7 +341,8 @@ public class AnonProxyVerifyingStates {
 
 			LOG.debug("passed c_vHash verification");
 
-			final Element P_dash_Vlhs = (((g_tilde.mul(x_hat_u)).add(Y_CV.mul(k_hat_v))).add(P_V.mul(c_vNum))).getImmutable();
+			final Element P_dash_Vlhs = (((g_tilde.mul(x_hat_u)).add(Y_CV.mul(k_hat_v))).add(P_V.mul(c_vNum)))
+					.getImmutable();
 			LOG.debug("P_dash_Vlhs = " + P_dash_Vlhs);
 			if (!P_dash_V.isEqual(P_dash_Vlhs)) {
 				LOG.debug("P_dash_V verification failed");
@@ -337,16 +363,14 @@ public class AnonProxyVerifyingStates {
 			final Element E_V_1 = sharedMemory.GTElementFromBytes(listData.getList().get(index++));
 			final Element E_V_2 = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
 			final Element E_V_3 = sharedMemory.G2ElementFromBytes(listData.getList().get(index++));
-			final Element T_V=sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
-			String ticket_Text_2=sharedMemory.stringFromBytes(listData.getList().get(index++));
+			final Element T_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
+			String ticket_Text_2 = sharedMemory.stringFromBytes(listData.getList().get(index++));
 			final byte[] s_Vhash = listData.getList().get(index++);
 			final BigInteger s_Vnum = (new BigInteger(1, s_Vhash)).mod(p);
 			final BigInteger w_v = (new BigInteger(1, listData.getList().get(index++))).mod(p);
 			final BigInteger z_v = (new BigInteger(1, listData.getList().get(index++))).mod(p);
 			final Element Z_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
 
-			
-		
 			final ListData s_Vdata = new ListData(Arrays.asList(P_V.toBytes(), Q_V.toBytes(), E_V_1.toBytes(),
 					E_V_2.toBytes(), E_V_3.toBytes(), T_V.toBytes(), ticket_Text_2.getBytes()));
 			final byte[] s_Vrhs = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
@@ -356,19 +380,36 @@ public class AnonProxyVerifyingStates {
 			}
 			LOG.debug("passed s_V hash verification!");
 
-			final Element E_V_1rhs = sharedMemory.pairing.pairing(E_V_2, verifierData.SK_V).getImmutable();
-			if (!E_V_1.isEqual(E_V_1rhs)) {
-				LOG.debug("E_V_1 verification failed!");
-				return false;
-			}
-			LOG.debug("passed E_V_1 verification!");
-
 			final Element lhs = sharedMemory.pairing.pairing(Z_V, Y_tilde_I.add(g_frak.mul(z_v))).getImmutable();
-			final Element rhs = sharedMemory.pairing.pairing(g_1.add(g_2.mul(w_v)).add(g_3.mul(s_Vnum)), g_frak).getImmutable();
+			final Element rhs = sharedMemory.pairing.pairing(g_1.add(g_2.mul(w_v)).add(g_3.mul(s_Vnum)), g_frak)
+					.getImmutable();
 			if (!lhs.isEqual(rhs)) {
 				LOG.debug("pairing verification failed!");
 				return false;
 			}
+			this.stopTiming("Common Tag verification");
+			if (!isProxy) {
+				this.startTiming("NoProxy EV1 check");
+				final Element E_V_1rhs = sharedMemory.pairing.pairing(E_V_2, verifierData.SK_V).getImmutable();
+				if (!E_V_1.isEqual(E_V_1rhs)) {
+					LOG.debug("E_V_1 verification failed!");
+					return false;
+				}
+				LOG.debug("passed E_V_1 verification!");
+				this.stopTiming("NoProxy EV1 check");
+			} else {
+				this.startTiming("Proxy EV1 check");
+				LOG.debug("Proxy check for E_V_1 happening");
+				final Element Theta_1 = verifierData.RK_2.add(verifierData.SK_V).getImmutable();
+				final Element Theta_2 = sharedMemory.pairing.pairing(E_V_2, Theta_1)
+						.sub(sharedMemory.pairing.pairing(verifierData.RK_1, E_V_3)).getImmutable();
+				if (!E_V_1.isEqual(Theta_2)) {
+					LOG.debug("E_V_1 verification failed!");
+					return false;
+				}
+				this.stopTiming("Proxy EV1 check");
+			}
+
 			LOG.debug("passed pairing verification! Tag is valid");
 			return true;
 		}
@@ -397,7 +438,7 @@ public class AnonProxyVerifyingStates {
 						return new Action<>(27);
 					} else {
 						LOG.debug("finished the ticket proof verification");
-						//return new Action<>(Status.END_SUCCESS, 0, null, null, 0);
+						// return new Action<>(Status.END_SUCCESS, 0, null, null, 0);
 						return new Action<>(32);
 					}
 				}
@@ -442,7 +483,6 @@ public class AnonProxyVerifyingStates {
 		}
 	}
 
-
 	/**
 	 * State 34 trace the user's ticket details
 	 */
@@ -454,19 +494,8 @@ public class AnonProxyVerifyingStates {
 			final Crypto crypto = Crypto.getInstance();
 			// Decode the received data.
 			final ListData listData = ListData.fromBytes(data);
-			
-			String verifierID=cenVerData.ID_V;
-			
-			String[] service={verifierID};
-//			//check the tag first:
-//			VState31 vState31=new VState31(service,service);
-//			boolean isValid=vState31.verifyTagProof(data,verifierID);
-//			if (!isValid) {
-//				LOG.debug("Failed CV Tag validation");
-//				return null;
-//			}
-//
-//			LOG.debug("Passed CV Tag validation");
+
+			String verifierID = cenVerData.ID_V;
 
 			if ((listData.getList().size() - 23) % 12 != 0) {
 				LOG.error("wrong number of data elements: " + listData.getList().size());
@@ -475,22 +504,19 @@ public class AnonProxyVerifyingStates {
 
 			// some constants from shared Memory
 			final BigInteger p = sharedMemory.p;
-			final Element g_1=sharedMemory.g_1;
-			final Element g_2=sharedMemory.g_2;
-			final Element g_3=sharedMemory.g_3;
+			final Element g_1 = sharedMemory.g_1;
+			final Element g_2 = sharedMemory.g_2;
+			final Element g_3 = sharedMemory.g_3;
 			final Element g_tilde = sharedMemory.g_tilde.getImmutable();
 			final Element g_frak = sharedMemory.g_frak.getImmutable();
 			final Element Y_CV = sharedMemory.getPublicKey(Actor.CENTRAL_VERIFIER)[1].getImmutable();
 			final Element Y_tilde_I = sharedMemory.getPublicKey(Actor.ISSUER)[1].getImmutable();
 
-			
-		
-			
 			// get the elements needed for the ZKP
 			int index = 0;
-			String ID_V=sharedMemory.stringFromBytes(listData.getList().get(index++));
-			LOG.debug("The tag proof is for: "+ID_V);
-			if (ID_V.compareTo(verifierID)!=0){
+			String ID_V = sharedMemory.stringFromBytes(listData.getList().get(index++));
+			LOG.debug("The tag proof is for: " + ID_V);
+			if (ID_V.compareTo(verifierID) != 0) {
 				LOG.debug("This is proxy mode - not yet implemented...");
 				return null;
 			}
@@ -514,7 +540,8 @@ public class AnonProxyVerifyingStates {
 
 			LOG.debug("passed c_vHash verification");
 
-			final Element P_dash_Vlhs = (((g_tilde.mul(x_hat_u)).add(Y_CV.mul(k_hat_v))).add(P_V.mul(c_vNum))).getImmutable();
+			final Element P_dash_Vlhs = (((g_tilde.mul(x_hat_u)).add(Y_CV.mul(k_hat_v))).add(P_V.mul(c_vNum)))
+					.getImmutable();
 			LOG.debug("P_dash_Vlhs = " + P_dash_Vlhs);
 			if (!P_dash_V.isEqual(P_dash_Vlhs)) {
 				LOG.debug("P_dash_V verification failed");
@@ -535,16 +562,14 @@ public class AnonProxyVerifyingStates {
 			final Element E_V_1 = sharedMemory.GTElementFromBytes(listData.getList().get(index++));
 			final Element E_V_2 = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
 			final Element E_V_3 = sharedMemory.G2ElementFromBytes(listData.getList().get(index++));
-			final Element T_V=sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
-			String ticket_Text_2=sharedMemory.stringFromBytes(listData.getList().get(index++));
+			final Element T_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
+			String ticket_Text_2 = sharedMemory.stringFromBytes(listData.getList().get(index++));
 			byte[] s_Vhash = listData.getList().get(index++);
 			BigInteger s_Vnum = (new BigInteger(1, s_Vhash)).mod(p);
 			final BigInteger w_v = (new BigInteger(1, listData.getList().get(index++))).mod(p);
 			final BigInteger z_v = (new BigInteger(1, listData.getList().get(index++))).mod(p);
 			final Element Z_V = sharedMemory.G1ElementFromBytes(listData.getList().get(index++));
 
-			
-		
 			final ListData s_Vdata = new ListData(Arrays.asList(P_V.toBytes(), Q_V.toBytes(), E_V_1.toBytes(),
 					E_V_2.toBytes(), E_V_3.toBytes(), T_V.toBytes(), ticket_Text_2.getBytes()));
 			final byte[] s_Vrhs = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
@@ -562,13 +587,14 @@ public class AnonProxyVerifyingStates {
 			LOG.debug("passed E_V_1 verification!");
 
 			Element lhs = sharedMemory.pairing.pairing(Z_V, Y_tilde_I.add(g_frak.mul(z_v))).getImmutable();
-			Element rhs = sharedMemory.pairing.pairing(g_1.add(g_2.mul(w_v)).add(g_3.mul(s_Vnum)), g_frak).getImmutable();
+			Element rhs = sharedMemory.pairing.pairing(g_1.add(g_2.mul(w_v)).add(g_3.mul(s_Vnum)), g_frak)
+					.getImmutable();
 			if (!lhs.isEqual(rhs)) {
 				LOG.debug("pairing verification failed!");
 				return null;
 			}
 			LOG.debug("passed pairing verification! Central Verification Tag is valid");
-			
+
 			int numOfVerifiers = (listData.getList().size() - 23) / 12;
 			LOG.debug("We should have " + numOfVerifiers + " verifiers");
 			TicketDetails ticketDetails = new TicketDetails(numOfVerifiers);
@@ -581,10 +607,10 @@ public class AnonProxyVerifyingStates {
 			boolean ZKPTagPresent = false;
 
 			Y_U_1 = ticketDetails.P_V[0].div(ticketDetails.Q_V[0].mul(cenVerData.x_cv)).getImmutable();
-			LOG.debug("Ticket details for: "+ticketDetails.VerifierList[0]);
-			LOG.debug("Public key of user from tag[0]: "+Y_U_1);
-			LOG.debug("Public key of user from sharedMemory: "+sharedMemory.Y_U);
-			
+			LOG.debug("Ticket details for: " + ticketDetails.VerifierList[0]);
+			LOG.debug("Public key of user from tag[0]: " + Y_U_1);
+			LOG.debug("Public key of user from sharedMemory: " + sharedMemory.Y_U);
+
 			verifierPK = ticketDetails.T_V[0].div(ticketDetails.E_V_2[0].mul(cenVerData.x_cv));
 			if ((P_V.equals(ticketDetails.P_V[0]) && (Q_V.equals(ticketDetails.Q_V[0])))) {
 				ZKPTagPresent = true;
@@ -592,8 +618,8 @@ public class AnonProxyVerifyingStates {
 			LOG.debug("Verifier[0] has public key: " + verifierPK);
 			for (int i = 1; i < numOfVerifiers; i++) {
 				Y_U_2 = ticketDetails.P_V[i].div(ticketDetails.Q_V[i].mul(cenVerData.x_cv)).getImmutable();
-				LOG.debug("Ticket details for: "+ticketDetails.VerifierList[i]);
-				LOG.debug("Public key of user from tag["+i+"]: "+Y_U_2);
+				LOG.debug("Ticket details for: " + ticketDetails.VerifierList[i]);
+				LOG.debug("Public key of user from tag[" + i + "]: " + Y_U_2);
 				verifierPK = ticketDetails.T_V[i].div(ticketDetails.E_V_2[i].mul(cenVerData.x_cv));
 				if ((P_V.equals(ticketDetails.P_V[i]) && (Q_V.equals(ticketDetails.Q_V[i])))) {
 					ZKPTagPresent = true;
@@ -616,18 +642,18 @@ public class AnonProxyVerifyingStates {
 			LOG.debug("the tag used for the ZKP was present - ticket is linked to user");
 
 			for (int i = 0; i < numOfVerifiers; i++) {
-				final byte[] verifys_V = crypto.getHash(
-						(new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(), ticketDetails.Q_V[i].toBytes(),
-								ticketDetails.E_V_1[i].toBytes(), ticketDetails.E_V_2[i].toBytes(),
-								ticketDetails.E_V_3[i].toBytes(), ticketDetails.T_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()))).toBytes(),
+				final byte[] verifys_V = crypto.getHash((new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(),
+						ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V_1[i].toBytes(),
+						ticketDetails.E_V_2[i].toBytes(), ticketDetails.E_V_3[i].toBytes(),
+						ticketDetails.T_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()))).toBytes(),
 						sharedMemory.Hash1);
 				if (!Arrays.equals(ticketDetails.s_V[i], verifys_V)) {
 					LOG.error("failed to verify s_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);
 					return null;
 				}
 				s_Vnum = (new BigInteger(1, verifys_V)).mod(p);
-				lhs = sharedMemory.pairing.pairing(ticketDetails.Z_V[i], Y_tilde_I.add(g_frak.mul(ticketDetails.z_v[i])))
-						.getImmutable();
+				lhs = sharedMemory.pairing
+						.pairing(ticketDetails.Z_V[i], Y_tilde_I.add(g_frak.mul(ticketDetails.z_v[i]))).getImmutable();
 				rhs = sharedMemory.pairing.pairing(g_1.add(g_2.mul(ticketDetails.w_v[i])).add(g_3.mul(s_Vnum)), g_frak);
 				if (!lhs.isEqual(rhs)) {
 					LOG.debug("first pairing check failed for ID_V[" + i + "]: " + ticketDetails.VerifierList[i]);
@@ -694,4 +720,144 @@ public class AnonProxyVerifyingStates {
 			return super.getAction(message);
 		}
 	}
+
+	/**
+	 * State 36 generate the proxy rekeys for ID_V
+	 */
+	public static class VState36 extends State<ICCCommand> {
+
+		private byte[] generateReKeys(byte[] data) {
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
+			final CentralAuthorityData cenAuthData = (CentralAuthorityData) sharedMemory
+					.getData(Actor.CENTRAL_AUTHORITY);
+			final Crypto crypto = Crypto.getInstance();
+
+			// Decode the received data.
+			final ListData listData = ListData.fromBytes(data);
+
+			// currently limited to one proxy but could be more...
+
+			if (listData.getList().size() != 2) {
+				LOG.error("wrong number of data elements: " + listData.getList().size());
+				return null;
+			}
+
+			final String ID_V = sharedMemory.stringFromBytes(listData.getList().get(0));
+			final String ID_Proxy = sharedMemory.stringFromBytes(listData.getList().get(1));
+			LOG.debug(ID_V + " wants to be a proxy for " + ID_Proxy);
+
+			if (ID_V.compareTo(ID_Proxy) == 0) {
+				LOG.error("ID_V is the same as ID_Proxy. This should not happen!");
+				return null;
+			}
+
+			// find ID_V details
+			CentralAuthorityData.VerifierCredentials verCred_IDV = cenAuthData.verifiers.get(ID_V);
+			// find the ID_Proxy details
+			CentralAuthorityData.VerifierCredentials verCred_IDProxy = cenAuthData.verifiers.get(ID_Proxy);
+			if (verCred_IDProxy == null || verCred_IDV == null) {
+				LOG.error("ID_V or ID_Proxy does not exist. This should not happen!");
+				return null;
+			}
+
+			// get some constants from sharedMemory
+			final BigInteger p = sharedMemory.p;
+			final Element g_tilde = sharedMemory.g_tilde;
+			final Element theta_1 = sharedMemory.theta1;
+			final Element theta_2 = sharedMemory.theta2;
+
+			final BigInteger beta_v = crypto.secureRandom(p);
+
+			// compute the rekeys
+			final Element RK_1 = g_tilde.mul(beta_v);
+
+			byte[] hashText = crypto.getHash((new ListData(
+					Arrays.asList(AnonProxySharedMemory.TT.getBytes(), AnonProxySharedMemory.ticket_Text_1.getBytes())))
+							.toBytes(),
+					AnonProxySharedMemory.Hash1);
+
+			final BigInteger hashTextNum = new BigInteger(1, hashText).mod(p);
+			final Element tmp =verCred_IDProxy.SK_V.sub(verCred_IDV.SK_V);
+			final Element RK_2 = (theta_1.add(theta_2.mul(hashTextNum))).mul(beta_v).add(tmp);
+
+			// send the rekey back.
+			final ListData sendData = new ListData(
+					Arrays.asList(sharedMemory.stringToBytes(ID_V), RK_1.toBytes(), RK_2.toBytes()));
+			return sendData.toBytes();
+
+		}
+
+		/**
+		 * Gets the required action given a message.
+		 *
+		 * @param message
+		 *            The received message to process.
+		 * @return The required action.
+		 */
+		@Override
+		public Action<ICCCommand> getAction(Message message) {
+			LOG.debug("reached the proxy rekeying state - meesage type is " + message.getType());
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
+			sharedMemory.actAs(Actor.CENTRAL_AUTHORITY);
+			// we are the CA
+			if (message.getType() == Type.DATA) {
+
+				// Obtain rekeying info for the verifier ID_V
+				final byte[] data = this.generateReKeys(message.getData());
+
+				if (data != null) {
+					LOG.debug("sending rekey details");
+					return new Action<>(Status.CONTINUE, 37, ICCCommand.PUT, data, 0);
+				}
+			}
+			return super.getAction(message);
+		}
+	}
+
+	/**
+	 * State 38 store the rekey details for the verifier
+	 */
+	public static class VState38 extends State<ICCCommand> {
+
+		private boolean storeReKeys(byte[] data) {
+			final AnonProxySharedMemory sharedMemory = (AnonProxySharedMemory) this.getSharedMemory();
+			// Decode the received data.
+			final ListData listData = ListData.fromBytes(data);
+
+			if (listData.getList().size() != 3) {
+				LOG.error("wrong number of data elements: " + listData.getList().size());
+				return false;
+			}
+
+			// extract the ID_V for which we are receiving the keys
+			final String ID_V = sharedMemory.stringFromBytes(listData.getList().get(0));
+			sharedMemory.actAs(ID_V);
+			LOG.debug("acting as: " + ID_V);
+			VerifierData verifierData = (VerifierData) sharedMemory.getData(ID_V);
+			verifierData.RK_1 = sharedMemory.G1ElementFromBytes(listData.getList().get(1));
+			verifierData.RK_2 = sharedMemory.G2ElementFromBytes(listData.getList().get(2));
+			return true;
+		}
+
+		/**
+		 * Gets the required action given a message.
+		 *
+		 * @param message
+		 *            The received message to process.
+		 * @return The required action.
+		 */
+		@Override
+		public Action<ICCCommand> getAction(Message message) {
+			LOG.debug("store the proxy keys state- meesage type is " + message.getType());
+			if (message.getType() == Type.DATA) {
+				// store the keys and progress to the standard tag validation
+				if (this.storeReKeys(message.getData())) {
+					LOG.debug("successfully stored proxy keys");
+					return new Action<>(27);
+				}
+			}
+			return super.getAction(message);
+		}
+	}
+
 }

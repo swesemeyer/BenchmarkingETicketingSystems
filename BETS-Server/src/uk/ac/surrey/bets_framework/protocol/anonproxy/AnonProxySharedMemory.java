@@ -51,8 +51,8 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	 * service the user originally needed. We don't test the case where a user does not have a valid token.
 	 */
 	public static final String[] Verifiers_for_J_U = 
-		{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[2], Actor.VERIFIERS[3] };
-		//{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[4], Actor.VERIFIERS[5] };
+		//{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[2], Actor.VERIFIERS[3] };
+		{ Actor.VERIFIERS[0], Actor.VERIFIERS[1], Actor.VERIFIERS[4], Actor.VERIFIERS[5] };
 	
 	/**
 	 * Interface defining actor data.
@@ -128,16 +128,21 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	public PropertiesParameters pairingParameters = null;
 
 	/** The name of the first hash algorithm */
-	public String Hash1 = "RIPEMD256";
+	public static final String Hash1 = "RIPEMD256";
 
 	/** The name of the second hash algorithm */
-	public String[] Hash2 = { "randomOracle", "H2" };
+	public static final String[] Hash2 = { "randomOracle", "H2" };
 
 	/** The name of the second hash algorithm */
-	public String Hash3 = "SHA-256";
+	public static final String Hash3 = "SHA-256";
 
-	// /** The name of the fourth hash algorithm */
-	// public String[] Hash4 = { "randomOracle", "H4" };
+
+	/** the text parts of the tickets */
+
+	public static final String TT = "Token to limit proxying";
+	public static final String ticket_Text_1 = "Travel time information";
+	public static final String ticket_Text_2 = "Service information,eg valid period, ticket type";
+
 
 	/** The first public key of the CA */
 
@@ -169,6 +174,8 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 
 	/** The public keys of the Verifiers */
 	public Map<String, Element> Y_Vs = new HashMap<>();
+	
+	//
 
 	/**
 	 * Change the current actor.

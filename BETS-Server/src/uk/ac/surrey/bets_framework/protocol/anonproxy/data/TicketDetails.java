@@ -28,7 +28,7 @@ public class TicketDetails {
 	/** Logback logger. */
 	private static final Logger LOG = LoggerFactory.getLogger(TicketDetails.class);
 	
-	
+	public String TT=null;
 	public String ticket_Text_1=null;
 	public String ticket_Text_2=null;
 	public String[] VerifierList = null;
@@ -51,9 +51,9 @@ public class TicketDetails {
 	public int numOfVerifiers = -1;
 
 	public TicketDetails(int numOfVerifiers) {
-		
-		this.ticket_Text_1="travel time";
-		this.ticket_Text_2="ticket type, etc";
+		this.TT=AnonProxySharedMemory.TT;
+		this.ticket_Text_1=AnonProxySharedMemory.ticket_Text_1;
+		this.ticket_Text_2=AnonProxySharedMemory.ticket_Text_2;
 
 		this.numOfVerifiers = numOfVerifiers;
 
@@ -126,7 +126,6 @@ public class TicketDetails {
 		
 		int index = -1;
 		for (int i = 0; i < numOfVerifiers; i++) {
-			LOG.debug("verifier["+i+"]= "+this.D_V[i]);
 			if (D_V.isEqual(this.D_V[i])) {
 				return i;
 			}

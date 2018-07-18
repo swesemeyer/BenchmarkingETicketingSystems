@@ -34,7 +34,13 @@ public class VerifierData implements AnonProxySharedMemory.ActorData {
 
 	/** the public key of the verifier */
 	public Element Y_V = null;
-
+	
+	/** the first proxy rekey */
+	public Element RK_1=null;
+	
+	/** the second proxy rekey */
+	public Element RK_2=null;
+	
 	public VerifierData() {
 		super();
 	}
