@@ -21,7 +21,6 @@ import uk.ac.surrey.bets_framework.protocol.anonproxy.data.CentralVerifierData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.IssuerData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.UserData;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.VerifierData;
-import uk.ac.surrey.bets_framework.protocol.anonsso.AnonSSOSharedMemory.Actor;
 
 public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** Logback logger. */
@@ -82,8 +81,6 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 
 	boolean validateVerifiers = true; // this can be quite time consuming, esp if done on Android!
 
-	/** Random generator of the group G1. */
-	public Element g = null;
 
 	/** Random generator of the group G1. */
 	public Element g_tilde = null;
@@ -100,11 +97,6 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** Random generator of the group G1. */
 	public Element g_3 = null;
 
-	// /** Random generator of the group G1. */
-	// public Element g_5 = null;
-	//
-	// /** Random generator of the group G1. */
-	// public Element g_6 = null;
 	//
 	/** Random generator of the group G2. */
 	public Element g_frak = null;
@@ -133,8 +125,8 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 	/** The name of the second hash algorithm */
 	public static final String[] Hash2 = { "randomOracle", "H2" };
 
-	/** The name of the second hash algorithm */
-	public static final String Hash3 = "SHA-256";
+	/** The name of the third hash algorithm */
+	//public static final String Hash3 = "SHA-256";
 
 
 	/** the text parts of the tickets */
@@ -213,7 +205,7 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 		this.Y_tilde_A = caData.Y_tilde_A;
 
 		// The Issuer
-		IssuerData issuerData = new IssuerData(Actor.ISSUER, this.p, this.g, this.g_frak);
+		IssuerData issuerData = new IssuerData(Actor.ISSUER, this.p, this.g_tilde, this.g_frak);
 		this.actorData.put(Actor.ISSUER, issuerData);
 
 		// The issuer's public keys
@@ -246,7 +238,7 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 		// Generate the required elements from the pairing.
 
 		// create some random generators for G1
-		this.g = this.pairing.getG1().newRandomElement().getImmutable();
+		//this.g = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_tilde = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_bar = this.pairing.getG1().newRandomElement().getImmutable();
 		this.g_1 = this.pairing.getG1().newRandomElement().getImmutable();
@@ -264,8 +256,14 @@ public class AnonProxySharedMemory extends ICCSharedMemory {
 		// generator), and subsequently our bilinear group
 		// pairing.
 		final SecureRandom prng = new Crypto.PRNGSecureRandom(PAIRING_RANDOM_SEED);
+		
+		
 		final PairingParametersGenerator<?> generator = new PBCTypeFCurveGenerator(this.rBits);
 		PairingFactory.getInstance().setUsePBCWhenPossible(true);
+		
+		//PairingParametersGenerator<?> generator = new  TypeFCurveGenerator(prng, this.rBits);
+		//PairingParametersGenerator<?> generator = new  TypeACurveGenerator(this.rBits, 2*this.rBits);
+		
 		this.pairingParameters = (PropertiesParameters) generator.generate();
 		this.pairing = PairingFactory.getPairing(this.pairingParameters, prng);
 		this.p = this.pairingParameters.getBigInteger("r");

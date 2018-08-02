@@ -41,7 +41,7 @@ public class TicketDetails {
 	public Element[] E_V_1 = null;
 	public Element[] E_V_2 = null;
 	public Element[] E_V_3 = null;
-	public Element[] T_V=null;
+	public Element[] K_V=null;
 	public byte[][] s_V = null;
 	public Element[] Z_V = null;
 	public byte[] s_CV = null;
@@ -67,7 +67,7 @@ public class TicketDetails {
 		this.E_V_1 = new Element[numOfVerifiers];
 		this.E_V_2 = new Element[numOfVerifiers];
 		this.E_V_3 = new Element[numOfVerifiers];
-		this.T_V = new Element[numOfVerifiers];
+		this.K_V = new Element[numOfVerifiers];
 		this.s_V = new byte[numOfVerifiers][];
 		this.Z_V = new Element[numOfVerifiers];
 
@@ -82,7 +82,7 @@ public class TicketDetails {
 			sendDataList.add(this.E_V_1[i].toBytes());
 			sendDataList.add(this.E_V_2[i].toBytes());
 			sendDataList.add(this.E_V_3[i].toBytes());
-			sendDataList.add(this.T_V[i].toBytes());
+			sendDataList.add(this.K_V[i].toBytes());
 			sendDataList.add(this.s_V[i]);
 			sendDataList.add(this.z_v[i].toByteArray());
 			sendDataList.add(this.w_v[i].toByteArray());
@@ -106,7 +106,7 @@ public class TicketDetails {
 			this.E_V_1[i] = sharedMemory.GTElementFromBytes(listData.getList().get(indx++));
 			this.E_V_2[i] = sharedMemory.G1ElementFromBytes(listData.getList().get(indx++));
 			this.E_V_3[i] = sharedMemory.G2ElementFromBytes(listData.getList().get(indx++));
-			this.T_V[i] = sharedMemory.G1ElementFromBytes(listData.getList().get(indx++));
+			this.K_V[i] = sharedMemory.G1ElementFromBytes(listData.getList().get(indx++));
 			this.s_V[i] = listData.getList().get(indx++);
 			this.z_v[i] = new BigInteger(1, listData.getList().get(indx++));
 			this.w_v[i] = new BigInteger(1, listData.getList().get(indx++));

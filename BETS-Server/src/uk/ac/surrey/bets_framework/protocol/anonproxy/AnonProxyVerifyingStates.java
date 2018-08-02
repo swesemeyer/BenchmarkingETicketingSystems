@@ -158,7 +158,7 @@ public class AnonProxyVerifyingStates {
 
 			byte[] D_VdataHash = crypto.getHash(
 					(new ListData(Arrays.asList(userData.R_U.toBytes(), ID_V.getBytes()))).toBytes(),
-					sharedMemory.Hash3);
+					sharedMemory.Hash1);
 			Element D_Vhash = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0, D_VdataHash.length);
 
 			TicketDetails userTicket = userData.ticketDetails;
@@ -168,7 +168,7 @@ public class AnonProxyVerifyingStates {
 				LOG.debug("Now looking for ID_proxy: " + ID_proxy);
 				D_VdataHash = crypto.getHash(
 						(new ListData(Arrays.asList(userData.R_U.toBytes(), ID_proxy.getBytes()))).toBytes(),
-						sharedMemory.Hash3);
+						sharedMemory.Hash1);
 				D_Vhash = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0, D_VdataHash.length);
 				index = userTicket.getVerifierIndex(D_Vhash);
 				if (index == -1) {
@@ -217,7 +217,7 @@ public class AnonProxyVerifyingStates {
 			sendDataList.addAll(Arrays.asList(userTicket.P_V[index].toBytes(), P_dash_V.toBytes(),
 					userTicket.Q_V[index].toBytes(), Q_dash_V.toBytes(), c_vHash, x_hat_u.toByteArray(),
 					k_hat_v.toByteArray(), userTicket.E_V_1[index].toBytes(), userTicket.E_V_2[index].toBytes(),
-					userTicket.E_V_3[index].toBytes(), userTicket.T_V[index].toBytes(),
+					userTicket.E_V_3[index].toBytes(), userTicket.K_V[index].toBytes(),
 					sharedMemory.stringToBytes(userTicket.ticket_Text_2), userTicket.s_V[index],
 					userTicket.w_v[index].toByteArray(), userTicket.z_v[index].toByteArray(),
 					userTicket.Z_V[index].toBytes()));
@@ -611,7 +611,7 @@ public class AnonProxyVerifyingStates {
 			LOG.debug("Public key of user from tag[0]: " + Y_U_1);
 			LOG.debug("Public key of user from sharedMemory: " + sharedMemory.Y_U);
 
-			verifierPK = ticketDetails.T_V[0].div(ticketDetails.E_V_2[0].mul(cenVerData.x_cv));
+			verifierPK = ticketDetails.K_V[0].div(ticketDetails.E_V_2[0].mul(cenVerData.x_cv));
 			if ((P_V.equals(ticketDetails.P_V[0]) && (Q_V.equals(ticketDetails.Q_V[0])))) {
 				ZKPTagPresent = true;
 			}
@@ -620,7 +620,7 @@ public class AnonProxyVerifyingStates {
 				Y_U_2 = ticketDetails.P_V[i].div(ticketDetails.Q_V[i].mul(cenVerData.x_cv)).getImmutable();
 				LOG.debug("Ticket details for: " + ticketDetails.VerifierList[i]);
 				LOG.debug("Public key of user from tag[" + i + "]: " + Y_U_2);
-				verifierPK = ticketDetails.T_V[i].div(ticketDetails.E_V_2[i].mul(cenVerData.x_cv));
+				verifierPK = ticketDetails.K_V[i].div(ticketDetails.E_V_2[i].mul(cenVerData.x_cv));
 				if ((P_V.equals(ticketDetails.P_V[i]) && (Q_V.equals(ticketDetails.Q_V[i])))) {
 					ZKPTagPresent = true;
 				}
@@ -645,7 +645,7 @@ public class AnonProxyVerifyingStates {
 				final byte[] verifys_V = crypto.getHash((new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(),
 						ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V_1[i].toBytes(),
 						ticketDetails.E_V_2[i].toBytes(), ticketDetails.E_V_3[i].toBytes(),
-						ticketDetails.T_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()))).toBytes(),
+						ticketDetails.K_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()))).toBytes(),
 						sharedMemory.Hash1);
 				if (!Arrays.equals(ticketDetails.s_V[i], verifys_V)) {
 					LOG.error("failed to verify s_V[" + i + "] for verifier: " + ticketDetails.VerifierList[i]);

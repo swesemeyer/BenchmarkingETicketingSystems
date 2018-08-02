@@ -68,7 +68,7 @@ public class IssuerData implements AnonProxySharedMemory.ActorData {
 	 * @param g_frak
 	 *            a generator of G2
 	 */
-	public IssuerData(String name, BigInteger p, Element g, Element g_frak) {
+	public IssuerData(String name, BigInteger p, Element g_tilde, Element g_frak) {
 		super();
 
 		this.ID_I = name;
@@ -79,7 +79,7 @@ public class IssuerData implements AnonProxySharedMemory.ActorData {
 		this.x_i = crypto.secureRandom(p);
 
 		// compute the secret key
-		this.Y_I = g.mul(this.x_i).getImmutable();
+		this.Y_I = g_tilde.mul(this.x_i).getImmutable();
 
 		// compute the public key
 		this.Y_tilde_I = g_frak.mul(this.x_i).getImmutable();

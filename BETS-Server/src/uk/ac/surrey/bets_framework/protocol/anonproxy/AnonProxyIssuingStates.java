@@ -12,8 +12,6 @@ import org.slf4j.LoggerFactory;
 import it.unisa.dia.gas.jpbc.Element;
 import uk.ac.surrey.bets_framework.Crypto;
 import uk.ac.surrey.bets_framework.Crypto.BigIntEuclidean;
-import uk.ac.surrey.bets_framework.icc.ICC;
-import uk.ac.surrey.bets_framework.nfc.NFC;
 import uk.ac.surrey.bets_framework.protocol.ICCCommand;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.AnonProxySharedMemory.Actor;
 import uk.ac.surrey.bets_framework.protocol.anonproxy.data.IssuerData;
@@ -136,7 +134,7 @@ public class AnonProxyIssuingStates {
 				c_DataList.add(Q_V[i].toBytes());
 				c_DataList.add(Q_dash_V[i].toBytes());
 			}
-			final byte[] c_hash = crypto.getHash((new ListData(c_DataList)).toBytes(), sharedMemory.Hash1);
+			final byte[] c_hash = crypto.getHash((new ListData(c_DataList)).toBytes(), AnonProxySharedMemory.Hash1);
 			final BigInteger c_hashNum = (new BigInteger(1, c_hash)).mod(p);
 
 			final BigInteger e_hat_U = (e_dash_u.subtract(c_hashNum.multiply(userData.e_u))).mod(p);
@@ -245,8 +243,8 @@ public class AnonProxyIssuingStates {
 			final Element theta_1 = sharedMemory.theta1.getImmutable();
 			final Element theta_2 = sharedMemory.theta2.getImmutable();
 
-			// check the ZKP here:
-
+			//simple pairing check
+			this.startTiming("Issuer:Check pairing");
 			int index = 0;
 			final List<byte[]> verifyc_hashData = new ArrayList<>();
 
@@ -264,7 +262,11 @@ public class AnonProxyIssuingStates {
 			}
 
 			LOG.debug("passed simple pairing check");
-
+			this.stopTiming("Issuer:Check pairing");
+			
+			// check the ZKP here:
+			this.startTiming("Issuer:Check ZKP PI_U_1");
+			
 			// compute the hash
 			verifyc_hashData.add(sigma_bar_U.toBytes());
 			verifyc_hashData.add(sigma_tilde_U.toBytes());
@@ -368,14 +370,25 @@ public class AnonProxyIssuingStates {
 			}
 			LOG.debug("passed Q_dash_V verification!");
 			LOG.debug("PI_U_1 proof passed");
-
+			this.stopTiming("Issuer:Check ZKP PI_U_1");
 			// Creating the ticket now
 
+			this.startTiming("ISSUER:pre-compute Values");
+			BigIntEuclidean[] gcd = new BigIntEuclidean[numberOfVerifiers];
+			BigIntEuclidean gcd_cv = null;
 			final BigInteger r_u = crypto.secureRandom(p);
 			final Element R_U = g_bar.mul(r_u);
+			
+			ticketDetails.w_cv = crypto.secureRandom(p);
+			ticketDetails.z_cv = crypto.secureRandom(p);
+			//store some values that we can pre-compute
+			final Element[] g1g2_wv=new Element[numberOfVerifiers];
+			final Element g1g2_wcv=g_1.add(g_2.mul(ticketDetails.w_cv));
+			gcd_cv = BigIntEuclidean.calculate(issuerData.x_i.add(ticketDetails.z_cv).mod(p), p);
+			
 			LOG.debug("R_U = " + R_U);
 
-			BigIntEuclidean gcd = null;
+			
 			boolean hasCV = false;
 
 			for (int i = 0; i < numberOfVerifiers; i++) {
@@ -385,17 +398,22 @@ public class AnonProxyIssuingStates {
 				ticketDetails.t_v[i] = crypto.secureRandom(p);
 				ticketDetails.w_v[i] = crypto.secureRandom(p);
 				ticketDetails.z_v[i] = crypto.secureRandom(p);
+				//compute some partial elements
+				g1g2_wv[i]=g_1.add(g_2.mul(ticketDetails.w_v[i]));
+				
 				final ListData D_Vdata = new ListData(
 						Arrays.asList(R_U.toBytes(), ticketDetails.VerifierList[i].getBytes()));
-				final byte[] D_VdataHash = crypto.getHash(D_Vdata.toBytes(), AnonProxySharedMemory.Hash3);
+				final byte[] D_VdataHash = crypto.getHash(D_Vdata.toBytes(), AnonProxySharedMemory.Hash1);
 				ticketDetails.D_V[i] = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0,
 						D_VdataHash.length);
 				LOG.debug("Verifier:" + ticketDetails.VerifierList[i]);
+				
 				Element ID_Vhash = crypto.getHash(ticketDetails.VerifierList[i].getBytes(), AnonProxySharedMemory.Hash2,
 						sharedMemory.pairing.getG2());
 
 				ticketDetails.E_V_1[i] = sharedMemory.pairing.pairing(Y_tilde_A, ID_Vhash).mul(ticketDetails.t_v[i])
 						.getImmutable();
+				
 				ticketDetails.E_V_2[i] = g_tilde.mul(ticketDetails.t_v[i]);
 
 				final BigInteger text1_hashNum = (new BigInteger(1,
@@ -404,21 +422,30 @@ public class AnonProxyIssuingStates {
 				ticketDetails.E_V_3[i] = (theta_1.add(theta_2.mul(text1_hashNum))).mul(ticketDetails.t_v[i]);
 
 				final BigInteger ID_VhashNum = (new BigInteger(1,
-						crypto.getHash(ticketDetails.VerifierList[i].getBytes(), sharedMemory.Hash1))).mod(p);
-				ticketDetails.T_V[i] = (g_tilde.mul(ID_VhashNum)).add(Y_CV.mul(ticketDetails.t_v[i]));
-
+						crypto.getHash(ticketDetails.VerifierList[i].getBytes(), AnonProxySharedMemory.Hash1))).mod(p);
+				ticketDetails.K_V[i] = (g_tilde.mul(ID_VhashNum)).add(Y_CV.mul(ticketDetails.t_v[i]));
+				
+				gcd[i] = BigIntEuclidean.calculate(issuerData.x_i.add(ticketDetails.z_v[i]).mod(p), p);
+				
+			}
+			
+			this.stopTiming("ISSUER:pre-compute Values");
+			
+			this.startTiming("ISSUER:compute Ticket");
+			
+			
+			for (int i = 0; i < numberOfVerifiers; i++) {
 				final ListData s_Vdata = new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(),
 						ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V_1[i].toBytes(),
 						ticketDetails.E_V_2[i].toBytes(), ticketDetails.E_V_3[i].toBytes(),
-						ticketDetails.T_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()));
+						ticketDetails.K_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()));
 				
-				ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), sharedMemory.Hash1);
+				ticketDetails.s_V[i] = crypto.getHash(s_Vdata.toBytes(), AnonProxySharedMemory.Hash1);
 				
 				
 				LOG.debug("Issuing s_v[i]"+crypto.base64Encode(ticketDetails.s_V[i]));
 				final BigInteger s_Vnum = (new BigInteger(1, ticketDetails.s_V[i])).mod(p);
-				gcd = BigIntEuclidean.calculate(issuerData.x_i.add(ticketDetails.z_v[i]).mod(p), p);
-				ticketDetails.Z_V[i] = (g_1.add(g_2.mul(ticketDetails.w_v[i])).add(g_3.mul(s_Vnum))).mul(gcd.x.mod(p))
+				ticketDetails.Z_V[i] = (g1g2_wv[i].add(g_3.mul(s_Vnum))).mul(gcd[i].x.mod(p))
 						.getImmutable();
 
 			}
@@ -428,16 +455,14 @@ public class AnonProxyIssuingStates {
 				return null;
 			}
 
-			ticketDetails.w_cv = crypto.secureRandom(p);
-			ticketDetails.z_cv = crypto.secureRandom(p);
 			final List<byte[]> s_cvDataList = new ArrayList<>();
 			for (int i = 0; i < numberOfVerifiers; i++) {
 				s_cvDataList.add(ticketDetails.s_V[i]);
 			}
-			ticketDetails.s_CV = crypto.getHash((new ListData(s_cvDataList)).toBytes(), sharedMemory.Hash1);
+			ticketDetails.s_CV = crypto.getHash((new ListData(s_cvDataList)).toBytes(), AnonProxySharedMemory.Hash1);
 			final BigInteger s_cvDataNum = new BigInteger(1, ticketDetails.s_CV).mod(p);
-			gcd = BigIntEuclidean.calculate(issuerData.x_i.add(ticketDetails.z_cv).mod(p), p);
-			ticketDetails.Z_CV = ((g_1.add(g_2.mul(ticketDetails.w_cv))).add(g_3.mul(s_cvDataNum))).mul(gcd.x.mod(p));
+			
+			ticketDetails.Z_CV = (g1g2_wcv.add(g_3.mul(s_cvDataNum))).mul(gcd_cv.x.mod(p));
 
 			final List<byte[]> sendDataList = new ArrayList<>();
 			sendDataList.add(R_U.toBytes());
@@ -446,6 +471,8 @@ public class AnonProxyIssuingStates {
 			ticketDetails.getTicketDetails(sendDataList);
 			final ListData sendData = new ListData(sendDataList);
 
+			this.stopTiming("ISSUER:compute Ticket");
+			
 			return sendData.toBytes();
 
 		}
@@ -509,7 +536,7 @@ public class AnonProxyIssuingStates {
 
 					final ListData D_Vdata = new ListData(
 							Arrays.asList(R_U.toBytes(), ticketDetails.VerifierList[i].getBytes()));
-					final byte[] D_VdataHash = crypto.getHash(D_Vdata.toBytes(), sharedMemory.Hash3);
+					final byte[] D_VdataHash = crypto.getHash(D_Vdata.toBytes(), AnonProxySharedMemory.Hash1);
 					final Element verifyD_V = sharedMemory.pairing.getG2().newElementFromHash(D_VdataHash, 0,
 							D_VdataHash.length);
 					if (!ticketDetails.D_V[i].isEqual(verifyD_V)) {
@@ -524,8 +551,8 @@ public class AnonProxyIssuingStates {
 					final ListData s_VdataVerify = new ListData(Arrays.asList(ticketDetails.P_V[i].toBytes(),
 							ticketDetails.Q_V[i].toBytes(), ticketDetails.E_V_1[i].toBytes(),
 							ticketDetails.E_V_2[i].toBytes(), ticketDetails.E_V_3[i].toBytes(),
-							ticketDetails.T_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()));
-					final byte[] verifys_V = crypto.getHash(s_VdataVerify.toBytes(), sharedMemory.Hash1);
+							ticketDetails.K_V[i].toBytes(), ticketDetails.ticket_Text_2.getBytes()));
+					final byte[] verifys_V = crypto.getHash(s_VdataVerify.toBytes(), AnonProxySharedMemory.Hash1);
 					LOG.debug("verifys_V: "+crypto.base64Encode(verifys_V));
 					LOG.debug("ticket s_v[i]: "+crypto.base64Encode(ticketDetails.s_V[i]));
 					if (!Arrays.equals(ticketDetails.s_V[i], verifys_V)) {
@@ -569,7 +596,7 @@ public class AnonProxyIssuingStates {
 				}
 
 				if (!Arrays.equals(ticketDetails.s_CV,
-						crypto.getHash((new ListData(verifys_PData)).toBytes(), sharedMemory.Hash1))) {
+						crypto.getHash((new ListData(verifys_PData)).toBytes(), AnonProxySharedMemory.Hash1))) {
 					LOG.error("failed to verify s_CV hash");
 					return false;
 				}
